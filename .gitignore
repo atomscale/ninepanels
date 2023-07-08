@@ -1,0 +1,8 @@
+/.vscode
+/.venv
+*pycache*
+/data_tools/data_sources
+*egg-info*
+/.pytest*
+*.db
+.DS*

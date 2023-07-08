@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "ninepanels"
+version = "0.0.1"
+description = "consistency vigilance"
+authors = ["Ben Dyer <ben@atomscale.co>"]
+license = "MIT Licence"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+black = "^23.3.0"
+SQLAlchemy = "^2.0.18"
+alembic = "^1.11.1"
+psycopg2-binary = "^2.9.6"
+pytest = "^7.4.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
