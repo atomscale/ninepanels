@@ -6,3 +6,6 @@ class DatabaseConnectionError(Exception):
 
 class UserNotCreated(Exception):
     pass
+
+class EntryNotCreated(Exception):
+    pass

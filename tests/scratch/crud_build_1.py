@@ -1,5 +1,5 @@
-from .database import engine
-from . import sqlmodels as sql
+from ...ninepanels.database import engine
+from ...ninepanels import sqlmodels as sql
 
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
