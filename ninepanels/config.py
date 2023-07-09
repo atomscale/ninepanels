@@ -2,8 +2,8 @@ import os
 
 ### DATABASE ###
 
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+# DB_PASSWORD = os.environ.get("DB_PASSWORD")
+# DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
 
 SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
 # SQLALCHEMY_DATABASE_URI = "sqlite:///./tempdb.db"
