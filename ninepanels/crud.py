@@ -1,4 +1,5 @@
 from . import sqlmodels as sql
+from. import pydmodels as pyd
 from .errors import UserNotCreated
 from .errors import EntryNotCreated
 
@@ -59,12 +60,12 @@ def read_all_entries(db: Session) -> list:
 
     return entries
 
-def create_entry(db: Session, new_entry: dict):
+def create_entry(db: Session, new_entry: pyd.EntryCreate):
     """Create an entry in the db. Appends timestamp in utc
 
     Args:
         db: an sqlalchemy Session instance
-        new_entry: a dict with new entry data
+        new_entry: a pydantic model with new entry data
 
     Returns:
         entry: an sqlalchemy Entry instance
