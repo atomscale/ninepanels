@@ -1,5 +1,6 @@
 from . import sqlmodels as sql
 from .errors import UserNotCreated
+from .errors import EntryNotCreated
 
 import logging
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import OperationalError
 
+from datetime import datetime
 
 
 def create_user(db: Session, new_user: dict):
@@ -17,7 +19,7 @@ def create_user(db: Session, new_user: dict):
         new_user: a dict with new user data
 
     Returns:
-        new_user: an sqlalchemy User instance
+        user: an sqlalchemy User instance
 
     Raises:
         UserNotCreated: the new user was not created
@@ -57,7 +59,35 @@ def read_all_entries(db: Session) -> list:
 
     return entries
 
-def read_latest_panel_status_for_user(db: Session, user_id: int) -> list:
+def create_entry(db: Session, new_entry: dict):
+    """Create an entry in the db. Appends timestamp in utc
+
+    Args:
+        db: an sqlalchemy Session instance
+        new_entry: a dict with new entry data
+
+    Returns:
+        entry: an sqlalchemy Entry instance
+
+    Raises:
+        EntryNotCreated: the new entry was not created
+
+    """
+
+    try:
+        new_entry.update({"timestamp": datetime.utcnow()})
+        entry = sql.Entry(**new_entry)
+        db.add(entry)
+        db.commit()
+    except (SQLAlchemyError, TypeError, IntegrityError) as e:
+        msg = f"error creating new entry"
+        logging.warning(msg + str(e))
+        db.rollback()
+        raise EntryNotCreated(msg)
+
+    return entry
+
+def read_latest_entries_for_user(db: Session, user_id: int) -> list:
     """ return only the latest status for each panel belonging to a user """
 
     all_user_panels = (

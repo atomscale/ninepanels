@@ -17,7 +17,7 @@ def test_db():
         "sqlite:///./pytest.db", connect_args={"check_same_thread": False}
     )
 
-    # ensure pragma is set if it is an Sqlite db
+    # ensure pragma for FK constraint is set if it is an Sqlite db
     @event.listens_for(test_engine, "connect")
     def _set_fk_pragma(conn, conn_record):
         if isinstance(conn, SQLiteConnection):
@@ -31,7 +31,7 @@ def test_db():
 
     db = SessionLocal()
 
-    # set up any req data here
+    # \/\/\/\/\/\/\/\/ set up any req data here
 
     test_users = [
         sql.User(name='Bennyboy'),
@@ -42,7 +42,7 @@ def test_db():
     db.add_all(test_users)
     db.commit()
 
-    new_panels = [
+    test_panels = [
     sql.Panel(title="workout", owner_id=1),
     sql.Panel(title="write code", owner_id=1),
     sql.Panel(title="walk harris", owner_id=1),
@@ -52,23 +52,23 @@ def test_db():
     sql.Panel(title="move house again", owner_id=2),
     ]
 
-    db.add_all(new_panels)
+    db.add_all(test_panels)
     db.commit()
 
     ts = datetime.utcnow()
     diff = timedelta(seconds=1)
 
-    entries = [
+    test_entries = [
         sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
         sql.Entry(is_complete=False, panel_id=2, timestamp=ts),
         sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
         sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
     ]
-    db.add_all(entries)
+    db.add_all(test_entries)
     db.commit()
 
 
-    # more logic can go here to set up more data
+    # /\/\/\/\/\/\ more logic can go above here to set up more data
 
     try:
         yield db
