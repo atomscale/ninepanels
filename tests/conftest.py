@@ -1,4 +1,5 @@
 import pytest
+from fastapi.testclient import TestClient
 
 from datetime import datetime, timedelta
 
@@ -8,6 +9,7 @@ from sqlalchemy import event
 from sqlite3 import Connection as SQLiteConnection
 
 from ninepanels import sqlmodels as sql
+from ninepanels.main import api, get_db
 
 @pytest.fixture(scope="session")
 def test_db():
@@ -74,3 +76,18 @@ def test_db():
         yield db
     finally:
         sql.Base.metadata.drop_all(bind=test_engine)
+
+@pytest.fixture(scope="session")
+def test_server(test_db):
+
+    def override_get_db():
+        try:
+            yield test_db
+        finally:
+            pass
+
+    api.dependency_overrides[get_db] = override_get_db
+
+    client = TestClient(api)
+
+    yield client

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 class EntryCreate(BaseModel):
     is_complete: bool = Field(examples=[True])
@@ -8,5 +9,5 @@ class Entry(EntryCreate):
     model_config = {"from_attributes": True}
 
     id: int
-    timestamp: str
+    timestamp: datetime
 

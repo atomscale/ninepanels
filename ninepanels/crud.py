@@ -1,5 +1,5 @@
 from . import sqlmodels as sql
-from. import pydmodels as pyd
+from . import pydmodels as pyd
 from .errors import UserNotCreated
 from .errors import EntryNotCreated
 
@@ -39,28 +39,32 @@ def create_user(db: Session, new_user: dict):
 
     return user
 
+
 def read_all_users(db: Session) -> list:
-    """ read all users in the db """
+    """read all users in the db"""
 
     users = db.query(sql.User).all()
 
     return users
 
+
 def read_all_panels(db: Session) -> list:
-    """ read all panels for all users """
+    """read all panels for all users"""
 
     panels = db.query(sql.Panel).all()
 
     return panels
 
+
 def read_all_entries(db: Session) -> list:
-    """ read all entries for all users """
+    """read all entries for all users"""
 
     entries = db.query(sql.Entry).all()
 
     return entries
 
-def create_entry(db: Session, new_entry: pyd.EntryCreate):
+
+def create_entry(db: Session, is_complete: bool, panel_id: int):
     """Create an entry in the db. Appends timestamp in utc
 
     Args:
@@ -76,8 +80,9 @@ def create_entry(db: Session, new_entry: pyd.EntryCreate):
     """
 
     try:
-        new_entry.update({"timestamp": datetime.utcnow()})
-        entry = sql.Entry(**new_entry)
+        entry = sql.Entry(
+            is_complete=is_complete, panel_id=panel_id, timestamp=datetime.utcnow()
+        )
         db.add(entry)
         db.commit()
     except (SQLAlchemyError, TypeError, IntegrityError) as e:
@@ -88,14 +93,12 @@ def create_entry(db: Session, new_entry: pyd.EntryCreate):
 
     return entry
 
+
 def read_latest_entries_for_user(db: Session, user_id: int) -> list:
-    """ return only the latest status for each panel belonging to a user """
+    """return only the latest status for each panel belonging to a user"""
 
     all_user_panels = (
-        db.query(sql.Panel)
-        .join(sql.User)
-        .where(sql.User.id == user_id)
-        .all()
+        db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
     )
 
     latest_user_panels = []
