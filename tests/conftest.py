@@ -45,13 +45,13 @@ def test_db():
     db.commit()
 
     test_panels = [
-    sql.Panel(title="workout", owner_id=1),
-    sql.Panel(title="write code", owner_id=1),
-    sql.Panel(title="walk harris", owner_id=1),
-    sql.Panel(title="cure cancer", owner_id=2),
-    sql.Panel(title="move to oz", owner_id=3),
-    sql.Panel(title="make pickles", owner_id=3),
-    sql.Panel(title="move house again", owner_id=2),
+    sql.Panel(title="workout", user_id=1),
+    sql.Panel(title="write code", user_id=1),
+    sql.Panel(title="walk harris", user_id=1),
+    sql.Panel(title="cure cancer", user_id=2),
+    sql.Panel(title="move to oz", user_id=3),
+    sql.Panel(title="make pickles", user_id=3),
+    sql.Panel(title="move house again", user_id=2),
     ]
 
     db.add_all(test_panels)

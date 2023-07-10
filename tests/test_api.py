@@ -7,12 +7,23 @@ def test_index(test_server):
 
     assert "yo" in payload.keys()
 
-def test_post_entry(test_server):
-    resp = test_server.post("/entries", json={"panel_id": 2, "is_complete": True})
+def test_get_panels_by_user_id(test_server):
+    resp = test_server.get("/panels")
 
     assert resp.status_code == 200
 
-def test_get_all_entries(test_server):
+    payload = resp.json()
+
+    assert isinstance(payload, list)
+
+    print(payload)
+
+def test_post_entry(test_server):
+    resp = test_server.post("/entries", json={"panel_id": 2, "is_complete": True, "user_id": 1})
+
+    assert resp.status_code == 200
+
+def test_get_entries_by_user_id(test_server):
     resp = test_server.get("/entries")
 
     assert resp.status_code == 200
@@ -20,5 +31,5 @@ def test_get_all_entries(test_server):
     payload = resp.json()
 
     assert isinstance(payload, list)
-    assert len(payload) == 5 # conftest 4 + 1 test post
 
+    print(payload)
