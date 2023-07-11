@@ -67,7 +67,7 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list:
 
     return user_panels
 
-def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int):
+def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int, user_id: int):
     """Create an entry in the db. Appends timestamp in utc
 
     Args:
@@ -82,13 +82,22 @@ def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int):
 
     """
 
+
+    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+
+    # check user_id on panel matches supplied user_id
+    if not panel.user_id == user_id:
+        msg = f"error creating new entry"
+        logging.warning(msg)
+        raise EntryNotCreated(msg)
+
     try:
-        panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
         entry = sql.Entry(
             is_complete=is_complete, panel_id=panel_id, timestamp=datetime.utcnow()
         )
         panel.entries.append(entry)
         db.commit()
+
     except (SQLAlchemyError, TypeError, IntegrityError) as e:
         msg = f"error creating new entry"
         logging.warning(msg + str(e))

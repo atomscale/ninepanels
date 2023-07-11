@@ -33,16 +33,16 @@ def test_read_all_entries(test_db):
     assert len(test_entries) > 2
 
 def test_create_entry_by_panel_id(test_db):
-    new_entry = crud.create_entry_by_panel_id(test_db, is_complete=False, panel_id=3)
+    new_entry = crud.create_entry_by_panel_id(test_db, is_complete=False, panel_id=3, user_id=1)
     assert isinstance(new_entry.id, int)
 
 def test_read_current_entries_by_user_id(test_db):
     test_user_id = 1
-    latest_panels = crud.read_current_entries_by_user_id(test_db, test_user_id)
+    current_panels = crud.read_current_entries_by_user_id(test_db, test_user_id)
 
-    assert len(latest_panels) == 3
+    assert len(current_panels) == 3
 
-    for lp in latest_panels:
+    for lp in current_panels:
         print(lp.timestamp, lp.panel.title)
         if lp.panel_id == 1:
             assert lp.is_complete == False

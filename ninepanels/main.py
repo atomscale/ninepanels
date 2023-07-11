@@ -25,7 +25,7 @@ def get_panels_by_user_id(
     db: Session = Depends(get_db)
     # auth dep will inject user id
 ):
-    user_id =1
+    user_id = 3
 
     panels = crud.read_all_panels_by_user_id(db=db, user_id=user_id)
 
@@ -36,25 +36,23 @@ def get_current_entries_by_user_id(
     db: Session = Depends(get_db)
     # auth dependency will inject user_id here
 ):
-    user_id = 1 # replace with auth dependency
+    user_id = 3 # replace with auth dependency
     entries = crud.read_current_entries_by_user_id(db=db, user_id=user_id)
 
     return entries
 
 @api.post("/entries", response_model=pyd.Entry)
-def post_entry(
+def post_entry_by_panel_id(
     new_entry: pyd.EntryCreate,
+    # auth dep will inject user_id currenlty in request object from tests
     db: Session = Depends(get_db)
 ):
 
-    new_entry_data = new_entry.model_dump()
-    if new_entry_data['user_id'] == 1:
-        del new_entry_data['user_id']
-        entry = crud.create_entry_by_panel_id(
-            db,
-            **new_entry_data
-            )
+    user_id = 1
 
-        return entry
-    else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    entry = crud.create_entry_by_panel_id(
+        db,
+        **new_entry.model_dump()
+        )
+
+    return entry

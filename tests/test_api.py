@@ -17,13 +17,14 @@ def test_get_panels_by_user_id(test_server):
     assert isinstance(payload, list)
 
     print(payload)
+    print()
 
-def test_post_entry(test_server):
+def test_post_entry_on_panel(test_server):
     resp = test_server.post("/entries", json={"panel_id": 2, "is_complete": True, "user_id": 1})
 
     assert resp.status_code == 200
 
-def test_get_entries_by_user_id(test_server):
+def test_get_current_entries_by_user_id(test_server):
     resp = test_server.get("/entries")
 
     assert resp.status_code == 200
