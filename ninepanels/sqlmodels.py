@@ -7,7 +7,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    panels = relationship('Panel', back_populates="owner")
+    panels = relationship('Panel', back_populates="user")
 
     MAX_PANELS = 3
 
@@ -23,8 +23,8 @@ class Panel(Base):
     __tablename__ = "panels"
     id = Column(Integer, primary_key=True)
     title = Column(String)
-    owner_id = Column(Integer, ForeignKey('users.id'))
-    owner = relationship('User', back_populates="panels")
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship('User', back_populates="panels")
 
     entries = relationship('Entry', back_populates="panel")
 

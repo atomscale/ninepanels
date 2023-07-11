@@ -1,5 +1,5 @@
 from . import sqlmodels as sql
-from. import pydmodels as pyd
+from . import pydmodels as pyd
 from .errors import UserNotCreated
 from .errors import EntryNotCreated
 
@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import OperationalError
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def create_user(db: Session, new_user: dict):
@@ -39,28 +39,35 @@ def create_user(db: Session, new_user: dict):
 
     return user
 
+
 def read_all_users(db: Session) -> list:
-    """ read all users in the db """
+    """read all users in the db"""
 
     users = db.query(sql.User).all()
 
     return users
 
+
 def read_all_panels(db: Session) -> list:
-    """ read all panels for all users """
+    """read all panels for all users"""
 
     panels = db.query(sql.Panel).all()
 
     return panels
 
-def read_all_entries(db: Session) -> list:
-    """ read all entries for all users """
+def read_all_panels_by_user_id(db: Session, user_id: int) -> list:
+    """ read all panels  by user id"""
 
-    entries = db.query(sql.Entry).all()
+    user_panels = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .where(sql.User.id == user_id)
+        .all()
+    )
 
-    return entries
+    return user_panels
 
-def create_entry(db: Session, new_entry: pyd.EntryCreate):
+def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int, user_id: int):
     """Create an entry in the db. Appends timestamp in utc
 
     Args:
@@ -75,11 +82,22 @@ def create_entry(db: Session, new_entry: pyd.EntryCreate):
 
     """
 
+
+    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+
+    # check user_id on panel matches supplied user_id
+    if not panel.user_id == user_id:
+        msg = f"error creating new entry"
+        logging.warning(msg)
+        raise EntryNotCreated(msg)
+
     try:
-        new_entry.update({"timestamp": datetime.utcnow()})
-        entry = sql.Entry(**new_entry)
-        db.add(entry)
+        entry = sql.Entry(
+            is_complete=is_complete, panel_id=panel_id, timestamp=datetime.utcnow()
+        )
+        panel.entries.append(entry)
         db.commit()
+
     except (SQLAlchemyError, TypeError, IntegrityError) as e:
         msg = f"error creating new entry"
         logging.warning(msg + str(e))
@@ -88,22 +106,33 @@ def create_entry(db: Session, new_entry: pyd.EntryCreate):
 
     return entry
 
-def read_latest_entries_for_user(db: Session, user_id: int) -> list:
-    """ return only the latest status for each panel belonging to a user """
+
+def read_all_entries(db: Session) -> list:
+    """read all entries for all users"""
+
+    entries = db.query(sql.Entry).all()
+
+    return entries
+
+def read_current_entries_by_user_id(db: Session, user_id: int) -> list:
+    """return only the latest status for each panel belonging to a user"""
 
     all_user_panels = (
-        db.query(sql.Panel)
-        .join(sql.User)
-        .where(sql.User.id == user_id)
-        .all()
+        db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
     )
 
     latest_user_panels = []
+
+    now = datetime.utcnow()
+    # mock now for testing as one day ahead of entries
+    # now = now + timedelta(days=1)
+    trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
     for panel in all_user_panels:
         latest_panel = (
             db.query(sql.Entry)
             .where(sql.Entry.panel_id == panel.id)
+            .where(sql.Entry.timestamp > trimmed_now)
             .order_by(sql.Entry.timestamp.desc())
             .first()
         )
@@ -112,3 +141,9 @@ def read_latest_entries_for_user(db: Session, user_id: int) -> list:
             latest_user_panels.append(latest_panel)
 
     return latest_user_panels
+
+
+
+
+
+

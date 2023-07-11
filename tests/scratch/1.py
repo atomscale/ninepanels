@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-first = datetime.utcnow()
-diff = timedelta(seconds=1)
-print(first)
-print(first + diff)
+now = datetime.utcnow()
+day_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
+print(day_now)
