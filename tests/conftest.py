@@ -16,7 +16,7 @@ def test_db():
 
     # set up a sqlite test engine connection NOT IN MEMORY!
     test_engine = create_engine(
-        "sqlite:///./pytest.db", connect_args={"check_same_thread": False}
+        "sqlite:///./test.db", connect_args={"check_same_thread": False}
     )
 
     # ensure pragma for FK constraint is set if it is an Sqlite db
@@ -36,9 +36,9 @@ def test_db():
     # \/\/\/\/\/\/\/\/ set up any req data here
 
     test_users = [
-        sql.User(name='Bennyboy'),
-        sql.User(name='Prof. Hobo'),
-        sql.User(name='Christoph')
+        sql.User(name='Bennyboy', email="ben@ben.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"), # "password"
+        sql.User(name='Prof. Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
+        sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja")
     ]
 
     db.add_all(test_users)

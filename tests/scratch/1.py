@@ -1,5 +1,9 @@
-from datetime import datetime, timedelta
+from passlib.context import CryptContext
 
-now = datetime.utcnow()
-day_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
-print(day_now)
+
+hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password):
+    return hash_context.hash(password)
+
+print(get_password_hash("password"))
