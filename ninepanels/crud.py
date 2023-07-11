@@ -7,9 +7,8 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.exc import OperationalError
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def create_user(db: Session, new_user: dict):
@@ -26,7 +25,7 @@ def create_user(db: Session, new_user: dict):
         UserNotCreated: the new user was not created
 
     """
-
+    print(new_user)
     try:
         user = sql.User(**new_user)
         db.add(user)
@@ -39,6 +38,12 @@ def create_user(db: Session, new_user: dict):
 
     return user
 
+def read_user_by_email(db: Session, email:str):
+    """ read user by email"""
+
+    user = db.query(sql.User).where(sql.User.email == email).first()
+
+    return user
 
 def read_all_users(db: Session) -> list:
     """read all users in the db"""

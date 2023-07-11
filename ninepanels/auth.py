@@ -6,7 +6,6 @@ from .config import (
     JWT_ALGORITHM,
     AUTH_CODE_EXPIRE_MINUTES,
     AUTH_CODE_LEN,
-    FERNET_KEY,
 )
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -14,24 +13,19 @@ from fastapi import Depends, HTTPException, status
 
 from . import sqlmodels as sql
 from . import pydmodels as pyd
+from . import crud
+from .database import get_db
 
 from datetime import datetime, timedelta
 
 import random
-
-from . import crud
-from .database import SessionLocal
-
-from cryptography.fernet import Fernet
-import hashlib
-
 
 hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password, hashed_password) -> bool:
     return hash_context.verify(
         plain_password, hashed_password
     )  # returns a bool of match/no match
@@ -41,31 +35,17 @@ def get_password_hash(password):
     return hash_context.hash(password)
 
 
-def get_email_hash(email):
-    """ the email hash allows lookup of email based on a unique, non reversible hash,
-    whilst preserving privacy
-
-    this is primarily used to check if an email address is already used.
-
-    """
-
-    h = hashlib.new("sha512")
-    h.update(email.encode())
-    return h.hexdigest()
-
-
-def encrypt(item_to_encrypt: str) -> bytes:
-    return Fernet(FERNET_KEY).encrypt(item_to_encrypt.encode())
-
-
-def decrypt(token_to_decrypt) -> bytes:
-    print(type(token_to_decrypt))
-    return Fernet(FERNET_KEY).decrypt(token_to_decrypt)
-
-
 def authenticate_user(db: Session, email: str, password: str):
 
-    user = crud.get_user_by_email(db, email)  # will return None if not found
+    """ find the user in the db and check their stored password
+
+
+    returns User
+
+    raises HTTP Unauth error if user not found
+    """
+
+    user = crud.read_user_by_email(db, email)  # will return None if not found
 
     if not user:  # authenticate_user func return false if password hashes do not match
         raise HTTPException(
@@ -83,48 +63,51 @@ def authenticate_user(db: Session, email: str, password: str):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    return user  # returns the UserInDb instance
+    return user  # returns the User sqlA instance
 
 
 def create_access_token(
-    data: dict,  # this is just for the extra data "sub" that will be econded in the JWT
+    data: dict,  # data to encode in claims
     expires_delta: timedelta
-    | None = None,  # optional expiry but SHOULD ALWAYS EXPIRE. hence if else block below
+    | None = None,
 ):
 
+    """ compose the JWT with encoded claims and expiry
+
+    NOTE: expiry set to 100 days!!
+
+
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(
-            minutes=15
-        )  # default to 15 mins if not provided
+            days=100
+        )  # essentially infiinite for purposes of first tests
+
+     # adding expiry as "exp" to claims
     to_encode.update(
         {"exp": expire}
-    )  # adding "exp" to existing "sub" that comes in when this func is called
+    )
+
     encoded_jwt = jwt.encode(
         to_encode,
         SECRET_KEY,
         algorithm=JWT_ALGORITHM,
-    )  # create the actual JWT
-    return encoded_jwt  # ... and send it out from the func
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    )
+    return encoded_jwt
 
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
+    db: Session = Depends(get_db), access_token: str = Depends(oauth2_scheme)
 ):
 
-    """Checks user is signed in and if so, returns user. Used as a base dependency.
+    """Checks provided access_token is valid and if so, looks up user using the email in "sub" of claims.
 
-    - valid JWT (not in blacklist)
+    Used as a base dependency.
+
+    - valid JWT (not in blacklist) - NOT IMPLEMENT YET
     - email is in JWT
     - email is in db
 
@@ -143,27 +126,26 @@ def get_current_user(
 
         # check if jwt  is in blacklist
         # func will return the
-        if crud.get_blacklisted_access_token(db, token):
-            # if it is in blacklist raise an exception, client can handle redirect to relogin
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="session expired, please log in again",
-            )
+        # if crud.get_blacklisted_access_token(db, token):
+        #     # if it is in blacklist raise an exception, client can handle redirect to relogin
+        #     raise HTTPException(
+        #         status_code=status.HTTP_401_UNAUTHORIZED,
+        #         detail="session expired, please log in again",
+        #     )
 
         # if not in blacklist proceed
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        email_hash: int = payload.get(
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        email: int = payload.get(
             "sub"
         )  # check if there is a "sub" claim in the JWT
-        if email_hash is None:  # if there is no "sub", then could not authenticate
+        if email is None:  # if there is no "sub", then could not authenticate
             raise credentials_exception
-        # if the conditional check on the there being a "id" in the sub part of the JWT, proceed
-        # token_data = pyd.AccessTokenData(email_hash=email_hash)
+
     except JWTError:
         # handle some decode error, perhaps if JWT is malformed due to network interrupt or soemthing.
         raise credentials_exception
     # check if the user is in the db using the email we decoded out from the JWT "sub" field
-    user = crud.get_user_by_email_hash(db, email_hash)
+    user = crud.read_user_by_email(db, email)
 
     # if it fails to find a user, again raise auth expcetion
     if user is None:
@@ -176,7 +158,10 @@ def get_current_user(
 def get_current_verified_user(
     current_user: pyd.User = Depends(get_current_user),
 ):
-    """Checks user is verified. Can be injected into user facing routes
+    """
+    NOT IMPLEMENTED YET
+
+    Checks user is verified. Can be injected into user facing routes
 
     If so, returns User pydantic instance"""
 
@@ -191,7 +176,10 @@ def get_current_verified_user(
 def get_current_admin_user(
     current_user: pyd.User = Depends(get_current_verified_user),
 ):
-    """Checks is the current user is an admin and verified.
+    """
+    NOT IMPLEMENTED YET - USE auth.get_current_user in dep injection
+
+    Checks is the current user is an admin and verified.
 
     If so, returns UserInDb pydantic instance"""
 
@@ -202,6 +190,8 @@ def get_current_admin_user(
 
 
 def create_auth_code(db: Session, user_id: int):
+
+    """ NOT IMPLEMENETED YET """
 
     code_data = {
         "code": random.randint(10 ** (AUTH_CODE_LEN - 1), 10**AUTH_CODE_LEN - 1),
@@ -223,6 +213,8 @@ def create_auth_code(db: Session, user_id: int):
 
 
 def invalidate_prev_auth_codes_for_user(db: Session, user_id: int):
+    """ NOT IMPLEMENETED YET """
+
     prev_codes_for_user = (
         db.query(sql.AuthCode).where(sql.AuthCode.user_id == user_id).all()
     )
