@@ -7,3 +7,4 @@
 *.db
 .DS*
 setenv.sh
+env_file.env

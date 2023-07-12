@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  ninepanels:
+    build: . # this is the repo/dir name
+    ports:
+      - "80:8000"
+    env_file: env_file.env
+  # account:
+  #   build:
+  #     context: ./asp_account_server
+  #     dockerfile: local.Dockerfile # this is the repo/dir name
+
+    # by adding or removing these host:container port mappings, i can make it externally accesisble or not
+    # ports:
+    #   - "5556:5556"
+    # "host port:container port"
