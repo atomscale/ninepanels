@@ -6,3 +6,4 @@
 /.pytest*
 *.db
 .DS*
+setenv.sh

@@ -56,12 +56,15 @@ if not user:
     db.commit()
 
     test_panels = [
-        sql.Panel(title="workout", user_id=1),
-        sql.Panel(title="write code", user_id=1),
-        sql.Panel(title="walk harris", user_id=1),
-        sql.Panel(title="cook", user_id=1),
-        sql.Panel(title="meditate", user_id=1),
-        sql.Panel(title="read", user_id=1),
+        sql.Panel(title="strength base", user_id=1),
+        sql.Panel(title="aerobic topper", user_id=1),
+        sql.Panel(title="two meals, no snacks", user_id=1),
+        sql.Panel(title="homemade meals", user_id=1),
+        sql.Panel(title="loving presence", user_id=1),
+        sql.Panel(title="house improvement", user_id=1),
+        sql.Panel(title="asc", user_id=1),
+        sql.Panel(title="atomscale", user_id=1),
+        sql.Panel(title="time rich: up at 6", user_id=1),
         sql.Panel(title="cure cancer", user_id=2),
         sql.Panel(title="move to oz", user_id=3),
         sql.Panel(title="make pickles", user_id=3),

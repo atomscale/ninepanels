@@ -2,14 +2,14 @@ import os
 
 ### DATABASE ###
 
-# DB_PASSWORD = os.environ.get("DB_PASSWORD")
-# DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
 
 # SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-SQLALCHEMY_DATABASE_URI = "sqlite:///./dev.db"
-# SQLALCHEMY_DATABASE_URI = (
-#     f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:5432/postgres"
-# )
+# SQLALCHEMY_DATABASE_URI = "sqlite:///./dev.db"
+SQLALCHEMY_DATABASE_URI = (
+    f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:5432/postgres"
+)
 
 os.environ["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 
@@ -29,7 +29,7 @@ logging.basicConfig(
 
 ### SECURITY ###
 
-SECRET_KEY = "someting verrry secret, no?"
+SECRET_KEY = os.environ.get("JWT_SECRET")
 JWT_ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_DAYS=100
 AUTH_CODE_EXPIRE_MINUTES = 10
