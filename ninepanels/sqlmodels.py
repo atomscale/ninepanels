@@ -7,7 +7,7 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
-    email = Column(String)
+    email = Column(String, unique=True)
     name = Column(String)
     hashed_password = Column(String)
     panels = relationship('Panel', back_populates="user")
