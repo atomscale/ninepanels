@@ -2,17 +2,19 @@ import os
 
 ### DATABASE ###
 
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+ninepanels_env = os.environ.get('NINEPANELS_ENV')
 
-# SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-# SQLALCHEMY_DATABASE_URI = "sqlite:///./dev.db"
-SQLALCHEMY_DATABASE_URI = (
-    f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:5432/postgres"
-)
+if ninepanels_env == "PRODUCTION" or ninepanels_env == "STAGING":
+    DB_PASSWORD = os.environ.get("DB_PASSWORD")
+    DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:5432/postgres"
+    )
+else:
+    SQLALCHEMY_DATABASE_URI = "sqlite:///./localdev.db"
 
 os.environ["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI

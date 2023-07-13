@@ -3,6 +3,7 @@ from . import crud
 from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import auth
+from . import config
 
 from datetime import datetime, timedelta
 
@@ -91,7 +92,7 @@ if not user:
 
 @api.get("/")
 def index():
-    return {"yep": "this is the nine panels api :)"}
+    return {f"success": f"this is the nine panels api in env: {config.ninepanels_env}"}
 
 @api.post("/token", response_model=pyd.AccessToken)
 def post_credentials_for_access_token(
