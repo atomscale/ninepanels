@@ -5,16 +5,21 @@ class AccessToken(BaseModel):
     access_token: str
 
 class UserBase(BaseModel):
+    model_config = {"from_attributes": True}
     email: EmailStr = Field(examples=['james@bond.com'])
+    name: str | None = None
 
 class UserCreate(UserBase):
     plain_password: str
 
 class User(UserBase):
+
     id: int
-    name: str
     hashed_password: str
     panels: list | None = None
+
+class UserDelete(BaseModel):
+    id: int
 
 
 class EntryCreate(BaseModel):

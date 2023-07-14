@@ -1,5 +1,4 @@
 import pytest
-import logging
 from ninepanels import crud
 from ninepanels import errors
 
@@ -8,7 +7,7 @@ def test_read_all_users(test_db):
     test_users = crud.read_all_users(test_db)
 
     assert isinstance(test_users, list)
-    assert len(test_users) == 3
+    assert len(test_users) == 4
 
     for user in test_users:
         print(user.email)
@@ -16,7 +15,7 @@ def test_read_all_users(test_db):
 def test_create_user(test_db):
     # note that db has no email validation, this lives in pydantic models,
     # which check the api route request body
-    new = {"name":'HAris', "email": "harris@harris.com", "hashed_password": "hashed"}
+    new = {"name":'Harris', "email": "harris@harris.com", "hashed_password": "hashed"}
 
     new_user = crud.create_user(test_db, new)
     assert isinstance(new_user.id, int)
@@ -52,12 +51,12 @@ def test_delete_user_by_id(test_db):
 
 
 def test_read_user_by_email(test_db):
-    email = "email"
+    email = "ben@ben.com"
 
     ben = crud.read_user_by_email(test_db, email)
 
     assert ben.email == email
-    assert ben.name == "HAris"
+    assert ben.id == 1
 
 def test_read_all_panels(test_db):
     test_panels = crud.read_all_panels(test_db)

@@ -108,6 +108,31 @@ def post_credentials_for_access_token(
 
     return {"access_token": access_token}
 
+@api.post('/users', response_model=pyd.User)
+def create_user(
+    new_user: pyd.UserCreate,
+    db: Session = Depends(get_db),
+):
+    new_user = new_user.model_dump()
+
+    hashed_password = auth.get_password_hash(new_user['plain_password'])
+
+    try:
+        user = crud.create_user(db, {"name": new_user["name"], "email": new_user['email'], "hashed_password": hashed_password})
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e)}")
+
+    return user
+
+@api.get('/users')
+def read_user_by_id(
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user)
+):
+    founduser = crud.read_user_by_id(db=db, user_id=user.id)
+
+    return founduser
+
 @api.get("/panels", response_model=List[pyd.Panel])
 def get_panels_by_user_id(
     db: Session = Depends(get_db),

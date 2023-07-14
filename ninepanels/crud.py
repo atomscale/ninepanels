@@ -26,6 +26,7 @@ def create_user(db: Session, new_user: dict):
         UserNotCreated: the new user was not created
 
     """
+    
 
     try:
         user = sql.User(**new_user)
