@@ -11,9 +11,13 @@ from sqlite3 import Connection as SQLiteConnection
 from ninepanels import sqlmodels as sql
 from ninepanels.main import api, get_db
 
+
+
 @pytest.fixture(scope="session")
 def test_db():
 
+    # set up env vars required for test runs
+    # dont worry, these credentials are local only, staging and prod have different ones :)
     # set up a sqlite test engine connection NOT IN MEMORY!
     test_engine = create_engine(
         "sqlite:///./test.db", connect_args={"check_same_thread": False}

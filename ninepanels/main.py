@@ -113,7 +113,6 @@ def get_panels_by_user_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user)
 ):
-    user_id = 1
     panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
 
     return panels

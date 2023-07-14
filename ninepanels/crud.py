@@ -1,6 +1,7 @@
 from . import sqlmodels as sql
-from . import pydmodels as pyd
 from .errors import UserNotCreated
+from .errors import UserNotFound
+from .errors import UserNotDeleted
 from .errors import EntryNotCreated
 
 import logging
@@ -25,7 +26,7 @@ def create_user(db: Session, new_user: dict):
         UserNotCreated: the new user was not created
 
     """
-    print(new_user)
+
     try:
         user = sql.User(**new_user)
         db.add(user)
@@ -37,6 +38,28 @@ def create_user(db: Session, new_user: dict):
         raise UserNotCreated(msg)
 
     return user
+
+def read_user_by_id(db: Session, user_id:int):
+    """ read user by user_id"""
+
+    user = db.query(sql.User).where(sql.User.id == user_id).first()
+
+    if user:
+        return user
+    else:
+        raise UserNotFound
+
+def delete_user_by_id(db: Session, user_id:int):
+    """delete a user by id"""
+
+    user = db.query(sql.User).where(sql.User.id == user_id).first()
+
+    if user:
+        db.delete(user)
+        db.commit()
+        return True # TODO what is the best way to confirmt he success of a delete op?
+    else:
+        raise UserNotDeleted
 
 def read_user_by_email(db: Session, email:str):
     """ read user by email"""

@@ -7,7 +7,7 @@ def test_index(test_server):
 
     payload = resp.json()
 
-    assert "yo" in payload.keys()
+    assert "success" in payload.keys()
 
 @pytest.fixture
 def test_access_token(test_server):
