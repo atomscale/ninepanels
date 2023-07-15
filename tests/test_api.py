@@ -47,10 +47,25 @@ def test_read_user_by_id(test_server, test_access_token):
     )
 
     assert resp.status_code == 200
-    payload = resp.json()
 
+    payload = resp.json()
+    print(payload)
     assert payload['email'] == "ben@ben.com"
 
+
+def test_delete_user_by_id(test_server):
+    user_to_delete_token = test_server.post(
+        "/token", data={"username": "hobo@hobo.com", "password": "password"}
+    )
+
+    resp = test_server.delete(
+        "/users", headers={"Authorization": "Bearer " + user_to_delete_token.json()['access_token']}
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+
+    assert payload['success'] == True
 
 def test_get_panels_by_user_id(test_server, test_access_token):
     resp = test_server.get(

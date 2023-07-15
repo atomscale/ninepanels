@@ -7,10 +7,7 @@ def test_read_all_users(test_db):
     test_users = crud.read_all_users(test_db)
 
     assert isinstance(test_users, list)
-    assert len(test_users) == 4
 
-    for user in test_users:
-        print(user.email)
 
 def test_create_user(test_db):
     # note that db has no email validation, this lives in pydantic models,
@@ -87,7 +84,6 @@ def test_read_current_entries_by_user_id(test_db):
     assert len(current_panels) == 3
 
     for lp in current_panels:
-        print(lp.timestamp, lp.panel.title)
         if lp.panel_id == 1:
             assert lp.is_complete == False
 

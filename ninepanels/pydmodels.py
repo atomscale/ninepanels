@@ -4,8 +4,13 @@ from datetime import datetime
 class AccessToken(BaseModel):
     access_token: str
 
-class UserBase(BaseModel):
+class Panel(BaseModel):
     model_config = {"from_attributes": True}
+    id: int
+    title: str
+    user_id: int
+
+class UserBase(BaseModel):
     email: EmailStr = Field(examples=['james@bond.com'])
     name: str | None = None
 
@@ -13,13 +18,13 @@ class UserCreate(UserBase):
     plain_password: str
 
 class User(UserBase):
+    model_config = {"from_attributes": True}
 
     id: int
+
+class UserInDB(User):
+    panels: list[Panel]
     hashed_password: str
-    panels: list | None = None
-
-class UserDelete(BaseModel):
-    id: int
 
 
 class EntryCreate(BaseModel):
@@ -32,9 +37,4 @@ class Entry(EntryCreate):
     id: int
     timestamp: datetime
 
-class Panel(BaseModel):
-    model_config = {"from_attributes": True}
-    id: int
-    title: str
-    user_id: int
 

@@ -124,14 +124,23 @@ def create_user(
 
     return user
 
-@api.get('/users')
+@api.get('/users', response_model=pyd.User)
 def read_user_by_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user)
 ):
-    founduser = crud.read_user_by_id(db=db, user_id=user.id)
+    found = crud.read_user_by_id(db=db, user_id=user.id)
 
-    return founduser
+    return found
+
+@api.delete('/users')
+def delete_user_by_id(
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user)
+):
+    is_deleted = crud.delete_user_by_id(db=db, user_id=user.id)
+
+    return {"success": is_deleted}
 
 @api.get("/panels", response_model=List[pyd.Panel])
 def get_panels_by_user_id(
