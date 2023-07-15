@@ -7,5 +7,11 @@ class DatabaseConnectionError(Exception):
 class UserNotCreated(Exception):
     pass
 
+class UserNotFound(Exception):
+    pass
+
+class UserNotDeleted(Exception):
+    pass
+
 class EntryNotCreated(Exception):
     pass
