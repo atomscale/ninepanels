@@ -1,5 +1,6 @@
 from . import sqlmodels as sql
 from .errors import UserNotCreated
+from .errors import UserAlreadyExists
 from .errors import UserNotFound
 from .errors import UserNotDeleted
 from .errors import EntryNotCreated
@@ -26,17 +27,22 @@ def create_user(db: Session, new_user: dict):
         UserNotCreated: the new user was not created
 
     """
-    
+
 
     try:
         user = sql.User(**new_user)
         db.add(user)
         db.commit()
-    except (SQLAlchemyError, TypeError, IntegrityError) as e:
+    except TypeError as e:
         msg = f"error creating new user"
-        logging.warning(msg + str(e))
+        logging.error(msg + str(e))
         db.rollback()
         raise UserNotCreated(msg)
+    except IntegrityError as e:
+        msg = f"error creating new user"
+        logging.error(msg + str(e))
+        db.rollback()
+        raise UserAlreadyExists(msg)
 
     return user
 
