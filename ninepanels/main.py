@@ -112,7 +112,7 @@ def post_credentials_for_access_token(
 
 @api.post('/users', response_model=pyd.User)
 def create_user(
-    email: EmailStr = Form(example="ben@atomscale.co"),
+    email: EmailStr = Form(),
     name: str = Form(),
     password: str = Form(),
     db: Session = Depends(get_db),
@@ -156,6 +156,19 @@ def get_panels_by_user_id(
     panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
 
     return panels
+
+@api.post("/panels", response_model=pyd.Panel)
+def post_panel_by_user_id(
+    title: str = Form(),
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user)
+):
+    print(title)
+    try:
+        new_panel = crud.create_panel_by_user_id(db, user.id, title)
+        return new_panel
+    except errors.PanelNotCreated:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel")
 
 @api.get("/entries", response_model=List[pyd.Entry])
 def get_current_entries_by_user_id(

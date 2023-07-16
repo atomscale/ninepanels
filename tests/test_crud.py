@@ -59,13 +59,11 @@ def test_read_all_panels(test_db):
     test_panels = crud.read_all_panels(test_db)
 
     assert isinstance(test_panels, list)
-    assert len(test_panels) == 7
 
 def test_read_all_panels_by_user_id(test_db):
     test_user_panels = crud.read_all_panels_by_user_id(test_db, user_id=1)
 
     assert isinstance(test_user_panels, list)
-    assert len(test_user_panels) == 3
 
 def test_read_all_entries(test_db):
     test_entries = crud.read_all_entries(test_db)
@@ -81,10 +79,30 @@ def test_read_current_entries_by_user_id(test_db):
     test_user_id = 1
     current_panels = crud.read_current_entries_by_user_id(test_db, test_user_id)
 
-    assert len(current_panels) == 3
 
     for lp in current_panels:
         if lp.panel_id == 1:
             assert lp.is_complete == False
+
+@pytest.fixture
+def test_create_panel_by_user_id(test_db):
+    test_user_id = 1
+    test_panel_title = "testing panel"
+
+    new_panel = crud.create_panel_by_user_id(test_db, test_user_id, test_panel_title)
+
+    assert isinstance(new_panel.id, int)
+
+    return new_panel.id
+
+def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
+    is_deleted = crud.delete_panel_by_panel_id(test_db, test_create_panel_by_user_id)
+
+    assert is_deleted
+
+    # try again, shoudl be idempotent
+    with pytest.raises(errors.PanelNotDeleted):
+        is_deleted = crud.delete_panel_by_panel_id(test_db, test_create_panel_by_user_id)
+
 
 

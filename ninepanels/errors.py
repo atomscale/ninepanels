@@ -18,3 +18,9 @@ class UserNotDeleted(Exception):
 
 class EntryNotCreated(Exception):
     pass
+
+class PanelNotDeleted(Exception):
+    pass
+
+class PanelNotCreated(Exception):
+    pass

@@ -4,6 +4,8 @@ from .errors import UserAlreadyExists
 from .errors import UserNotFound
 from .errors import UserNotDeleted
 from .errors import EntryNotCreated
+from .errors import PanelNotDeleted
+from .errors import PanelNotCreated
 
 import logging
 from sqlalchemy.orm import Session
@@ -81,6 +83,31 @@ def read_all_users(db: Session) -> list:
     users = db.query(sql.User).all()
 
     return users
+
+def create_panel_by_user_id(db: Session, user_id: int, title: str):
+    """ create a panel for a user by id"""
+
+    user = db.query(sql.User).where(sql.User.id == user_id).first()
+
+    try:
+        new_panel = sql.Panel(title=title, user_id=user_id)
+        user.panels.append(new_panel)
+        db.commit()
+        return new_panel
+    except SQLAlchemyError as e:
+        raise PanelNotCreated(e)
+
+def delete_panel_by_panel_id(db: Session, panel_id: int):
+    """ delete a panel by panel id"""
+
+    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+
+    if panel:
+        db.delete(panel)
+        db.commit()
+        return True
+    else:
+        raise PanelNotDeleted
 
 
 def read_all_panels(db: Session) -> list:
