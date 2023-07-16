@@ -5,6 +5,7 @@ from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import auth
 from . import config
+from . import errors
 
 from datetime import datetime, timedelta
 
@@ -122,8 +123,10 @@ def create_user(
 
     try:
         user = crud.create_user(db, {"name": name, "email": email, "hashed_password": hashed_password})
+    except errors.UserAlreadyExists:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email already exists")
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}")
 
     return user
 

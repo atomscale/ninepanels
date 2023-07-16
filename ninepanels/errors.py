@@ -10,6 +10,9 @@ class UserNotCreated(Exception):
 class UserNotFound(Exception):
     pass
 
+class UserAlreadyExists(Exception):
+    pass
+
 class UserNotDeleted(Exception):
     pass
 
