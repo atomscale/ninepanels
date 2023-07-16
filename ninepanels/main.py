@@ -36,7 +36,7 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
-# sql.Base.metadata.drop_all(bind=engine)
+
 sql.Base.metadata.create_all(bind=engine)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -47,48 +47,48 @@ db = SessionLocal()
 user = db.query(sql.User).first()
 
 if not user:
-
+    # sql.Base.metadata.drop_all(bind=engine)
     test_users = [
-        sql.User(name='Bennyboy', email="ben@ben.com", hashed_password="$2b$12$v9zcspKOpiOZ7SA1LRo44er.TwmDigIVLevTnNBa4esI81ZarWKUW"),
-        sql.User(name='Prof. Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
+        sql.User(name='Bennito', email="ben@ben.com", hashed_password="$2b$12$v9zcspKOpiOZ7SA1LRo44er.TwmDigIVLevTnNBa4esI81ZarWKUW"),
+        sql.User(name='Professor Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
         sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja")
     ]
 
     db.add_all(test_users)
     db.commit()
 
-    test_panels = [
-        sql.Panel(title="strength base", user_id=1),
-        sql.Panel(title="aerobic topper", user_id=1),
-        sql.Panel(title="two meals, no snacks", user_id=1),
-        sql.Panel(title="homemade meals", user_id=1),
-        sql.Panel(title="loving presence", user_id=1),
-        sql.Panel(title="house improvement", user_id=1),
-        sql.Panel(title="asc", user_id=1),
-        sql.Panel(title="atomscale", user_id=1),
-        sql.Panel(title="time rich: up at 6", user_id=1),
-        sql.Panel(title="cure cancer", user_id=2),
-        sql.Panel(title="move to oz", user_id=3),
-        sql.Panel(title="make pickles", user_id=3),
-        sql.Panel(title="move house again", user_id=2),
-    ]
+    # test_panels = [
+    #     sql.Panel(title="strength base", user_id=1),
+    #     sql.Panel(title="aerobic topper", user_id=1),
+    #     sql.Panel(title="two meals, no snacks", user_id=1),
+    #     sql.Panel(title="homemade meals", user_id=1),
+    #     sql.Panel(title="loving presence", user_id=1),
+    #     sql.Panel(title="house improvement", user_id=1),
+    #     sql.Panel(title="asc", user_id=1),
+    #     sql.Panel(title="atomscale", user_id=1),
+    #     sql.Panel(title="time rich: up at 6", user_id=1),
+    #     sql.Panel(title="cure cancer", user_id=2),
+    #     sql.Panel(title="move to oz", user_id=3),
+    #     sql.Panel(title="make pickles", user_id=3),
+    #     sql.Panel(title="move house again", user_id=2),
+    # ]
 
-    db.add_all(test_panels)
-    db.commit()
+    # db.add_all(test_panels)
+    # db.commit()
 
-    ts = datetime.utcnow()
-    diff = timedelta(seconds=1)
+    # ts = datetime.utcnow()
+    # diff = timedelta(seconds=1)
 
-    test_entries = [
-        # sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=2, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
-        # sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
-        # sql.Entry(is_complete=True, panel_id=5, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=6, timestamp=ts),
-    ]
-    db.add_all(test_entries)
-    db.commit()
+    # test_entries = [
+    #     # sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
+    #     # sql.Entry(is_complete=True, panel_id=2, timestamp=ts),
+    #     # sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
+    #     # sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
+    #     # sql.Entry(is_complete=True, panel_id=5, timestamp=ts),
+    #     # sql.Entry(is_complete=True, panel_id=6, timestamp=ts),
+    # ]
+    # db.add_all(test_entries)
+    # db.commit()
 
 @api.get("/")
 def index():
