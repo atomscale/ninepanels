@@ -96,13 +96,14 @@ def test_create_panel_by_user_id(test_db):
     return new_panel.id
 
 def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
-    is_deleted = crud.delete_panel_by_panel_id(test_db, test_create_panel_by_user_id)
+    test_user_id = 1
+    is_deleted = crud.delete_panel_by_panel_id(test_db, test_user_id, test_create_panel_by_user_id)
 
     assert is_deleted
 
     # try again, shoudl be idempotent
     with pytest.raises(errors.PanelNotDeleted):
-        is_deleted = crud.delete_panel_by_panel_id(test_db, test_create_panel_by_user_id)
+        is_deleted = crud.delete_panel_by_panel_id(test_db,test_user_id, test_create_panel_by_user_id)
 
 
 

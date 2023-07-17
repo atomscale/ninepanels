@@ -86,7 +86,16 @@ def test_get_panels_by_user_id(test_server, test_access_token):
 def test_post_panel_by_user_id(test_server, test_access_token):
     resp = test_server.post(
         "/panels",
-        data={"title": "test api panel"},
+        data={"title": "test api panel"},  # form
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
+
+    assert resp.status_code == 200
+
+
+def test_delete_panel_by_id(test_server, test_access_token):
+    resp = test_server.delete(
+        f"/panels/1",
         headers={"Authorization": "Bearer " + test_access_token},
     )
 

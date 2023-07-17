@@ -97,10 +97,21 @@ def create_panel_by_user_id(db: Session, user_id: int, title: str):
     except SQLAlchemyError as e:
         raise PanelNotCreated(e)
 
-def delete_panel_by_panel_id(db: Session, panel_id: int):
-    """ delete a panel by panel id"""
+def delete_panel_by_panel_id(db: Session, user_id: int,  panel_id: int) -> bool:
+    """ delete a panel by panel id, constrained to user_id
 
-    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+    returns: true on success
+
+    raises: PanelNotDeleted on failure
+    """
+
+    panel = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .filter(sql.Panel.id == panel_id)
+        .filter(sql.User.id == user_id)
+        .first()
+    )
 
     if panel:
         db.delete(panel)
