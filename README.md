@@ -1,2 +1,2 @@
 # ninepanels
-consistency vigilance
+Consistency visibility for the chronically inconsistent.
