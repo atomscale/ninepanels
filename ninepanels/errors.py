@@ -10,8 +10,17 @@ class UserNotCreated(Exception):
 class UserNotFound(Exception):
     pass
 
+class UserAlreadyExists(Exception):
+    pass
+
 class UserNotDeleted(Exception):
     pass
 
 class EntryNotCreated(Exception):
+    pass
+
+class PanelNotDeleted(Exception):
+    pass
+
+class PanelNotCreated(Exception):
     pass

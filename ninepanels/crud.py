@@ -1,8 +1,11 @@
 from . import sqlmodels as sql
 from .errors import UserNotCreated
+from .errors import UserAlreadyExists
 from .errors import UserNotFound
 from .errors import UserNotDeleted
 from .errors import EntryNotCreated
+from .errors import PanelNotDeleted
+from .errors import PanelNotCreated
 
 import logging
 from sqlalchemy.orm import Session
@@ -26,17 +29,22 @@ def create_user(db: Session, new_user: dict):
         UserNotCreated: the new user was not created
 
     """
-    
+
 
     try:
         user = sql.User(**new_user)
         db.add(user)
         db.commit()
-    except (SQLAlchemyError, TypeError, IntegrityError) as e:
+    except TypeError as e:
         msg = f"error creating new user"
-        logging.warning(msg + str(e))
+        logging.error(msg + str(e))
         db.rollback()
         raise UserNotCreated(msg)
+    except IntegrityError as e:
+        msg = f"error creating new user"
+        logging.error(msg + str(e))
+        db.rollback()
+        raise UserAlreadyExists(msg)
 
     return user
 
@@ -75,6 +83,42 @@ def read_all_users(db: Session) -> list:
     users = db.query(sql.User).all()
 
     return users
+
+def create_panel_by_user_id(db: Session, user_id: int, title: str):
+    """ create a panel for a user by id"""
+
+    user = db.query(sql.User).where(sql.User.id == user_id).first()
+
+    try:
+        new_panel = sql.Panel(title=title, user_id=user_id)
+        user.panels.append(new_panel)
+        db.commit()
+        return new_panel
+    except SQLAlchemyError as e:
+        raise PanelNotCreated(e)
+
+def delete_panel_by_panel_id(db: Session, user_id: int,  panel_id: int) -> bool:
+    """ delete a panel by panel id, constrained to user_id
+
+    returns: true on success
+
+    raises: PanelNotDeleted on failure
+    """
+
+    panel = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .filter(sql.Panel.id == panel_id)
+        .filter(sql.User.id == user_id)
+        .first()
+    )
+
+    if panel:
+        db.delete(panel)
+        db.commit()
+        return True
+    else:
+        raise PanelNotDeleted
 
 
 def read_all_panels(db: Session) -> list:

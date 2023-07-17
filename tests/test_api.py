@@ -14,10 +14,10 @@ def test_index(test_server):
 def test_create_user(test_server):
     resp = test_server.post(
         "/users",
-        json={
+        data={
             "email": "new@new.com",
             "name": "NewPerson",
-            "plain_password": "password",
+            "password": "password",
         },
     )
 
@@ -50,7 +50,7 @@ def test_read_user_by_id(test_server, test_access_token):
 
     payload = resp.json()
     print(payload)
-    assert payload['email'] == "ben@ben.com"
+    assert payload["email"] == "ben@ben.com"
 
 
 def test_delete_user_by_id(test_server):
@@ -59,13 +59,17 @@ def test_delete_user_by_id(test_server):
     )
 
     resp = test_server.delete(
-        "/users", headers={"Authorization": "Bearer " + user_to_delete_token.json()['access_token']}
+        "/users",
+        headers={
+            "Authorization": "Bearer " + user_to_delete_token.json()["access_token"]
+        },
     )
 
     assert resp.status_code == 200
     payload = resp.json()
 
-    assert payload['success'] == True
+    assert payload["success"] == True
+
 
 def test_get_panels_by_user_id(test_server, test_access_token):
     resp = test_server.get(
@@ -79,6 +83,23 @@ def test_get_panels_by_user_id(test_server, test_access_token):
     assert isinstance(payload, list)
 
 
+def test_post_panel_by_user_id(test_server, test_access_token):
+    resp = test_server.post(
+        "/panels",
+        data={"title": "test api panel"},  # form
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
+
+    assert resp.status_code == 200
+
+
+def test_delete_panel_by_id(test_server, test_access_token):
+    resp = test_server.delete(
+        f"/panels/1",
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
+
+    assert resp.status_code == 200
 
 
 def test_post_entry_on_panel(test_server, test_access_token):
@@ -101,4 +122,3 @@ def test_get_current_entries_by_user_id(test_server, test_access_token):
     payload = resp.json()
 
     assert isinstance(payload, list)
-
