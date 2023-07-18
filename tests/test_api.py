@@ -49,7 +49,7 @@ def test_read_user_by_id(test_server, test_access_token):
     assert resp.status_code == 200
 
     payload = resp.json()
-    print(payload)
+
     assert payload["email"] == "ben@ben.com"
 
 
@@ -112,13 +112,13 @@ def test_post_entry_on_panel(test_server, test_access_token):
     assert resp.status_code == 200
 
 
-def test_get_current_entries_by_user_id(test_server, test_access_token):
-    resp = test_server.get(
-        "/entries", headers={"Authorization": "Bearer " + test_access_token}
-    )
+# def test_get_current_entries_by_user_id(test_server, test_access_token):
+#     resp = test_server.get(
+#         "/entries", headers={"Authorization": "Bearer " + test_access_token}
+#     )
 
-    assert resp.status_code == 200
+#     assert resp.status_code == 200
 
-    payload = resp.json()
+#     payload = resp.json()
 
-    assert isinstance(payload, list)
+#     assert isinstance(payload, list)

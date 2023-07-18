@@ -14,6 +14,16 @@ from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime
 
+from pprint import PrettyPrinter
+
+pp = PrettyPrinter(indent=4)
+
+def instance_to_dict(instance):
+    _dict = {}
+    for key in instance.__mapper__.c.keys():
+        _dict[key] = getattr(instance, key)
+    return _dict
+
 
 def create_user(db: Session, new_user: dict):
     """Create a user in the db.
@@ -161,7 +171,7 @@ def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int, user
     # check user_id on panel matches supplied user_id
     if not panel.user_id == user_id:
         msg = f"error creating new entry"
-        logging.warning(msg)
+        logging.error(msg)
         raise EntryNotCreated(msg)
 
     try:
@@ -173,7 +183,7 @@ def create_entry_by_panel_id(db: Session, is_complete: bool, panel_id: int, user
 
     except (SQLAlchemyError, TypeError, IntegrityError) as e:
         msg = f"error creating new entry"
-        logging.warning(msg + str(e))
+        logging.error(msg + str(e))
         db.rollback()
         raise EntryNotCreated(msg)
 
@@ -187,33 +197,47 @@ def read_all_entries(db: Session) -> list:
 
     return entries
 
-def read_current_entries_by_user_id(db: Session, user_id: int) -> list:
+def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
     """return only the latest status for each panel belonging to a user"""
 
-    all_user_panels = (
+    user_panels = (
         db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
     )
 
-    latest_user_panels = []
+    user_panels_with_latest_entry_only = []
 
     now = datetime.utcnow()
     # mock now for testing as one day ahead of entries
     # now = now + timedelta(days=1)
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
-    for panel in all_user_panels:
-        latest_panel = (
+    for user_panel in user_panels:
+        # convert the user_panel to a regular dict:
+        user_panel_d = instance_to_dict(user_panel)
+        # pp.pprint("user_panel_d in loop:", user_panel_d )
+
+        # clear the list of entries on the object: TODO this is a hack
+        user_panel_d['entries'] = []
+
+        # get the current entry for the panel
+        current_entry = (
             db.query(sql.Entry)
-            .where(sql.Entry.panel_id == panel.id)
+            .where(sql.Entry.panel_id == user_panel_d['id'])
             .where(sql.Entry.timestamp > trimmed_now)
             .order_by(sql.Entry.timestamp.desc())
             .first()
         )
 
-        if latest_panel:
-            latest_user_panels.append(latest_panel)
+        if current_entry:
+            current_entry_d = instance_to_dict(current_entry)
+            user_panel_d['entries'].append(current_entry_d)
 
-    return latest_user_panels
+        user_panels_with_latest_entry_only.append(user_panel_d)
+
+    # pp.pprint(f"final: {user_panels_with_latest_entry_only}")
+    # print()
+
+    return user_panels_with_latest_entry_only
 
 
 
