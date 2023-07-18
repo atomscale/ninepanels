@@ -62,13 +62,13 @@ def test_db():
     db.commit()
 
     ts = datetime.utcnow()
-    diff = timedelta(seconds=1)
+    diff = timedelta(days=2)
 
     test_entries = [
         sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
         sql.Entry(is_complete=False, panel_id=2, timestamp=ts),
         sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
-        sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
+        # sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
         sql.Entry(is_complete=True, panel_id=5, timestamp=ts),
         sql.Entry(is_complete=True, panel_id=6, timestamp=ts),
     ]

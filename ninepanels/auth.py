@@ -205,9 +205,6 @@ def create_auth_code(db: Session, user_id: int):
     db.add(auth_code_db)
     db.commit()
 
-    print(
-        f"new authcode persited with {auth_code_db.id=}, {auth_code_db.expiry=} for {auth_code_db.user_id=}"
-    )
 
     return auth_code_db.code
 
