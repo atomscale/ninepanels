@@ -75,14 +75,17 @@ def test_create_entry_by_panel_id(test_db):
     new_entry = crud.create_entry_by_panel_id(test_db, is_complete=False, panel_id=3, user_id=1)
     assert isinstance(new_entry.id, int)
 
-def test_read_current_entries_by_user_id(test_db):
+def test_read_panels_with_current_entry_by_user_id(test_db):
     test_user_id = 1
-    current_panels = crud.read_current_entries_by_user_id(test_db, test_user_id)
+    current_panels = crud.read_panels_with_current_entry_by_user_id(test_db, test_user_id)
 
+    for panel in current_panels:
+        assert len(panel['entries']) <= 1 # check max one or none for every panel['entries'] list
+        if panel['id'] == 1:
 
-    for lp in current_panels:
-        if lp.panel_id == 1:
-            assert lp.is_complete == False
+            # for this test case we know we want the roginal True from two days ago
+            # to be flipped to None
+            assert len(panel['entries']) == 0
 
 @pytest.fixture
 def test_create_panel_by_user_id(test_db):

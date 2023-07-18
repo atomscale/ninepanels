@@ -21,6 +21,10 @@ from typing import List
 
 from sqlalchemy.orm import Session, sessionmaker
 
+from pprint import PrettyPrinter
+
+pp = PrettyPrinter(indent=4)
+
 api = FastAPI()
 
 api_origins = [
@@ -132,7 +136,7 @@ def create_user(
     password: str = Form(),
     db: Session = Depends(get_db),
 ):
-    print(email, name, password)
+
 
     hashed_password = auth.get_password_hash(password)
 
@@ -174,8 +178,10 @@ def delete_user_by_id(
 def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-    panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
+    # panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
+    panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
+    pp.pprint(f" api panel resp {panels}")
     return panels
 
 
@@ -185,7 +191,7 @@ def post_panel_by_user_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-    print(title)
+
     try:
         new_panel = crud.create_panel_by_user_id(db, user.id, title)
         return new_panel
