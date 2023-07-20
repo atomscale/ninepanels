@@ -24,3 +24,6 @@ class PanelNotDeleted(Exception):
 
 class PanelNotCreated(Exception):
     pass
+
+class PanelNotUpdated(Exception):
+    pass

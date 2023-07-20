@@ -21,7 +21,11 @@ class Panel(BaseModel):
     user_id: int
     entries: list[Entry]
 
-    
+class PanelUpdate(BaseModel):
+    """ request validation for the udpate operation """
+    title: str
+
+
 class UserBase(BaseModel):
     email: EmailStr = Field(examples=['james@bond.com'])
     name: str | None = None
