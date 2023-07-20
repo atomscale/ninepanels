@@ -137,6 +137,7 @@ def create_user(
     db: Session = Depends(get_db),
 ):
 
+
     hashed_password = auth.get_password_hash(password)
 
     try:
@@ -173,6 +174,17 @@ def delete_user_by_id(
     return {"success": is_deleted}
 
 
+@api.get("/panels", response_model=List[pyd.Panel])
+def get_panels_by_user_id(
+    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
+):
+    # panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
+    panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
+
+    pp.pprint(f" api panel resp {panels}")
+    return panels
+
+
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
     title: str = Form(),
@@ -187,31 +199,6 @@ def post_panel_by_user_id(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel"
         )
-
-@api.get("/panels", response_model=List[pyd.Panel])
-def get_panels_by_user_id(
-    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
-):
-    # panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
-    panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
-
-    pp.pprint(f" api panel resp {panels}")
-    return panels
-
-@api.patch("/panels/{panel_id}", response_model=pyd.Panel)
-def update_panel_by_id(
-    panel_id: int,
-    update: pyd.PanelUpdate,
-    db: Session = Depends(get_db),
-    user: pyd.User = Depends(auth.get_current_user)
-):
-   
-    try:
-        updated_panel = crud.update_panel_by_id(db, panel_id, update.model_dump())
-    except errors.PanelNotUpdated as e:
-        raise HTTPException(status_code=400, detail=f"Panel not updated: {str(e)}")
-
-    return updated_panel
 
 
 @api.delete("/panels/{panel_id}")
