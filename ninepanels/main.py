@@ -112,7 +112,7 @@ if not user:
 
 @api.get("/")
 def index():
-    return {f"success": f"this is the nine panels api in env: {config.ninepanels_env}"}
+    return {f"success": f"this is the nine panels api in on new staging branch in env: {config.ninepanels_env}"}
 
 
 @api.post("/token", response_model=pyd.AccessToken)
