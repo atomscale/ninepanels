@@ -61,7 +61,7 @@ sql.Base.metadata.create_all(bind=engine)
 
 @api.get("/")
 def index():
-    return {f"success": f"this is the nine panels api in env: {config.CURRENT_ENV}"}
+    return {f"success": f"this is the nine panels api in env: {config.CURRENT_ENV}, commit: {config.CURRENT_COMMIT}"}
 
 
 @api.post("/token", response_model=pyd.AccessToken)
