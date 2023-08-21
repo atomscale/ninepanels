@@ -48,10 +48,6 @@ def compare_env_and_branch():
 if branch:
     compare_env_and_branch()
 
-if commit:
-    CURRENT_COMMIT = commit
-else:
-    CURRENT_COMMIT = "no data"
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
