@@ -18,6 +18,9 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from alembic.config import Config
+from alembic import command
+
 from pprint import PrettyPrinter
 
 pp = PrettyPrinter(indent=4)
@@ -40,8 +43,21 @@ api.add_middleware(
 )
 
 
-sql.Base.metadata.create_all(bind=engine)
+def run_migrations():
+    """ this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
+    taregt database.
 
+    on main branch, this means that all that needs to happen is the staging branch is merged
+
+    this assumes a fix forward approach, with no use of downgrade
+
+    """
+    alembic_cfg = Config("alembic.ini") # Path to your Alembic configuration file
+    command.upgrade(alembic_cfg, "head")
+
+run_migrations()
+
+sql.Base.metadata.create_all(bind=engine)
 
 @api.get("/")
 def index():
