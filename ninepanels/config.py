@@ -52,6 +52,9 @@ if branch:
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
 
+RENDER_GIT_BRANCH = os.environ.get("RENDER_GIT_BRANCH")
+RENDER_GIT_COMMIT = os.environ.get("RENDER_GIT_COMMIT")
+
 
 ### LOGGING ###
 
