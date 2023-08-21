@@ -6,5 +6,6 @@
 /.pytest*
 *.db
 .DS*
-setenv.sh
+set_env.sh
 env_file.env
+data_mgmt.py

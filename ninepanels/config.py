@@ -1,20 +1,53 @@
 import os
+import subprocess
+
+from . import errors
+
+
+def get_git_branch():
+    try:
+        branch_name = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().decode('utf-8')
+        return branch_name
+    except subprocess.CalledProcessError:
+        print("An error occurred while trying to fetch the Git branch.")
+        return None
+    except FileNotFoundError:
+        print("Git is not installed or not in the PATH.")
+        return None
+
+def get_git_commit():
+    try:
+        branch_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+        return branch_commit
+    except subprocess.CalledProcessError:
+        print("An error occurred while trying to fetch the Git branch.")
+        return None
+    except FileNotFoundError:
+        print("Git is not installed or not in the PATH.")
+        return None
 
 ### DATABASE ###
 
-ninepanels_env = os.environ.get('NINEPANELS_ENV')
+CURRENT_ENV = os.environ.get("NINEPANELS_ENV")
+DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+DB_PORT = os.environ.get("DB_PORT")
 
-if ninepanels_env == "PRODUCTION" or ninepanels_env == "STAGING":
-    DB_PASSWORD = os.environ.get("DB_PASSWORD")
-    DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
+SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/postgres"
 
-    SQLALCHEMY_DATABASE_URI = (
-        f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:5432/postgres"
-    )
-else:
-    SQLALCHEMY_DATABASE_URI = "sqlite:///./localdev.db"
+### ENVIRONMENT ###
 
-os.environ["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
+branch = get_git_branch()
+commit = get_git_commit()
+
+def compare_env_and_branch():
+    if CURRENT_ENV == "FEATURE":
+        if branch == "main" or branch == "staging":
+            raise errors.ConfigurationException(f"you are on the wrong branch (main or staging) to run a local feature branch")
+
+if branch:
+    compare_env_and_branch()
+
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI

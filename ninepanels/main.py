@@ -7,8 +7,6 @@ from . import auth
 from . import config
 from . import errors
 
-from datetime import datetime, timedelta
-
 from fastapi import FastAPI
 from fastapi import Depends
 from fastapi import HTTPException, status
@@ -16,10 +14,12 @@ from fastapi import Form
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
-
 from typing import List
 
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
+
+from alembic.config import Config
+from alembic import command
 
 from pprint import PrettyPrinter
 
@@ -43,76 +43,25 @@ api.add_middleware(
 )
 
 
+def run_migrations():
+    """ this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
+    taregt database.
+
+    on main branch, this means that all that needs to happen is the staging branch is merged
+
+    this assumes a fix forward approach, with no use of downgrade
+
+    """
+    alembic_cfg = Config("alembic.ini") # Path to your Alembic configuration file
+    command.upgrade(alembic_cfg, "head")
+
+run_migrations()
+
 sql.Base.metadata.create_all(bind=engine)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-db = SessionLocal()
-
-# check if db is empty (first time run after manual delete maybe)
-
-user = db.query(sql.User).first()
-
-if not user:
-    # sql.Base.metadata.drop_all(bind=engine)
-    test_users = [
-        sql.User(
-            name="Bennito",
-            email="ben@ben.com",
-            hashed_password="$2b$12$v9zcspKOpiOZ7SA1LRo44er.TwmDigIVLevTnNBa4esI81ZarWKUW",
-        ),
-        sql.User(
-            name="Professor Hobo",
-            email="hobo@hobo.com",
-            hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja",
-        ),
-        sql.User(
-            name="Christoph",
-            email="chris@chris.com",
-            hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja",
-        ),
-    ]
-
-    db.add_all(test_users)
-    db.commit()
-
-    test_panels = [
-        sql.Panel(title="strength base", user_id=1),
-        sql.Panel(title="aerobic topper", user_id=1),
-        sql.Panel(title="two meals, no snacks", user_id=1),
-        sql.Panel(title="homemade meals", user_id=1),
-        sql.Panel(title="loving presence", user_id=1),
-        sql.Panel(title="house improvement", user_id=1),
-        sql.Panel(title="asc", user_id=1),
-        sql.Panel(title="atomscale", user_id=1),
-        sql.Panel(title="time rich: up at 6", user_id=1),
-        sql.Panel(title="cure cancer", user_id=2),
-        sql.Panel(title="move to oz", user_id=3),
-        sql.Panel(title="make pickles", user_id=3),
-        sql.Panel(title="move house again", user_id=2),
-        sql.Panel(title="find new gf", user_id=2),
-    ]
-
-    db.add_all(test_panels)
-    db.commit()
-
-    ts = datetime.utcnow()
-    diff = timedelta(seconds=1)
-
-    test_entries = [
-        # sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=2, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
-        # sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
-        # sql.Entry(is_complete=True, panel_id=5, timestamp=ts),
-        # sql.Entry(is_complete=True, panel_id=6, timestamp=ts),
-    ]
-    db.add_all(test_entries)
-    db.commit()
-
 
 @api.get("/")
 def index():
-    return {f"success": f"this is the nine panels api in on new staging branch in env: {config.ninepanels_env}"}
+    return {f"success": f"this is the nine panels api in env: {config.CURRENT_ENV}"}
 
 
 @api.post("/token", response_model=pyd.AccessToken)
