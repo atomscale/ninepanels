@@ -27,3 +27,6 @@ class PanelNotCreated(Exception):
 
 class PanelNotUpdated(Exception):
     pass
+
+class ConfigurationException(Exception):
+    pass
