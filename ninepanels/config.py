@@ -62,10 +62,13 @@ if not RENDER_GIT_BRANCH:
 
 import logging
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s (%(filename)s:%(lineno)d): %(message)s ",
-    level=logging.INFO,
-)
+def set_up_logger():
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s (%(filename)s:%(lineno)d): %(message)s ",
+        level=logging.INFO,
+    )
+
+set_up_logger()
 
 ### SECURITY ###
 
