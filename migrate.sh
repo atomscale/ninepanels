@@ -4,6 +4,7 @@ echo
 
 echo "MIGRATION.. proceed with care!!!"
 echo
+echo "In \033[1;32m$NINEPANELS_ENV\033[0m environment"
 
 select action in "Stamp" "Create Migration" "Upgrade Manually" ; do
     case $action in
@@ -19,7 +20,7 @@ select action in "Stamp" "Create Migration" "Upgrade Manually" ; do
             read msg
             alembic revision --autogenerate -m $msg
             echo
-            echo "\e[1;31mnow check the migration file!\e[0m"
+            echo "\e[1;31mNow check the migration file!\e[0m"
             break
             ;;
         "Upgrade Manually")

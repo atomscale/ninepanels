@@ -2,6 +2,8 @@
 echo "\e[1;34mBackup...\e[0m"
 echo
 
+echo "In \033[1;32m$NINEPANELS_ENV\033[0m environment"
+
 select backup_opt in "Yes" "No"; do
     case $backup_opt in
         "Yes")

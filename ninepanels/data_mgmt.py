@@ -12,7 +12,7 @@ from . import config
 from sqlalchemy import desc
 from sqlalchemy import inspect
 from .database import SessionLocal
-from .database import engine
+from .database import engine, text
 
 import argparse
 
@@ -61,6 +61,8 @@ def update_date():
 
 def delete_schema():
     sql.Base.metadata.drop_all(bind=engine)
+    db.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    db.commit()
     print(f"dropped tables")
 
 

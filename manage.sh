@@ -1,14 +1,16 @@
 
 echo "\e[1;34mManage data and schema...\e[0m"
 echo
+echo "In \033[1;32m$NINEPANELS_ENV\033[0m environment"
+echo
 
 
 keep_looping=true
 while $keep_looping; do
-    echo "Select database action:"
-    select func in "CREATE SCHEMA" "CREATE DATA" "READ SCHEMA" "READ DATA" "CLEAR DB" "EXIT"; do
+    echo "Select database action in \033[1;32m$NINEPANELS_ENV\033[0m:"
+    select func in "Create schema" "Create data" "Read schema" "Read data" "Clear DB" "Exit"; do
         case $func in
-        "CREATE SCHEMA")
+        "Create schema")
 
             if [ "$NINEPANELS_ENV" = "MAIN" ]; then
                 echo "no chance mate, you're on main!"
@@ -19,7 +21,7 @@ while $keep_looping; do
 
             break
             ;;
-        "CREATE DATA")
+        "Create data")
 
             if [ "$NINEPANELS_ENV" = "MAIN" ]; then
                 echo "no chance mate, you're on main!"
@@ -30,41 +32,41 @@ while $keep_looping; do
 
             break
             ;;
-        "READ SCHEMA")
+        "Read schema")
 
             python -m ninepanels.data_mgmt --read schema
             echo
 
             break
             ;;
-        "READ DATA")
+        "Read data")
 
             python -m ninepanels.data_mgmt --read data
             echo
 
             break
             ;;
-        "CLEAR DB")
+        "Clear DB")
 
             if [ "$NINEPANELS_ENV" = "MAIN" ]; then
                 echo "no chance mate, you're on main!"
                 break
             fi
-            echo "Are you SURE you want to drop all??"
-            select delete_action in "Yes, let's go" "Fucking no way"; do
+            echo "Are you SURE you want to drop all?? You are in \033[1;32m$NINEPANELS_ENV\033[0m environment"
+            select delete_action in "Yes, let's go" "Nope, bail!"; do
                 case $delete_action in
                     "Yes, let's go")
                         python -m ninepanels.data_mgmt --delete schema
                         break
                         ;;
-                    "Fucking no way")
+                    "Nope, bail!")
                         break
                         ;;
                 esac
             done
             break
             ;;
-        "EXIT")
+        "Exit")
             echo "finished.."
             keep_looping=false
             break

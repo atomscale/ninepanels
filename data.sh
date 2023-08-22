@@ -42,6 +42,7 @@ select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
         "Exit")
             echo "Finishing..."
             continue_script=false
+            clear
             break
             ;;
         *)
@@ -52,9 +53,9 @@ done
 
 if $continue_script; then
     echo "Select action area:"
-    select opt in "Manage" "Backup" "Restore" "Clone" "Migrate" "Exit"; do
+    select opt in "Manage schema/data" "Backup" "Restore" "Migrate" "Exit"; do
         case $opt in
-            "Manage")
+            "Manage schema/data")
                 source manage.sh
                 break
                 ;;
@@ -64,6 +65,10 @@ if $continue_script; then
                 ;;
             "Restore")
                 source restore.sh
+                break
+                ;;
+            "Migrate")
+                source migrate.sh
                 break
                 ;;
             "Exit")
@@ -76,4 +81,5 @@ if $continue_script; then
                 ;;
         esac
     done
+    clear
 fi
