@@ -9,7 +9,7 @@ def test_index(test_server):
 
     payload = resp.json()
 
-    assert "success" in payload.keys()
+    assert "branch" in payload.keys()
 
 
 def test_create_user(test_server):

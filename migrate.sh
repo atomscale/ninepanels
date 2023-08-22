@@ -6,8 +6,8 @@ echo "MIGRATION.. proceed with care!!!"
 echo
 echo "In \033[1;32m$NINEPANELS_ENV\033[0m environment"
 
-select action in "Stamp" "Create Migration" "Upgrade Manually" ; do
-    case $action in
+select migration_action in "Stamp" "Create Migration" "Upgrade Manually" ; do
+    case $migration_action in
         "Stamp")
             alembic stamp head
             echo "Stamped head"
