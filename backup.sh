@@ -1,4 +1,3 @@
-
 echo "\e[1;34mBackup...\e[0m"
 echo
 
@@ -6,19 +5,18 @@ echo "In \033[1;32m$NINEPANELS_ENV\033[0m environment"
 
 select backup_opt in "Yes" "No"; do
     case $backup_opt in
-        "Yes")
-            echo "backup up $NINEPANELS_ENV database"
+    "Yes")
+        echo "backup up $NINEPANELS_ENV database"
 
-            # establish a timestamp to id this process
-            clone_ts=$(date +"%Y%m%d%H%M%S")
+        # establish a timestamp to id this process
+        clone_ts=$(date +"%Y%m%d%H%M%S")
 
-            pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -F c > "backups/${clone_ts}_${NINEPANELS_ENV}_dump.dump"
-            echo "selected tables database backup complete"
-            break
-            ;;
+        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
+        echo "selected tables database backup complete"
+        break
+        ;;
     esac
 done
-
 
 # # take backup of target
 # pg_dump -U postgres -h localhost -p 5433 -d postgres -F c > "clones/${clone_ts}_localdev_preclone_dump.dump"

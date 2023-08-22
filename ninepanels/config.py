@@ -47,8 +47,8 @@ def compare_env_and_branch():
         if branch == "main" or branch == "staging":
             raise errors.ConfigurationException(f"you are on the wrong branch (main or staging) to run a local feature branch")
 
-if branch:
-    compare_env_and_branch()
+# if branch:
+#     compare_env_and_branch()
 
 
 def get_db_uri():

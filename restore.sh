@@ -15,12 +15,18 @@ select restore_opt in "Yes" "No"; do
             clone_ts=$(date +"%Y%m%d%H%M%S")
 
             echo "Taking pre-restore backup..."
-            pg_dump -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -F c > "backups/${clone_ts}_${NINEPANELS_ENV}_prerestore.dump"
+            pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
+
             echo "Pre-restore backup of target complete."
             echo
 
+
             echo "Dropping target database..."
             dropdb --if-exists -U postgres -h $DB_HOSTNAME -p $DB_PORT postgres
+            if [ $? -ne 0 ]; then
+                echo "error occurred dropping db..."
+                return
+            fi
             echo "Target database dropped."
             echo
 
@@ -34,6 +40,9 @@ select restore_opt in "Yes" "No"; do
             echo "Target database restored from source dump."
 
 
+            break
+            ;;
+        "No")
             break
             ;;
     esac
