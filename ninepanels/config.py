@@ -55,6 +55,8 @@ def get_db_uri():
 RENDER_GIT_BRANCH = os.environ.get("RENDER_GIT_BRANCH")
 RENDER_GIT_COMMIT = os.environ.get("RENDER_GIT_COMMIT")
 
+if not RENDER_GIT_BRANCH:
+    RENDER_GIT_BRANCH = "local feature"
 
 ### LOGGING ###
 
