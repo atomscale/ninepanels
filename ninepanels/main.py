@@ -23,6 +23,8 @@ from alembic import command
 
 from pprint import PrettyPrinter
 
+from datetime import datetime
+
 pp = PrettyPrinter(indent=4)
 
 api = FastAPI()
@@ -59,9 +61,15 @@ run_migrations()
 
 sql.Base.metadata.create_all(bind=engine)
 
+version_ts = datetime.utcnow()
+
+version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
+
+print(f"this is the ninepanels api in env: {config.CURRENT_ENV}. Version: {version_date}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}")
+
 @api.get("/")
 def index():
-    return {f"success": f"this is the nine panels api in env: {config.CURRENT_ENV}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}"}
+    return {f"Version: {config.RENDER_GIT_BRANCH}, {version_date}"}
 
 
 @api.post("/token", response_model=pyd.AccessToken)
