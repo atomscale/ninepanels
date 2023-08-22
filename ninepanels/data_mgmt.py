@@ -8,6 +8,7 @@ can change across branches and not have to merge or affect core branch code
 """
 
 from . import sqlmodels as sql
+from . import config
 from sqlalchemy import desc
 from sqlalchemy import inspect
 from .database import SessionLocal
@@ -15,13 +16,10 @@ from .database import engine
 
 import argparse
 
-
-
-sql.Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
-def see_schema():
 
+def read_schema():
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     print(f"db tables:")
@@ -34,45 +32,68 @@ def see_schema():
         for column in columns:
             print(f"   {column['name']}")
 
-def see_data() -> None:
 
-
+def read_data() -> None:
     users = db.query(sql.User).all()
     for user in users:
-        print(f"{user.id=} {user.first_name=}")
+        print(f"{user.id=} {user.name=}")
 
 
-def set_up_data():
+def create_schema():
+    sql.Base.metadata.create_all(bind=engine)
 
-    print(f"no data created yet need to set up a core place for this to be used locally runnign and across tests")
 
-def amend_data():
+def create_data():
+    sql.Base.metadata.create_all(bind=engine)
+
+    ben = sql.User(
+        name="Ben",
+        email="ben@ben.com",
+        hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
+    )
+
+    db.add(ben)
+    db.commit()
+
+def update_date():
     pass
 
-def drop_tables():
+
+def delete_schema():
     sql.Base.metadata.drop_all(bind=engine)
     print(f"dropped tables")
 
+
 def main():
+    print(
+        f"data_mgmt.py operating on branch {config.branch} in env {config.CURRENT_ENV}"
+    )
+    print()
     parser = argparse.ArgumentParser()
-    parser.add_argument('--read', type=str, help="see the schema of the db")
-    parser.add_argument('--create', type=str, help="see the schema of the db")
+    parser.add_argument("--create", type=str)
+    parser.add_argument("--read", type=str)
+    parser.add_argument("--delete", type=str)
 
     args = parser.parse_args()
 
-    print(args.read)
+    if args.create:
+        if args.create == "schema":
+            create_schema()
+        if args.create == "data":
+            create_data()
 
     if args.read:
         if args.read == "schema":
-            see_schema()
+            read_schema()
         elif args.read == "data":
-            see_data()
+            read_data()
         else:
             pass
 
-    if args.create:
-        if args.create == "data":
-            set_up_data()
+    if args.delete:
+        if args.delete == "schema":
+            delete_schema()
+
 
 if __name__ == "__main__":
     main()

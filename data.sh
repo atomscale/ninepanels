@@ -2,74 +2,78 @@ clear
 echo "\e[1;34mMANAGING DATA SCRIPT!!\e[0m"
 echo
 
-echo "Please select the environment you want to use:"
 
-select env in "MAIN" "FEATURE"; do
+select env in "STAGING" "FEATURE"; do
     case $env in
-    "MAIN")
-        # source sh/set_env.sh MAIN localhost postgres 5434
-        echo "You selected \033[1;34m$NINEPANELS_ENV\033[0m environment."
-        select func in "SEE SCHEMA" "SEE DATA" "AMEND DATA"; do
-            case $func in
-            "SEE SCHEMA")
-                cd src
-                python -c "from data_mgmt import see_schema; see_schema()"
-                cd ..
-                break
-                ;;
-            "SEE DATA")
-                cd src
-                python -c "from data_mgmt import see_data; see_data()"
-                cd ..
-                break
-                ;;
-            "AMEND DATA")
-                echo "yo, you kidding? this is prod!?!"
-                break
-                ;;
-            *)
-                echo "invalid slection"
-                ;;
-            esac
-        done
-        break
-        ;;
-    "FEATURE")
-        echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-        source set_env.sh
-        select func in "SEE SCHEMA" "SEE DATA" "SET UP DATA" "CLEAR DB"; do
-            case $func in
-            "SEE SCHEMA")
+        "STAGING")
+            source set_env_staging.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
+            echo "Set satging env vars for satging and lconneciton to supabase staging db"
 
-                python -m ninepanels.data_mgmt --read schema
+            break
+            ;;
+        "FEATURE")
+            source set_env_feature.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
+            echo "Set local env vars for feature branch and local db connection"
 
-                break
-                ;;
-            "SEE DATA")
-
-                python -m ninepanels.data_mgmt --read data
-
-                break
-                ;;
-            "SET UP DATA")
-
-                python -m ninepanels.data_mgmt --create data
-
-                break
-                ;;
-            "CLEAR DB")
-
-                break
-                ;;
-            *)
-                echo "invalid slection"
-                ;;
-            esac
-        done
-        break
-        ;;
-    *)
-        echo "Invalid selection."
-        ;;
+            break
+            ;;
+        *)
+            echo "invalid, try again"
+            ;;
     esac
 done
+echo
+
+keep_looping=true
+while $keep_looping; do
+    select func in "CREATE SCHEMA" "CREATE DATA" "READ SCHEMA" "READ DATA" "CLEAR DB" "EXIT"; do
+        case $func in
+        "CREATE SCHEMA")
+
+            python -m ninepanels.data_mgmt --create schema
+
+            break
+            ;;
+        "CREATE DATA")
+
+            python -m ninepanels.data_mgmt --create data
+
+            break
+            ;;
+        "READ SCHEMA")
+
+            python -m ninepanels.data_mgmt --read schema
+
+            break
+            ;;
+        "READ DATA")
+
+            python -m ninepanels.data_mgmt --read data
+
+            break
+            ;;
+        "CLEAR DB")
+
+            if [ "$NINEPANELS_ENV" = "STAGING" ]; then
+                echo "no chance mate"
+                break
+            fi
+
+            echo "data would have been deleted"
+            python -m ninepanels.data_mgmt --delete schema
+            break
+            ;;
+        "EXIT")
+            echo "finished.."
+            keep_looping=false
+            break
+            ;;
+        *)
+            echo "invalid slection"
+            ;;
+        esac
+    done
+done
+
