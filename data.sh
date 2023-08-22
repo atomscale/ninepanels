@@ -1,22 +1,47 @@
 clear
-echo "\e[1;34mMANAGING DATA SCRIPT!!\e[0m"
+echo "\e[1;34mDATABASE COMMAND CENTRE\e[0m"
 echo
 
+# this scropt sets env, the rest are called
 
-select env in "STAGING" "FEATURE"; do
+# manage
+# backup
+# migrate
+# clone
+
+
+continue_script=true
+
+echo "Select environment:"
+select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
     case $env in
+        "MAIN")
+            source set_env_main.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment BE CAREFUL!!!"
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase PRODUCTION db"
+            echo
+
+            break
+            ;;
         "STAGING")
             source set_env_staging.sh
             echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-            echo "Set satging env vars for satging and lconneciton to supabase staging db"
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase staging db"
+            echo
 
             break
             ;;
         "FEATURE")
             source set_env_feature.sh
             echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-            echo "Set local env vars for feature branch and local db connection"
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
+            echo
 
+            break
+            ;;
+        "Exit")
+            echo "Finishing..."
+            continue_script=false
             break
             ;;
         *)
@@ -24,56 +49,31 @@ select env in "STAGING" "FEATURE"; do
             ;;
     esac
 done
-echo
 
-keep_looping=true
-while $keep_looping; do
-    select func in "CREATE SCHEMA" "CREATE DATA" "READ SCHEMA" "READ DATA" "CLEAR DB" "EXIT"; do
-        case $func in
-        "CREATE SCHEMA")
-
-            python -m ninepanels.data_mgmt --create schema
-
-            break
-            ;;
-        "CREATE DATA")
-
-            python -m ninepanels.data_mgmt --create data
-
-            break
-            ;;
-        "READ SCHEMA")
-
-            python -m ninepanels.data_mgmt --read schema
-
-            break
-            ;;
-        "READ DATA")
-
-            python -m ninepanels.data_mgmt --read data
-
-            break
-            ;;
-        "CLEAR DB")
-
-            if [ "$NINEPANELS_ENV" = "STAGING" ]; then
-                echo "no chance mate"
+if $continue_script; then
+    echo "Select action area:"
+    select opt in "Manage" "Backup" "Restore" "Clone" "Migrate" "Exit"; do
+        case $opt in
+            "Manage")
+                source manage.sh
                 break
-            fi
-
-            echo "data would have been deleted"
-            python -m ninepanels.data_mgmt --delete schema
-            break
-            ;;
-        "EXIT")
-            echo "finished.."
-            keep_looping=false
-            break
-            ;;
-        *)
-            echo "invalid slection"
-            ;;
+                ;;
+            "Backup")
+                source backup.sh
+                break
+                ;;
+            "Restore")
+                source restore.sh
+                break
+                ;;
+            "Exit")
+                echo "Finishing..."
+                # continue_script=false
+                break
+                ;;
+            *)
+                echo "invalid, try again"
+                ;;
         esac
     done
-done
-
+fi

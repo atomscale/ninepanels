@@ -1,5 +1,5 @@
-clear
-echo "\e[1;34mBUILD STAGING\e[0m"
+
+echo "\e[1;34mClone...\e[0m"
 echo
 
 
