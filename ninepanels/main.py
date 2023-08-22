@@ -46,7 +46,7 @@ api.add_middleware(
 
 
 def run_migrations():
-    """ this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
+    """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
     taregt database.
 
     on main branch, this means that all that needs to happen is the staging branch is merged
@@ -54,8 +54,9 @@ def run_migrations():
     this assumes a fix forward approach, with no use of downgrade
 
     """
-    alembic_cfg = Config("alembic.ini") # Path to your Alembic configuration file
+    alembic_cfg = Config("alembic.ini")  # Path to your Alembic configuration file
     command.upgrade(alembic_cfg, "head")
+
 
 run_migrations()
 
@@ -65,11 +66,14 @@ version_ts = datetime.utcnow()
 
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
 
-print(f"this is the ninepanels api in env: {config.CURRENT_ENV}. Version: {version_date}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}")
+print(
+    f"this is the ninepanels api in env: {config.CURRENT_ENV}. Version: {version_date}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}"
+)
+
 
 @api.get("/")
 def index():
-    return {f"Version: {config.RENDER_GIT_BRANCH}, {version_date}"}
+    return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
 @api.post("/token", response_model=pyd.AccessToken)
@@ -93,7 +97,6 @@ def create_user(
     password: str = Form(),
     db: Session = Depends(get_db),
 ):
-
     hashed_password = auth.get_password_hash(password)
 
     try:
@@ -136,7 +139,6 @@ def post_panel_by_user_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-
     try:
         new_panel = crud.create_panel_by_user_id(db, user.id, title)
         return new_panel
@@ -144,6 +146,7 @@ def post_panel_by_user_id(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel"
         )
+
 
 @api.get("/panels", response_model=List[pyd.Panel])
 def get_panels_by_user_id(
@@ -155,14 +158,14 @@ def get_panels_by_user_id(
     pp.pprint(f" api panel resp {panels}")
     return panels
 
+
 @api.patch("/panels/{panel_id}", response_model=pyd.Panel)
 def update_panel_by_id(
     panel_id: int,
     update: pyd.PanelUpdate,
     db: Session = Depends(get_db),
-    user: pyd.User = Depends(auth.get_current_user)
+    user: pyd.User = Depends(auth.get_current_user),
 ):
-
     try:
         updated_panel = crud.update_panel_by_id(db, panel_id, update.model_dump())
     except errors.PanelNotUpdated as e:
