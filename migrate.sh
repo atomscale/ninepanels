@@ -14,7 +14,6 @@ select migration_action in "Stamp" "Create Migration" "Upgrade Manually" ; do
             break
             ;;
         "Create Migration")
-
             echo "Creating a migration..."
             echo "Enter the migration message:"
             read msg
@@ -24,7 +23,6 @@ select migration_action in "Stamp" "Create Migration" "Upgrade Manually" ; do
             break
             ;;
         "Upgrade Manually")
-
             echo "applying migration... are you sure?"
             while true; do
                 read -q "response?Do you want to continue (Y/N)? "

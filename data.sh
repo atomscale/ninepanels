@@ -81,5 +81,4 @@ if $continue_script; then
                 ;;
         esac
     done
-    clear
 fi

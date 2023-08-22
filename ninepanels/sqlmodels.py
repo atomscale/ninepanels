@@ -26,6 +26,7 @@ class Panel(Base):
     __tablename__ = "panels"
     id = Column(Integer, primary_key=True)
     title = Column(String)
+    description = Column(String)
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship('User', back_populates="panels")
 
