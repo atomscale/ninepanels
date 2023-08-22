@@ -22,10 +22,9 @@ from alembic.config import Config
 from alembic import command
 
 from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=4)
 
 from datetime import datetime
-
-pp = PrettyPrinter(indent=4)
 
 api = FastAPI()
 
@@ -56,6 +55,7 @@ def run_migrations():
     """
     alembic_cfg = Config("alembic.ini")  # Path to your Alembic configuration file
     command.upgrade(alembic_cfg, "head")
+    return None
 
 
 run_migrations()

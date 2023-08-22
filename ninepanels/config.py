@@ -33,7 +33,9 @@ DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 DB_PORT = os.environ.get("DB_PORT")
 
-SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/postgres"
+SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
+
+
 
 ### ENVIRONMENT ###
 
@@ -45,8 +47,8 @@ def compare_env_and_branch():
         if branch == "main" or branch == "staging":
             raise errors.ConfigurationException(f"you are on the wrong branch (main or staging) to run a local feature branch")
 
-if branch:
-    compare_env_and_branch()
+# if branch:
+#     compare_env_and_branch()
 
 
 def get_db_uri():
@@ -62,10 +64,13 @@ if not RENDER_GIT_BRANCH:
 
 import logging
 
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s (%(filename)s:%(lineno)d): %(message)s ",
-    level=logging.INFO,
-)
+def set_up_logger():
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s (%(filename)s:%(lineno)d): %(message)s ",
+        level=logging.INFO,
+    )
+
+set_up_logger()
 
 ### SECURITY ###
 

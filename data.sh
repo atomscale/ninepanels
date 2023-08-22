@@ -1,75 +1,84 @@
 clear
-echo "\e[1;34mMANAGING DATA SCRIPT!!\e[0m"
+echo "\e[1;34mDATABASE COMMAND CENTRE\e[0m"
 echo
 
-echo "Please select the environment you want to use:"
+# this scropt sets env, the rest are called
 
-select env in "MAIN" "FEATURE"; do
+# manage
+# backup
+# migrate
+# clone
+
+
+continue_script=true
+
+echo "Select environment:"
+select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
     case $env in
-    "MAIN")
-        # source sh/set_env.sh MAIN localhost postgres 5434
-        echo "You selected \033[1;34m$NINEPANELS_ENV\033[0m environment."
-        select func in "SEE SCHEMA" "SEE DATA" "AMEND DATA"; do
-            case $func in
-            "SEE SCHEMA")
-                cd src
-                python -c "from data_mgmt import see_schema; see_schema()"
-                cd ..
-                break
-                ;;
-            "SEE DATA")
-                cd src
-                python -c "from data_mgmt import see_data; see_data()"
-                cd ..
-                break
-                ;;
-            "AMEND DATA")
-                echo "yo, you kidding? this is prod!?!"
-                break
-                ;;
-            *)
-                echo "invalid slection"
-                ;;
-            esac
-        done
-        break
-        ;;
-    "FEATURE")
-        echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-        source set_env.sh
-        select func in "SEE SCHEMA" "SEE DATA" "SET UP DATA" "CLEAR DB"; do
-            case $func in
-            "SEE SCHEMA")
+        "MAIN")
+            source set_env_main.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment BE CAREFUL!!!"
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase PRODUCTION db"
+            echo
 
-                python -m ninepanels.data_mgmt --read schema
+            break
+            ;;
+        "STAGING")
+            source set_env_staging.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase staging db"
+            echo
 
-                break
-                ;;
-            "SEE DATA")
+            break
+            ;;
+        "FEATURE")
+            source set_env_feature.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
+            echo
 
-                python -m ninepanels.data_mgmt --read data
-
-                break
-                ;;
-            "SET UP DATA")
-
-                python -m ninepanels.data_mgmt --create data
-
-                break
-                ;;
-            "CLEAR DB")
-
-                break
-                ;;
-            *)
-                echo "invalid slection"
-                ;;
-            esac
-        done
-        break
-        ;;
-    *)
-        echo "Invalid selection."
-        ;;
+            break
+            ;;
+        "Exit")
+            echo "Finishing..."
+            continue_script=false
+            clear
+            break
+            ;;
+        *)
+            echo "invalid, try again"
+            ;;
     esac
 done
+
+if $continue_script; then
+    echo "Select action area:"
+    select opt in "Manage schema/data" "Backup" "Restore" "Migrate" "Exit"; do
+        case $opt in
+            "Manage schema/data")
+                source manage.sh
+                break
+                ;;
+            "Backup")
+                source backup.sh
+                break
+                ;;
+            "Restore")
+                source restore.sh
+                break
+                ;;
+            "Migrate")
+                source migrate.sh
+                break
+                ;;
+            "Exit")
+                echo "Finishing..."
+                # continue_script=false
+                break
+                ;;
+            *)
+                echo "invalid, try again"
+                ;;
+        esac
+    done
+fi
