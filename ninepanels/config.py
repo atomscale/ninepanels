@@ -35,7 +35,12 @@ DB_PORT = os.environ.get("DB_PORT")
 
 SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
 
+def get_db_uri():
+    return SQLALCHEMY_DATABASE_URI
 
+### SERVER ###
+
+SERVER_ROOT = os.environ.get("NINEPANELS_SERVER_ROOT")
 
 ### ENVIRONMENT ###
 
@@ -50,9 +55,6 @@ def compare_env_and_branch():
 # if branch:
 #     compare_env_and_branch()
 
-
-def get_db_uri():
-    return SQLALCHEMY_DATABASE_URI
 
 RENDER_GIT_BRANCH = os.environ.get("RENDER_GIT_BRANCH")
 RENDER_GIT_COMMIT = os.environ.get("RENDER_GIT_COMMIT")
