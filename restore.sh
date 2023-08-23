@@ -46,7 +46,8 @@ select restore_opt in "Yes" "No"; do
                         break
                         ;;
                     "Data only")
-                        echo "supply path to dump file"
+                        echo "\033[1;31mIs the schema in place but with no data??\033[0m"
+                        echo "supply path to dump file:"
                         read dump_file_path
 
                         echo "restoring $NINEPANELS_ENV database from $dump_file_path"
