@@ -36,7 +36,7 @@ def read_schema():
 def read_data() -> None:
     users = db.query(sql.User).all()
     for user in users:
-        print(f"{user.id=} {user.name=}")
+        print(f"{user.id=} {user.name=} {user.panels[0].description}")
 
 
 def create_schema():
@@ -53,6 +53,10 @@ def create_data():
     )
 
     db.add(ben)
+    db.commit()
+
+    panel = sql.Panel(title="set up panel", description="Long panel description detialing cool stuff", user_id=ben.id)
+    ben.panels.append(panel)
     db.commit()
 
 def update_date():

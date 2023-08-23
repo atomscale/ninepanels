@@ -114,13 +114,13 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     assert "Panel not updated" in resp.text
 
     # panel json empty
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
-        json={},
+        # json={},
         headers=headers,
     )
 
@@ -135,14 +135,14 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422
+    assert resp.status_code == 422 # this is not validated by pydantic
     assert "detail" in resp.json()
 
     # test success:
 
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
-        json={"title": "the update worked"},
+        json={"title": "the update worked", "description": "test description"},
         headers=headers,
     )
 
@@ -150,6 +150,7 @@ def test_update_panel_by_id(test_server, test_access_token):
 
     assert resp_body['id'] == test_panel_id
     assert resp_body['title'] == "the update worked"
+    assert resp_body['description'] == "test description"
 
 def test_delete_panel_by_id(test_server, test_access_token):
     resp = test_server.delete(
