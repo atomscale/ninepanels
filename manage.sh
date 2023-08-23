@@ -16,6 +16,7 @@ while $keep_looping; do
                 echo "no chance mate, you're on main!"
                 break
             fi
+            alembic stamp head
             python -m ninepanels.data_mgmt --create schema
             echo
 

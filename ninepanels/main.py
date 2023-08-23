@@ -152,10 +152,8 @@ def post_panel_by_user_id(
 def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-    # panels = crud.read_all_panels_by_user_id(db=db, user_id=user.id)
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
-    pp.pprint(f" api panel resp {panels}")
     return panels
 
 

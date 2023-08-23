@@ -1,5 +1,5 @@
 clear
-echo "\e[1;34mDATABASE COMMAND CENTRE\e[0m"
+echo "\e[1;34mMISSION CONTROL\e[0m"
 echo
 
 # this scropt sets env, the rest are called
@@ -53,22 +53,26 @@ done
 
 if $continue_script; then
     echo "Select action area:"
-    select opt in "Manage schema/data" "Backup" "Restore" "Migrate" "Exit"; do
+    select opt in "Manage schema/data" "Backup db" "Restore db" "Migrate db" "Ping server" "Exit"; do
         case $opt in
             "Manage schema/data")
                 source manage.sh
                 break
                 ;;
-            "Backup")
+            "Backup db")
                 source backup.sh
                 break
                 ;;
-            "Restore")
+            "Restore db")
                 source restore.sh
                 break
                 ;;
-            "Migrate")
+            "Migrate db")
                 source migrate.sh
+                break
+                ;;
+            "Ping server")
+                python -m ninepanels.ping
                 break
                 ;;
             "Exit")
