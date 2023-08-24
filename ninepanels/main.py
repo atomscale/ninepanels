@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi import Depends
 from fastapi import HTTPException, status
 from fastapi import Form
+from fastapi import Body
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -136,11 +137,15 @@ def delete_user_by_id(
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
     title: str = Form(),
+    description: str | None = Form(None),
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
     try:
-        new_panel = crud.create_panel_by_user_id(db, user.id, title)
+        if description:
+            new_panel = crud.create_panel_by_user_id(db, user.id, title, description)
+        else:
+            new_panel = crud.create_panel_by_user_id(db, user.id, title)
         return new_panel
     except errors.PanelNotCreated:
         raise HTTPException(
@@ -160,16 +165,19 @@ def get_panels_by_user_id(
 @api.patch("/panels/{panel_id}", response_model=pyd.Panel)
 def update_panel_by_id(
     panel_id: int,
-    update: pyd.PanelUpdate,
+    update: dict = Body(),
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-    try:
-        updated_panel = crud.update_panel_by_id(db, panel_id, update.model_dump())
-    except errors.PanelNotUpdated as e:
-        raise HTTPException(status_code=400, detail=f"Panel not updated: {str(e)}")
+    if update:
+        try:
+            updated_panel = crud.update_panel_by_id(db, panel_id, update)
+            return updated_panel
+        except errors.PanelNotUpdated as e:
+            raise HTTPException(status_code=422, detail=f"Panel not updated: {str(e)}")
 
-    return updated_panel
+    else:
+        raise HTTPException(status_code=422, detail="No update object")
 
 
 @api.delete("/panels/{panel_id}")

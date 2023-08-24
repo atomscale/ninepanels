@@ -104,8 +104,9 @@ def test_read_panels_with_current_entry_by_user_id(test_db):
 def test_create_panel_by_user_id(test_db):
     test_user_id = 1
     test_panel_title = "testing panel"
+    test_description = "this is a nice test descritpooooon"
 
-    new_panel = crud.create_panel_by_user_id(test_db, test_user_id, test_panel_title)
+    new_panel = crud.create_panel_by_user_id(test_db, test_user_id, test_panel_title, test_description)
 
     assert isinstance(new_panel.id, int)
 
@@ -114,7 +115,7 @@ def test_create_panel_by_user_id(test_db):
 
 def test_update_panel_by_panel_id(test_db):
     # create a new panel for this test:
-    new_panel = crud.create_panel_by_user_id(test_db, 1, "test panel for update")
+    new_panel = crud.create_panel_by_user_id(test_db, 1, "test panel for update", "test_desc")
 
     # test failure cases:
 
@@ -136,12 +137,13 @@ def test_update_panel_by_panel_id(test_db):
     # test success:
 
     # update new panel and check title changes
-    update_d = {"title": "updated test panel"}
+    update_d = {"title": "updated test panel", "description": "updated description"}
 
     updated_panel = crud.update_panel_by_id(test_db, new_panel.id, update_d)
 
     assert updated_panel.id == new_panel.id
     assert updated_panel.title == "updated test panel"
+    assert updated_panel.description == "updated description"
 
 
 def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
