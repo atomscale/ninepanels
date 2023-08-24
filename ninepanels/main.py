@@ -137,11 +137,15 @@ def delete_user_by_id(
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
     title: str = Form(),
+    description: str | None = Form(None),
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
     try:
-        new_panel = crud.create_panel_by_user_id(db, user.id, title)
+        if description:
+            new_panel = crud.create_panel_by_user_id(db, user.id, title, description)
+        else:
+            new_panel = crud.create_panel_by_user_id(db, user.id, title)
         return new_panel
     except errors.PanelNotCreated:
         raise HTTPException(

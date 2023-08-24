@@ -100,13 +100,17 @@ def read_all_users(db: Session) -> list:
     return users
 
 
-def create_panel_by_user_id(db: Session, user_id: int, title: str):
+def create_panel_by_user_id(db: Session, user_id: int, title: str, description: str = None):
     """create a panel for a user by id"""
 
     user = db.query(sql.User).where(sql.User.id == user_id).first()
 
     try:
-        new_panel = sql.Panel(title=title, user_id=user_id)
+        if description:
+            new_panel = sql.Panel(title=title, description=description, user_id=user_id)
+        else:
+            new_panel = sql.Panel(title=title, user_id=user_id)
+
         user.panels.append(new_panel)
         db.commit()
         return new_panel

@@ -73,6 +73,17 @@ def test_delete_user_by_id(test_server):
 
 
 def test_post_panel_by_user_id(test_server, test_access_token):
+
+    # test with both title and desc
+    resp = test_server.post(
+        "/panels",
+        data={"title": "test api panel", "description": "this is the api testy testy panel desc"},  # form
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
+
+    assert resp.status_code == 200
+
+    # test with just required title
     resp = test_server.post(
         "/panels",
         data={"title": "test api panel"},  # form
@@ -100,7 +111,7 @@ def test_update_panel_by_id(test_server, test_access_token):
     # create new panel for test:
 
     resp = test_server.post(
-        "/panels", data={"title": "test api panel for udpate"}, headers=headers
+        "/panels", data={"title": "test api panel for udpate", "description": "testy desc"}, headers=headers
     )
     assert resp.status_code == 200
 
