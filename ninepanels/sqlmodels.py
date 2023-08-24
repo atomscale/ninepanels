@@ -27,6 +27,7 @@ class Panel(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String)
     description = Column(String)
+    position = Column(Integer)
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship('User', back_populates="panels")
 

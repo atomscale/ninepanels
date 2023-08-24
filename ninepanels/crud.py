@@ -100,7 +100,9 @@ def read_all_users(db: Session) -> list:
     return users
 
 
-def create_panel_by_user_id(db: Session, user_id: int, title: str, description: str = None):
+def create_panel_by_user_id(
+    db: Session, user_id: int, title: str, description: str = None
+):
     """create a panel for a user by id"""
 
     user = db.query(sql.User).where(sql.User.id == user_id).first()
@@ -126,19 +128,14 @@ def update_panel_by_id(db: Session, panel_id: int, update: dict):
     return the upate panel instance
     """
     if update:
-
-
         panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
-        # print(panel.title)
+
         if panel:
             for update_field, update_value in update.items():
                 if hasattr(panel, update_field):
                     setattr(panel, update_field, update_value)
                 else:
                     raise PanelNotUpdated(f"no field '{update_field}' found on panel")
-            print(update)
-            print(panel.id)
-            # print(panel.title)
             try:
                 db.commit()
             except Exception as e:
@@ -186,7 +183,15 @@ def read_all_panels(db: Session) -> list:
 def read_all_panels_by_user_id(db: Session, user_id: int) -> list:
     """read all panels  by user id"""
 
-    user_panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
+    # this will by default sort_by sql.Panel.position
+
+    user_panels = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .where(sql.User.id == user_id)
+        .order_by(sql.Panel.position)
+        .all()
+    )
 
     return user_panels
 

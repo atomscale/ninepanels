@@ -41,21 +41,20 @@ def test_db():
 
     test_users = [
         sql.User(name='Bennyboy', email="ben@ben.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"), # "password"
+        sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
         sql.User(name='Prof. Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
-        sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja")
     ]
 
     db.add_all(test_users)
     db.commit()
 
     test_panels = [
-        sql.Panel(title="workout", user_id=1),
-        sql.Panel(title="write code", user_id=1),
-        sql.Panel(title="walk harris", user_id=1),
-        sql.Panel(title="cure cancer", user_id=2),
-        sql.Panel(title="move to oz", user_id=3),
-        sql.Panel(title="make pickles", user_id=3),
-        sql.Panel(title="move house again", user_id=2),
+        sql.Panel(title="one", description="some funky desoon you know", position=0, user_id=1),
+        # nulls get returned first:
+        sql.Panel(title="two", description="some funky descrtioonou know", user_id=1),
+        sql.Panel(title="three", description="somy descrtioon  know", position=2, user_id=1),
+        sql.Panel(title="A", position=0, user_id=2),
+        sql.Panel(title="B", position=1, user_id=2),
     ]
 
     db.add_all(test_panels)
@@ -68,9 +67,7 @@ def test_db():
         sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
         sql.Entry(is_complete=False, panel_id=2, timestamp=ts),
         sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
-        # sql.Entry(is_complete=False, panel_id=1, timestamp=ts + diff),
-        sql.Entry(is_complete=True, panel_id=5, timestamp=ts),
-        sql.Entry(is_complete=True, panel_id=6, timestamp=ts),
+
     ]
     db.add_all(test_entries)
     db.commit()

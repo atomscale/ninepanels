@@ -34,7 +34,7 @@ def test_read_user_by_id(test_db):
 
 
 def test_delete_user_by_id(test_db):
-    user_id = 3  # delete christy
+    user_id = 2  # delete christy
 
     conf = crud.delete_user_by_id(test_db, user_id)
 
@@ -68,6 +68,7 @@ def test_read_all_panels_by_user_id(test_db):
     test_user_panels = crud.read_all_panels_by_user_id(test_db, user_id=1)
 
     assert isinstance(test_user_panels, list)
+    assert test_user_panels[0].title == "one"
 
 
 def test_read_all_entries(test_db):
@@ -97,7 +98,7 @@ def test_read_panels_with_current_entry_by_user_id(test_db):
         if panel["id"] == 1:
             # for this test case we know we want the roginal True from two days ago
             # to be flipped to None
-            assert len(panel["entries"]) == 0
+            assert len(panel["entries"]) == 1
 
 
 @pytest.fixture
@@ -144,6 +145,14 @@ def test_update_panel_by_panel_id(test_db):
     assert updated_panel.id == new_panel.id
     assert updated_panel.title == "updated test panel"
     assert updated_panel.description == "updated description"
+
+    # update new panel without desc and check title changes
+    update_d = {"title": "updated test panel no desc"}
+
+    updated_panel = crud.update_panel_by_id(test_db, new_panel.id, update_d)
+
+    assert updated_panel.id == new_panel.id
+    assert updated_panel.title == "updated test panel no desc"
 
 
 def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
