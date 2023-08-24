@@ -92,6 +92,15 @@ def test_post_panel_by_user_id(test_server, test_access_token):
 
     assert resp.status_code == 200
 
+    # test with just required title and blank "" desc
+    resp = test_server.post(
+        "/panels",
+        data={"title": "test api panel", "description": ""},  # form
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
+
+    assert resp.status_code == 200
+
 
 def test_get_panels_by_user_id(test_server, test_access_token):
     resp = test_server.get(
