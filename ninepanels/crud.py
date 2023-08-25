@@ -180,22 +180,6 @@ def read_all_panels(db: Session) -> list:
     return panels
 
 
-def read_all_panels_by_user_id(db: Session, user_id: int) -> list:
-    """read all panels  by user id"""
-
-    # this will by default sort_by sql.Panel.position
-
-    user_panels = (
-        db.query(sql.Panel)
-        .join(sql.User)
-        .where(sql.User.id == user_id)
-        .order_by(sql.Panel.position)
-        .all()
-    )
-
-    return user_panels
-
-
 def create_entry_by_panel_id(
     db: Session, is_complete: bool, panel_id: int, user_id: int
 ):
@@ -246,7 +230,7 @@ def read_all_entries(db: Session) -> list:
 
 
 def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
-    """return only the latest status for each panel belonging to a user"""
+    """return only the latest status for each panel belonging to a user, ie the up do date daily view"""
 
     user_panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
 
@@ -281,3 +265,14 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
         user_panels_with_latest_entry_only.append(user_panel_d)
 
     return user_panels_with_latest_entry_only
+
+def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
+    """ Look up all panels for a user, unsorted - assume no position
+    TODO add sort flag to get_panels_by_user_id
+    check each panel for a position, loop enum get index
+    if a position, including 0s, check by being an int, skip
+    if position is null and null only
+
+
+    """
+    pass

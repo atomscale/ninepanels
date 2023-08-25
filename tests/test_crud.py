@@ -64,13 +64,6 @@ def test_read_all_panels(test_db):
     assert isinstance(test_panels, list)
 
 
-def test_read_all_panels_by_user_id(test_db):
-    test_user_panels = crud.read_all_panels_by_user_id(test_db, user_id=1)
-
-    assert isinstance(test_user_panels, list)
-    assert test_user_panels[0].title == "one"
-
-
 def test_read_all_entries(test_db):
     test_entries = crud.read_all_entries(test_db)
 
