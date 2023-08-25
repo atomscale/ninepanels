@@ -50,8 +50,8 @@ def test_db():
 
     test_panels = [
         sql.Panel(title="one", description="some funky desoon you know", position=0, user_id=1),
-        # nulls get returned first:
-        sql.Panel(title="two", description="some funky descrtioonou know", user_id=1),
+        # nulls get returned first, ie if position not speficied, panel "two" will be first:
+        sql.Panel(title="two", description="some funky descrtioonou know", position=1, user_id=1),
         sql.Panel(title="three", description="somy descrtioon  know", position=2, user_id=1),
         sql.Panel(title="A", position=0, user_id=2),
         sql.Panel(title="B", position=1, user_id=2),
