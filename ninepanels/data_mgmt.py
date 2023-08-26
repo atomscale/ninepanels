@@ -34,9 +34,13 @@ def read_schema():
 
 
 def read_data() -> None:
+    print("USERS:")
     users = db.query(sql.User).all()
     for user in users:
-        print(f"{user.id=} {user.name=} {user.panels[0].description}")
+        print(f"{user.id=} {user.name=}:")
+        for panel in user.panels:
+            print(f"{panel.title}: {panel.description}")
+        print()
 
 
 def create_schema():
