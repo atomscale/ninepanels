@@ -39,7 +39,7 @@ def read_data() -> None:
     for user in users:
         print(f"{user.id=} {user.name=}:")
         for panel in user.panels:
-            print(f"{panel.title}: {panel.description}")
+            print(f"{panel.title=}: {panel.description=} {panel.position=}")
         print()
 
 
@@ -59,9 +59,35 @@ def create_data():
     db.add(ben)
     db.commit()
 
-    panel = sql.Panel(title="set up panel", description="Long panel description detialing cool stuff", user_id=ben.id)
-    ben.panels.append(panel)
+    panels = [
+        sql.Panel(
+            position=0,
+            title="A",
+            description="Long panel description detialing cool stuff",
+            user_id=ben.id,
+        ),
+        sql.Panel(
+            position=1,
+            title="B",
+            description="Long panel description detialing cool stuff",
+            user_id=ben.id,
+        ),
+        sql.Panel(
+            position=2,
+            title="C",
+            description="Long panel description detialing cool stuff",
+            user_id=ben.id,
+        ),
+        sql.Panel(
+            # position=3,
+            title="D",
+            description="Long panel description detialing cool stuff",
+            user_id=ben.id,
+        ),
+    ]
+    db.add_all(panels)
     db.commit()
+
 
 def update_date():
     pass

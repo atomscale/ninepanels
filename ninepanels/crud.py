@@ -101,7 +101,11 @@ def read_all_users(db: Session) -> list:
 
 
 def create_panel_by_user_id(
-    db: Session, user_id: int, title: str, description: str = None
+    db: Session,
+    user_id: int,
+    position: int,
+    title: str,
+    description: str = None,
 ):
     """create a panel for a user by id"""
 
@@ -109,9 +113,11 @@ def create_panel_by_user_id(
 
     try:
         if description:
-            new_panel = sql.Panel(title=title, description=description, user_id=user_id)
+            new_panel = sql.Panel(
+                title=title, description=description, user_id=user_id, position=position
+            )
         else:
-            new_panel = sql.Panel(title=title, user_id=user_id)
+            new_panel = sql.Panel(title=title, user_id=user_id, position=position)
 
         user.panels.append(new_panel)
         db.commit()
@@ -120,9 +126,9 @@ def create_panel_by_user_id(
         raise PanelNotCreated(e)
 
 
-def update_panel_by_id(db: Session, panel_id: int, update: dict):
-    """assume the 'update' dict has been validated by pydantic
-    update dict will contain only the fields to be updated, min len 1, max len unknown
+def update_panel_by_id(db: Session, user_id: int, panel_id: int, update: dict):
+    """
+    update dict will contain only the fields to be updated
     grab the panel, assing the new value, commit
 
     return the upate panel instance
@@ -133,13 +139,21 @@ def update_panel_by_id(db: Session, panel_id: int, update: dict):
         if panel:
             for update_field, update_value in update.items():
                 if hasattr(panel, update_field):
-                    setattr(panel, update_field, update_value)
+                    if update_field == "position":
+                        print()
+                        print(f"RUNNING udpate fpr {update_field}")
+
+                        print(f"running sort on {panel.title=}")
+                        panel_sort_on_update(db, user_id, panel_id, update_value)
+                    else:
+                        print(f"RUNNING udpate fpr {update_field}")
+                        setattr(panel, update_field, update_value)
+                        try:
+                            db.commit()
+                        except Exception as e:
+                            raise PanelNotUpdated(f"some issue in this commit {e}")
                 else:
                     raise PanelNotUpdated(f"no field '{update_field}' found on panel")
-            try:
-                db.commit()
-            except Exception as e:
-                raise PanelNotUpdated(f"some issue in this commit {e}")
             return panel
         else:
             raise PanelNotUpdated(f"panel with id {panel_id} not found")
@@ -165,8 +179,16 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
     )
 
     if panel:
+        # capture pos for re-sort on delete
+        panel_pos = panel.position
+
         db.delete(panel)
         db.commit()
+
+        # call re-sort here
+
+        panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
+
         return True
     else:
         raise PanelNotDeleted
@@ -176,6 +198,20 @@ def read_all_panels(db: Session) -> list:
     """read all panels for all users"""
 
     panels = db.query(sql.Panel).all()
+
+    return panels
+
+
+def read_all_panels_by_user(db: Session, user_id: int) -> list:
+    """Returns a list of all panels for a user sorted by position"""
+
+    panels = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .where(sql.User.id == user_id)
+        .order_by(sql.Panel.position)
+        .all()
+    )
 
     return panels
 
@@ -230,34 +266,34 @@ def read_all_entries(db: Session) -> list:
 
 
 def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
-    """ return only the latest status for each panel belonging to a user
+    """return only the latest status for each panel belonging to a user
     ie the up do date daily view
 
-    TODO examine if this can be refactored into the db
+    TODO examine if this can be refactored into the db, and i think it can be optimised
 
     """
 
-    user_panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
+    panels = read_all_panels_by_user(db=db, user_id=user_id)
 
-    user_panels_with_latest_entry_only = []
+    panels_with_latest_entry_only = []
 
     now = datetime.utcnow()
     # mock now for testing as one day ahead of entries
     # now = now + timedelta(days=1)
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
-    for user_panel in user_panels:
+    for panel in panels:
         # convert the user_panel to a regular dict:
-        user_panel_d = instance_to_dict(user_panel)
+        panel_d = instance_to_dict(panel)
         # pp.pprint("user_panel_d in loop:", user_panel_d )
 
         # clear the list of entries on the object: TODO this is a hack
-        user_panel_d["entries"] = []
+        panel_d["entries"] = []
 
         # get the current entry for the panel
         current_entry = (
             db.query(sql.Entry)
-            .where(sql.Entry.panel_id == user_panel_d["id"])
+            .where(sql.Entry.panel_id == panel_d["id"])
             .where(sql.Entry.timestamp > trimmed_now)
             .order_by(sql.Entry.timestamp.desc())
             .first()
@@ -265,14 +301,18 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
         if current_entry:
             current_entry_d = instance_to_dict(current_entry)
-            user_panel_d["entries"].append(current_entry_d)
+            panel_d["entries"].append(current_entry_d)
 
-        user_panels_with_latest_entry_only.append(user_panel_d)
+        panels_with_latest_entry_only.append(panel_d)
 
-    return user_panels_with_latest_entry_only
+    return panels_with_latest_entry_only
+
 
 def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
-    """ Look up all panels for a user, unsorted - assume no position
+    """This is to fix null positions on panels
+
+
+    Look up all panels for a user, unsorted - assume no position
     TODO add sort flag to get_panels_by_user_id
     check each panel for a position, loop enum get index
     if a position, including 0s, check by being an int, skip
@@ -281,3 +321,89 @@ def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
 
     """
     pass
+
+
+def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
+    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    for p in panels:
+        print(p.position, p.title)
+
+    max_pos = len(panels) - 1
+    print(f"{max_pos=}")
+    min_pos = 0
+
+    for i, panel in enumerate(panels):
+        if panel.id == panel_id:
+            panel_to_move = panel  # essentially saved to memeory
+            panel_to_move_cur_index = i
+
+    if panel_to_move.position:
+        cur_pos = panel_to_move.position
+    else:
+        cur_pos = panel_to_move_cur_index
+
+    # remove from the list that will be iterated over to update the other positions
+    # this panel will have had its position update already in the caller func
+    panels.pop(panel_to_move_cur_index)
+    print(f"moving {panel_to_move.title} from {cur_pos} -> {new_pos}")
+
+    if new_pos != cur_pos:
+        if new_pos <= max_pos:
+            if new_pos >= min_pos:
+                panel_to_move.position = new_pos
+                try:
+                    if new_pos < cur_pos:
+                        for panel in panels:
+                            # everything below the cur pos until the new_pos must be incremented by one
+                            if panel.position < cur_pos and panel.position >= new_pos:
+                                panel.position = panel.position + 1
+                        db.commit()
+
+                    if new_pos > cur_pos:
+                        for panel in panels:
+                            # everything above the cur pos until the new_pos must be decremented by one
+                            if panel.position > cur_pos and panel.position <= new_pos:
+                                panel.position = panel.position - 1
+                        db.commit()
+                except Exception as e:
+                    raise PanelNotUpdated(f"wihtin the try block: {e}")
+
+                user = db.query(sql.User).where(sql.User.id == user_id).first()
+                user.panels.append(panel_to_move)
+                db.commit()
+        else:
+            raise PanelNotUpdated(f"That's where the panel already is 🙂")
+
+    else:
+        raise PanelNotUpdated(f"That's where the panel already is 🙂")
+    print("FINAL POSITIONS:")
+    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    for p in panels:
+        print(p.position, p.title)
+    print("END ")
+
+
+def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
+    """
+
+    panel is gone from table, but know the positon it did occupy
+
+    every panel above that position needs to be decremented by 1
+
+    so if it del_panel_pos=0,
+    loop all panels (that are left)
+    if the panels pos > del_panel_pos, postion - 1
+    else just leave it, so panel at pos 1 becomes pos 0, panel at pos 5, becomes 4 etc. yes
+
+    for del_panel_pos =5
+    panel pos 6 is decremented to 5, but not panel 4
+
+    """
+
+    panels = read_all_panels_by_user(db=db, user_id=user_id)
+
+    for panel in panels:
+        if panel.position > del_panel_pos:
+            panel.position = panel.position - 1
+
+    db.commit()
