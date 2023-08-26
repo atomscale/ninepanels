@@ -230,7 +230,12 @@ def read_all_entries(db: Session) -> list:
 
 
 def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
-    """return only the latest status for each panel belonging to a user, ie the up do date daily view"""
+    """ return only the latest status for each panel belonging to a user
+    ie the up do date daily view
+
+    TODO examine if this can be refactored into the db
+
+    """
 
     user_panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == user_id).all()
 
