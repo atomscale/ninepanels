@@ -34,7 +34,7 @@ def test_read_user_by_id(test_db):
 
 
 def test_delete_user_by_id(test_db):
-    user_id = 3  # delete christy
+    user_id = 2  # delete christy
 
     conf = crud.delete_user_by_id(test_db, user_id)
 
@@ -64,12 +64,6 @@ def test_read_all_panels(test_db):
     assert isinstance(test_panels, list)
 
 
-def test_read_all_panels_by_user_id(test_db):
-    test_user_panels = crud.read_all_panels_by_user_id(test_db, user_id=1)
-
-    assert isinstance(test_user_panels, list)
-
-
 def test_read_all_entries(test_db):
     test_entries = crud.read_all_entries(test_db)
 
@@ -86,52 +80,74 @@ def test_create_entry_by_panel_id(test_db):
 
 def test_read_panels_with_current_entry_by_user_id(test_db):
     test_user_id = 1
-    current_panels = crud.read_panels_with_current_entry_by_user_id(
-        test_db, test_user_id
-    )
+    panels = crud.read_panels_with_current_entry_by_user_id(test_db, test_user_id)
 
-    for panel in current_panels:
+    # test there is is either one (complete) or 0 (incomplete) entries:
+    for panel in panels:
         assert (
             len(panel["entries"]) <= 1
         )  # check max one or none for every panel['entries'] list
         if panel["id"] == 1:
-            # for this test case we know we want the roginal True from two days ago
-            # to be flipped to None
-            assert len(panel["entries"]) == 0
+            assert len(panel["entries"]) == 1
+
+    # test that the panels are coming out in asc order of position:
+    for i, panel in enumerate(panels):
+        assert panel["position"] == i
 
 
-@pytest.fixture
 def test_create_panel_by_user_id(test_db):
     test_user_id = 1
-    test_panel_title = "testing panel"
+    test_panel_title = "four"
     test_description = "this is a nice test descritpooooon"
 
-    new_panel = crud.create_panel_by_user_id(test_db, test_user_id, test_panel_title, test_description)
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db,
+        position=3,
+        user_id=test_user_id,
+        title=test_panel_title,
+        description=test_description,
+    )
 
     assert isinstance(new_panel.id, int)
-
-    return new_panel.id
+    assert new_panel.position == 3
 
 
 def test_update_panel_by_panel_id(test_db):
+    test_user_id = 1
     # create a new panel for this test:
-    new_panel = crud.create_panel_by_user_id(test_db, 1, "test panel for update", "test_desc")
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db,
+        user_id=test_user_id,
+        position=4,
+        title="test panel for update",
+        description="test_desc",
+    )
 
     # test failure cases:
 
     # test non-existent panel_id
     with pytest.raises(errors.PanelNotUpdated):
         crud.update_panel_by_id(
-            db=test_db, panel_id=9999, update={"title": "won't work?"}
+            db=test_db,
+            user_id=test_user_id,
+            panel_id=9999,
+            update={"title": "won't work?"},
         )
 
     # test empty update obj
     with pytest.raises(errors.PanelNotUpdated):
-        crud.update_panel_by_id(db=test_db, panel_id=9999, update={})
+        crud.update_panel_by_id(
+            db=test_db, user_id=test_user_id, panel_id=9999, update={}
+        )
 
     # test update obj with keys that dont exist on object
     with pytest.raises(errors.PanelNotUpdated) as e:
-        crud.update_panel_by_id(test_db, new_panel.id, {"not_there": "update value"})
+        crud.update_panel_by_id(
+            db=test_db,
+            user_id=test_user_id,
+            panel_id=new_panel.id,
+            update={"not_there": "update value"},
+        )
         assert "no field" in str(e)
 
     # test success:
@@ -139,17 +155,70 @@ def test_update_panel_by_panel_id(test_db):
     # update new panel and check title changes
     update_d = {"title": "updated test panel", "description": "updated description"}
 
-    updated_panel = crud.update_panel_by_id(test_db, new_panel.id, update_d)
+    updated_panel = crud.update_panel_by_id(
+        db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+    )
 
     assert updated_panel.id == new_panel.id
     assert updated_panel.title == "updated test panel"
     assert updated_panel.description == "updated description"
 
+    # update new panel without desc and check title changes
+    update_d = {"title": "THE MOVING ONE"}
 
-def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
+    updated_panel = crud.update_panel_by_id(
+        db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+    )
+
+    assert updated_panel.id == new_panel.id
+    assert updated_panel.title == "THE MOVING ONE"
+
+    # update position
+    new_pos = 0
+    update_d = {"position": new_pos}
+
+    updated_panel = crud.update_panel_by_id(
+        db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+    )
+
+    assert updated_panel.id == new_panel.id
+    assert updated_panel.position == new_pos
+
+    # update position
+    new_pos = 3
+    update_d = {"position": new_pos}
+
+    updated_panel = crud.update_panel_by_id(
+        db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+    )
+
+    assert updated_panel.id == new_panel.id
+    assert updated_panel.position == new_pos
+
+    # check failure using out of rnage index pf panels
+    new_pos = 6
+    update_d = {"position": new_pos}
+
+    with pytest.raises(errors.PanelNotUpdated):
+        updated_panel = crud.update_panel_by_id(
+            db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+        )
+
+    # check failure using same
+    new_pos = 3
+    update_d = {"position": new_pos}
+
+    with pytest.raises(errors.PanelNotUpdated):
+        updated_panel = crud.update_panel_by_id(
+            db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
+        )
+
+
+
+def test_delete_panel_by_panel_id(test_db):
     test_user_id = 1
     is_deleted = crud.delete_panel_by_panel_id(
-        test_db, test_user_id, test_create_panel_by_user_id
+        db=test_db, user_id=test_user_id, panel_id=2
     )
 
     assert is_deleted
@@ -157,5 +226,5 @@ def test_delete_panel_by_panel_id(test_db, test_create_panel_by_user_id):
     # try again, shoudl be idempotent
     with pytest.raises(errors.PanelNotDeleted):
         is_deleted = crud.delete_panel_by_panel_id(
-            test_db, test_user_id, test_create_panel_by_user_id
+            db=test_db, user_id=test_user_id, panel_id=2
         )

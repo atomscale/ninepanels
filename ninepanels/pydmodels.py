@@ -23,6 +23,7 @@ class Panel(BaseModel):
     id: int
     title: str
     description: str | None = None
+    position: int | None = None # dev None, will be non-nullable
     user_id: int
     entries: list[Entry]
 

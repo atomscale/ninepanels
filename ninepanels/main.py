@@ -136,6 +136,7 @@ def delete_user_by_id(
 
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
+    position: int = Form(default=None), # TODO temp until client updates
     title: str = Form(),
     description: str | None = Form(None),
     db: Session = Depends(get_db),
@@ -143,9 +144,9 @@ def post_panel_by_user_id(
 ):
     try:
         if description:
-            new_panel = crud.create_panel_by_user_id(db, user.id, title, description)
+            new_panel = crud.create_panel_by_user_id(db=db, position=position, user_id=user.id, title=title, description=description)
         else:
-            new_panel = crud.create_panel_by_user_id(db, user.id, title)
+            new_panel = crud.create_panel_by_user_id(db=db, position=position, user_id=user.id, title=title)
         return new_panel
     except errors.PanelNotCreated:
         raise HTTPException(
@@ -171,10 +172,10 @@ def update_panel_by_id(
 ):
     if update:
         try:
-            updated_panel = crud.update_panel_by_id(db, panel_id, update)
+            updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
             return updated_panel
         except errors.PanelNotUpdated as e:
-            raise HTTPException(status_code=422, detail=f"Panel not updated: {str(e)}")
+            raise HTTPException(status_code=422, detail=f"{str(e)}")
 
     else:
         raise HTTPException(status_code=422, detail="No update object")
