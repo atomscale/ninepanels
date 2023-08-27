@@ -8,7 +8,7 @@ echo
 keep_looping=true
 while $keep_looping; do
     echo "Select database action in \033[1;32m$NINEPANELS_ENV\033[0m:"
-    select func in "Create schema" "Create data" "Read schema" "Read data" "Clear DB" "Exit"; do
+    select func in "Create schema" "Create data" "Read schema" "Read data" "Update data" "Clear DB" "Exit"; do
         case $func in
         "Create schema")
 
@@ -45,6 +45,26 @@ while $keep_looping; do
             python -m ninepanels.data_mgmt --read data
             echo
 
+            break
+            ;;
+        "Update data")
+
+            if [ "$NINEPANELS_ENV" = "MAIN" ]; then
+                echo "no chance this is main... you gotta edit this out.. ;)"
+                break
+            fi
+            echo "Are you SURE you want to apply this update?? You are in \033[1;32m$NINEPANELS_ENV\033[0m environment"
+            select delete_action in "Yes, let's go" "Nope, bail!"; do
+                case $delete_action in
+                    "Yes, let's go")
+                        python -m ninepanels.data_mgmt --apply update
+                        break
+                        ;;
+                    "Nope, bail!")
+                        break
+                        ;;
+                esac
+            done
             break
             ;;
         "Clear DB")
