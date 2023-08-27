@@ -79,11 +79,41 @@ def create_data():
             user_id=ben.id,
         ),
         sql.Panel(
-            # position=3,
+            position=3,
             title="D",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
+        # sql.Panel(
+        #     # position=3,
+        #     title="E",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
+        # sql.Panel(
+        #     # position=3,
+        #     title="F",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
+        # sql.Panel(
+        #     # position=3,
+        #     title="G",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
+        # sql.Panel(
+        #     # position=3,
+        #     title="H",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
+        # sql.Panel(
+        #     # position=3,
+        #     title="I",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
     ]
     db.add_all(panels)
     db.commit()
