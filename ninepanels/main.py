@@ -136,7 +136,7 @@ def delete_user_by_id(
 
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
-    position: int = Form(),
+    position: int = Form(default=None), # TODO temp until client updates
     title: str = Form(),
     description: str | None = Form(None),
     db: Session = Depends(get_db),

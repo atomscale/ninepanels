@@ -103,8 +103,8 @@ def read_all_users(db: Session) -> list:
 def create_panel_by_user_id(
     db: Session,
     user_id: int,
-    position: int,
     title: str,
+    position: int | None = None,
     description: str = None,
 ):
     """create a panel for a user by id"""
@@ -191,7 +191,7 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
             panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
         except PanelNotUpdated:
             pass
-        
+
         return True
     else:
         raise PanelNotDeleted
