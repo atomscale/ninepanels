@@ -9,6 +9,7 @@ can change across branches and not have to merge or affect core branch code
 
 from . import sqlmodels as sql
 from . import config
+from . import crud
 from sqlalchemy import desc
 from sqlalchemy import inspect
 from .database import SessionLocal
@@ -41,6 +42,18 @@ def read_data() -> None:
         for panel in user.panels:
             print(f"{panel.title=}: {panel.description=} {panel.position=}")
         print()
+    print()
+
+    print(f"panel query as per prod")
+    panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == 1).all()
+    for panel in panels:
+        print(f"{panel.id=}, {panel.title=}, {panel.position=}")
+
+    print(f"Panel query as per app - new:")
+    panels = crud.read_all_panels_by_user(db=db, user_id=1)
+
+    for panel in panels:
+        print(f"{panel.id=}, {panel.title=}, {panel.position=}")
 
 
 def create_schema():
@@ -61,55 +74,55 @@ def create_data():
 
     panels = [
         sql.Panel(
-            position=0,
+            # position=0,
             title="A",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
         sql.Panel(
-            position=1,
+            # position=1,
             title="B",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
         sql.Panel(
-            position=2,
+            # position=2,
             title="C",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
-        sql.Panel(
-            position=3,
-            title="D",
-            description="Long panel description detialing cool stuff",
-            user_id=ben.id,
-        ),
         # sql.Panel(
-        #     # position=3,
+        #     position=3,
+        #     title="D",
+        #     description="Long panel description detialing cool stuff",
+        #     user_id=ben.id,
+        # ),
+        # sql.Panel(
+        #     position=4,
         #     title="E",
         #     description="Long panel description detialing cool stuff",
         #     user_id=ben.id,
         # ),
         # sql.Panel(
-        #     # position=3,
+        #     # position=5,
         #     title="F",
         #     description="Long panel description detialing cool stuff",
         #     user_id=ben.id,
         # ),
         # sql.Panel(
-        #     # position=3,
+        #     # position=6,
         #     title="G",
         #     description="Long panel description detialing cool stuff",
         #     user_id=ben.id,
         # ),
         # sql.Panel(
-        #     # position=3,
+        #     # position=7,
         #     title="H",
         #     description="Long panel description detialing cool stuff",
         #     user_id=ben.id,
         # ),
         # sql.Panel(
-        #     # position=3,
+        #     # position=8,
         #     title="I",
         #     description="Long panel description detialing cool stuff",
         #     user_id=ben.id,
