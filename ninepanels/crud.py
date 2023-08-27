@@ -186,9 +186,12 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
         db.commit()
 
         # call re-sort here
-
-        panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
-
+        # TODO this needs erorr handled as if
+        try:
+            panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
+        except PanelNotUpdated:
+            pass
+        
         return True
     else:
         raise PanelNotDeleted
@@ -402,8 +405,11 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
 
     panels = read_all_panels_by_user(db=db, user_id=user_id)
 
-    for panel in panels:
-        if panel.position > del_panel_pos:
-            panel.position = panel.position - 1
+    try:
+        for panel in panels:
+            if panel.position > del_panel_pos:
+                panel.position = panel.position - 1
 
-    db.commit()
+        db.commit()
+    except Exception as e:
+        raise PanelNotUpdated(f"{str(e)}")
