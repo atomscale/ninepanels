@@ -42,7 +42,7 @@ def read_data() -> None:
         print(f"{user.id=} {user.name=}:")
         print()
         for i, panel in enumerate(user.panels):
-            print(f"{panel.title=}: {panel.position=}: cur index = {i}")
+            print(f"{panel.id=}: {panel.position=}: cur index = {i}")
             print()
         print()
     print()
@@ -53,7 +53,7 @@ def read_data() -> None:
     #     print(f"{panel.id=}, {panel.title=}, {panel.position=}")
 
     # print(f"Panel query as per app - new:")
-    # panels = crud.read_all_panels_by_user(db=db, user_id=1)
+    # panels = crud.read_all_panels_by_user(db=db, user_id=4)
 
     # for panel in panels:
     #     print(f"{panel.id=}, {panel.title=}, {panel.position=}")
@@ -90,31 +90,31 @@ def create_data():
             user_id=ben.id,
         ),
         sql.Panel(
-            # position=1,
+            position=1,
             title="B",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
         sql.Panel(
-            # position=2,
+            position=2,
             title="C",
             description="Long panel description detialing cool stuff",
             user_id=ben.id,
         ),
         sql.Panel(
-            # position=0,
+            position=0,
             title="A",
             description="Long panel description detialing cool stuff",
             user_id=bec.id,
         ),
         sql.Panel(
-            # position=1,
+            position=1,
             title="B",
             description="Long panel description detialing cool stuff",
             user_id=bec.id,
         ),
         sql.Panel(
-            # position=2,
+            position=2,
             title="C",
             description="Long panel description detialing cool stuff",
             user_id=bec.id,
@@ -125,23 +125,7 @@ def create_data():
 
 
 def update_data():
-    print("UPDATE PANEL POSITION:")
-    print()
-    users = db.query(sql.User).all()
-    for user in users:
-        print(f"{user.id=} {user.name=}:")
-        print()
-        for i, panel in enumerate(user.panels):
-            print(f"EXISTING PANEL: {panel.id=}: {panel.position=}: cur index = {i}")
-            if panel.position == None:
-                print("update occur")
-                panel.position = i
-            print()
-        print("committing")
-        db.commit()
-        print()
-    print()
-
+    pass
 
 def delete_schema():
     sql.Base.metadata.drop_all(bind=engine)

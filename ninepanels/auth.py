@@ -50,7 +50,7 @@ def authenticate_user(db: Session, email: str, password: str):
     if not user:  # authenticate_user func return false if password hashes do not match
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,  # the cool status helper
-            detail="Incorrect username or password - email not found",  # some extra info
+            detail="Incorrect email or password",  # some extra info
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not verify_password(
@@ -59,7 +59,7 @@ def authenticate_user(db: Session, email: str, password: str):
         # this verify_password is a function of passlib and hashes the plain password and compares to the hash retrived from db
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,  # the cool status helper
-            detail="Incorrect username or password",  # some extra info
+            detail="Incorrect email or password",  # some extra info
             headers={"WWW-Authenticate": "Bearer"},
         )
 
