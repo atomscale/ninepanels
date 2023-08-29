@@ -39,14 +39,17 @@ def read_data() -> None:
     print("USERS:")
     print()
     users = db.query(sql.User).all()
-    for user in users:
-        print(f"{user.id=} {user.name=}:")
-        print()
-        for i, panel in enumerate(user.panels):
-            print(f"{panel.id=}: {panel.position=}: cur index = {i}")
+    if users:
+        for user in users:
+            print(f"{user.id=} {user.name=}:")
             print()
-        print()
-    print()
+            if user.panels:
+                for i, panel in enumerate(user.panels):
+                    print(f"{panel.id=}, {panel.created_at}, {panel.position=}")
+                print()
+            print()
+
+
 
 
 def create_schema():
@@ -162,29 +165,29 @@ def create_data():
             position=0,
             title="A",
             description="AAAAH this is cool",
-            entries=sql_entries_a,
-            created_at=datetime(2023, 8, 1, 13),
+            # entries=sql_entries_a,
+            # created_at=datetime(2023, 8, 1, 13),
         ),
         sql.Panel(
             position=1,
             title="B",
             description="to make it look lvery  nice",
             entries=sql_entries_b,
-            created_at=datetime(2023, 8, 20, 13),
+            # created_at=datetime(2023, 8, 20, 13),
         ),
         sql.Panel(
             position=2,
             title="Created today",
             description="See ya later...geddit?",
             entries=sql_entries_c,
-            created_at=datetime.utcnow() + timedelta(minutes=-2),
+            # created_at=datetime.utcnow() + timedelta(minutes=-2),
         ),
         sql.Panel(
             position=3,
             title="Created yesterday completed today",
             description="Donkey Kong",
             entries=sql_entries_d,
-            created_at=datetime.utcnow() + timedelta(days=-1),
+            # created_at=datetime.utcnow() + timedelta(days=-1),
         ),
     ]
 
@@ -198,9 +201,38 @@ def create_data():
     db.add(ben)
     db.commit()
 
+    bec = sql.User(
+        name="Bec",
+        email="bec@bec.com",
+        hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
+    )
+
+    db.add(bec)
+    db.commit()
+
 
 def update_data():
-    pass
+
+    users = db.query(sql.User).order_by(sql.User.id).all()
+
+    if users:
+        for user in users:
+            if user.panels:
+                for panel in user.panels:
+                    print(f"Panel '{panel.title}':")
+                    if panel.entries:
+                        sorted_entries = sorted(panel.entries, key=lambda x:x.timestamp)
+
+                        earliest_entry = sorted_entries[0].timestamp
+                        print(f"earliest record is {earliest_entry}, {type(earliest_entry)}")
+                        print()
+                        panel.created_at = earliest_entry
+                    else:
+                        print(f"panel has had no entries, assginig now...")
+                        panel.created_at = datetime.utcnow()
+                db.commit()
+            else:
+                print(f"user {user.name} has no panels")
 
 
 def delete_schema():

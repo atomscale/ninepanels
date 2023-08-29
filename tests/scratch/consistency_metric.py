@@ -56,7 +56,7 @@ panels = [
             {
                 "id": 1987,
                 "is_complete": True,
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.utcnow() + timedelta(weeks=-23),
                 "panel_id": 1,
             },
 
@@ -107,7 +107,7 @@ panels = [
             {
                 "id": 98,
                 "is_complete": True,
-                "timestamp": datetime(2023, 8, 25, 13),
+                "timestamp": datetime(2023, 1, 25, 13),
                 "panel_id": 2,
             },
             {
@@ -225,4 +225,9 @@ for panel in panels:
     print(f"consistency for panel '{panel['title']}': {panel_consistency}")
     print()
 
+for panel in panels:
+    print(f"Panel '{panel['title']}':")
+    sorted_entries = sorted(panel['entries'], key=lambda x:x['timestamp'])
 
+    print(f"earliest record is {sorted_entries[0]['timestamp']}")
+    print()
