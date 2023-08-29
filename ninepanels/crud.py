@@ -472,7 +472,7 @@ def calc_consistency(db: Session, user_id: int):
 
             for entry in panel.entries:
                 if (
-                    date.day == entry.timestamp.day
+                    date.date() == entry.timestamp.date()
                 ):  #  TODO needs to compare whole dates
                     day_matches.append(entry)
 
