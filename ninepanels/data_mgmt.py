@@ -16,6 +16,7 @@ from .database import SessionLocal
 from .database import engine, text
 
 import argparse
+from datetime import datetime, timedelta
 
 db = SessionLocal()
 
@@ -47,17 +48,6 @@ def read_data() -> None:
         print()
     print()
 
-    # print(f"panel query as per prod")
-    # panels = db.query(sql.Panel).join(sql.User).where(sql.User.id == 1).all()
-    # for panel in panels:
-    #     print(f"{panel.id=}, {panel.title=}, {panel.position=}")
-
-    # print(f"Panel query as per app - new:")
-    # panels = crud.read_all_panels_by_user(db=db, user_id=4)
-
-    # for panel in panels:
-    #     print(f"{panel.id=}, {panel.title=}, {panel.position=}")
-
 
 def create_schema():
     sql.Base.metadata.create_all(bind=engine)
@@ -66,72 +56,152 @@ def create_schema():
 def create_data():
     sql.Base.metadata.create_all(bind=engine)
 
+    entries_a = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 1, 18, 3),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime(2023, 8, 1, 18),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 1, 14),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 10, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime(2023, 8, 11, 13, 0, 1),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_b = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 18, 3),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime(2023, 8, 20, 18, 3, 25),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 18, 3, 25, 400),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 21, 14),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 24, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 25, 13),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime(2023, 8, 25, 14, 1),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow() + timedelta(hours=-1),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_c = [
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_d = [
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow() + timedelta(days=-1),
+        },
+        {
+            "is_complete": False,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    sql_entries_a = [sql.Entry(**entry) for entry in entries_a]
+    sql_entries_b = [sql.Entry(**entry) for entry in entries_b]
+    sql_entries_c = [sql.Entry(**entry) for entry in entries_c]
+    sql_entries_d = [sql.Entry(**entry) for entry in entries_d]
+
+    new_panels = [
+        sql.Panel(
+            position=0,
+            title="A",
+            description="AAAAH this is cool",
+            entries=sql_entries_a,
+            created_at=datetime(2023, 8, 1, 13),
+        ),
+        sql.Panel(
+            position=1,
+            title="B",
+            description="to make it look lvery  nice",
+            entries=sql_entries_b,
+            created_at=datetime(2023, 8, 20, 13),
+        ),
+        sql.Panel(
+            position=2,
+            title="Created today",
+            description="See ya later...geddit?",
+            entries=sql_entries_c,
+            created_at=datetime.utcnow() + timedelta(minutes=-2),
+        ),
+        sql.Panel(
+            position=3,
+            title="Created yesterday completed today",
+            description="Donkey Kong",
+            entries=sql_entries_d,
+            created_at=datetime.utcnow() + timedelta(days=-1),
+        ),
+    ]
+
     ben = sql.User(
         name="Ben",
         email="ben@ben.com",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
-    )
-
-    bec = sql.User(
-        name="Bec",
-        email="bec@bec.com",
-        hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
+        panels=new_panels,
     )
 
     db.add(ben)
-    db.add(bec)
-    db.commit()
-
-    panels = [
-        sql.Panel(
-            position=0,
-            title="A",
-            description="Long panel description detialing cool stuff",
-            user_id=ben.id,
-        ),
-        sql.Panel(
-            position=1,
-            title="B",
-            description="Long panel description detialing cool stuff",
-            user_id=ben.id,
-        ),
-        sql.Panel(
-            position=2,
-            title="C",
-            description="Long panel description detialing cool stuff",
-            user_id=ben.id,
-        ),
-        sql.Panel(
-            position=3,
-            title="D",
-            description="Long panel description detialing cool stuff",
-            user_id=ben.id,
-        ),
-        sql.Panel(
-            position=0,
-            title="A",
-            description="Long panel description detialing cool stuff",
-            user_id=bec.id,
-        ),
-        sql.Panel(
-            position=1,
-            title="B",
-            description="Long panel description detialing cool stuff",
-            user_id=bec.id,
-        ),
-        sql.Panel(
-            position=2,
-            title="C",
-            description="Long panel description detialing cool stuff",
-            user_id=bec.id,
-        ),
-    ]
-    db.add_all(panels)
     db.commit()
 
 
 def update_data():
     pass
+
 
 def delete_schema():
     sql.Base.metadata.drop_all(bind=engine)

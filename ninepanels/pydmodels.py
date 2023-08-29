@@ -21,6 +21,7 @@ class Entry(EntryCreate):
 class Panel(BaseModel):
     model_config = {"from_attributes": True}
     id: int
+    created_at: datetime | None = None # dev None, will be non-nullable
     title: str
     description: str | None = None
     position: int | None = None # dev None, will be non-nullable

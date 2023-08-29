@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from pprint import PrettyPrinter
 
@@ -114,10 +114,19 @@ def create_panel_by_user_id(
     try:
         if description:
             new_panel = sql.Panel(
-                title=title, description=description, user_id=user_id, position=position
+                created_at=datetime.utcnow(),
+                title=title,
+                description=description,
+                user_id=user_id,
+                position=position,
             )
         else:
-            new_panel = sql.Panel(title=title, user_id=user_id, position=position)
+            new_panel = sql.Panel(
+                created_at=datetime.utcnow(),
+                title=title,
+                user_id=user_id,
+                position=position,
+            )
 
         user.panels.append(new_panel)
         db.commit()
@@ -305,12 +314,11 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
         if current_entry:
             current_entry_d = instance_to_dict(current_entry)
             panel_d["entries"].append(current_entry_d)
-            panel_d['is_complete'] = current_entry_d['is_complete']
+            panel_d["is_complete"] = current_entry_d["is_complete"]
         else:
-            panel_d['is_complete'] = False
+            panel_d["is_complete"] = False
 
         panels_with_latest_entry_only.append(panel_d)
-
 
     return panels_with_latest_entry_only
 
@@ -417,3 +425,74 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
         db.commit()
     except Exception as e:
         raise PanelNotUpdated(f"{str(e)}")
+
+
+def today() -> datetime:
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    return today
+
+
+def calc_panel_age(created_at: datetime) -> int:
+    panel_age = today() - created_at
+    return panel_age.days + 2
+
+
+def calc_consistency(db: Session, user_id: int):
+    panels = read_all_panels_by_user(db=db, user_id=user_id)
+
+    panel_consistencies = []
+    for panel in panels:
+        print(f"Panel '{panel.title}':")
+
+        panel_age = calc_panel_age(created_at=panel.created_at)
+        print(f"{panel_age=}")
+
+        date_range = []
+        start_date = panel.created_at
+        start_date = start_date.replace(
+            hour=23, minute=59, second=59, microsecond=100000
+        )
+
+        date_range = []
+        date_range.append(start_date)
+
+        day_counter = 0
+
+        for i in range(panel_age):
+            day_counter += 1
+            new_date = start_date + timedelta(days=day_counter)
+            date_range.append(new_date)
+
+        # # pp.pprint(date_range)
+
+        days_complete = 0
+        for date in date_range:
+            day_matches = []
+
+            for entry in panel.entries:
+                if (
+                    date.day == entry.timestamp.day
+                ):  #  TODO needs to compare whole dates
+                    day_matches.append(entry)
+
+            if day_matches:
+                sorted_day_match = sorted(
+                    day_matches, key=lambda x: x.timestamp, reverse=True
+                )
+                if sorted_day_match[0].is_complete == True:
+                    days_complete += 1
+
+        if panel_age > 0:
+            panel_consistency = days_complete / panel_age
+        else:
+            panel_consistency = 0
+        print(f"{days_complete=}")
+        print(f"consistency for panel '{panel.title}': {panel_consistency}")
+
+        panel_consistencies.append(
+            {"panel_pos": panel.position, "consistency": panel_consistency, "panel_age": panel_age, "days_complete": days_complete}
+        )
+
+        print()
+
+    return panel_consistencies

@@ -217,7 +217,7 @@ for panel in panels:
             if sorted_day_match[0]['is_complete'] == True:
                 complete_counter += 1
 
-    if panel_age > 0:
+    if panel_age > 1:
         panel_consistency = complete_counter/panel_age
     else:
         panel_consistency = 0

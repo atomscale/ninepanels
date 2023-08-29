@@ -236,13 +236,7 @@ def get_panel_consistency_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
 
-    panels = crud.read_all_panels_by_user(db=db, user_id=user.id)
+    resp = crud.calc_consistency(db=db, user_id=user.id)
 
-    resp = []
-
-    for panel in panels:
-        item = {"panel_id": panel.id, "panel_pos": panel.position, "consistency": random.random()}
-        resp.append(item)
-
-    time.sleep(2)
+    # time.sleep(1)
     return resp
