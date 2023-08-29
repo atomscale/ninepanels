@@ -27,6 +27,9 @@ class Panel(BaseModel):
     user_id: int
     entries: list[Entry]
 
+class PanelResponse(Panel):
+    is_complete: bool
+
 
 class PanelUpdate(BaseModel):
     """request validation for the update operation"""

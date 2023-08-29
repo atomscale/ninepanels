@@ -135,7 +135,7 @@ def test_update_panel_by_id(test_server, test_access_token):
     )
 
     assert resp.status_code == 422
-    assert "Panel not updated" in resp.text
+    assert "not found" in resp.text
 
     # panel json empty
     resp = test_server.patch(

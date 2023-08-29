@@ -23,6 +23,10 @@ from alembic.config import Config
 from alembic import command
 
 from pprint import PrettyPrinter
+
+import time
+import random
+
 pp = PrettyPrinter(indent=4)
 
 from datetime import datetime
@@ -136,7 +140,7 @@ def delete_user_by_id(
 
 @api.post("/panels", response_model=pyd.Panel)
 def post_panel_by_user_id(
-    position: int = Form(default=None), # TODO temp until client updates
+    position: int = Form(default=None),  # TODO temp until client updates
     title: str = Form(),
     description: str | None = Form(None),
     db: Session = Depends(get_db),
@@ -144,9 +148,17 @@ def post_panel_by_user_id(
 ):
     try:
         if description:
-            new_panel = crud.create_panel_by_user_id(db=db, position=position, user_id=user.id, title=title, description=description)
+            new_panel = crud.create_panel_by_user_id(
+                db=db,
+                position=position,
+                user_id=user.id,
+                title=title,
+                description=description,
+            )
         else:
-            new_panel = crud.create_panel_by_user_id(db=db, position=position, user_id=user.id, title=title)
+            new_panel = crud.create_panel_by_user_id(
+                db=db, position=position, user_id=user.id, title=title
+            )
         return new_panel
     except errors.PanelNotCreated:
         raise HTTPException(
@@ -154,13 +166,16 @@ def post_panel_by_user_id(
         )
 
 
-@api.get("/panels", response_model=List[pyd.Panel])
+@api.get("/panels") # response_model=List[pyd.PanelResponse])
 def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
     return panels
+
+
+# add an is_complete col to panels table - how pop in prod? how reset every day?
 
 
 @api.patch("/panels/{panel_id}", response_model=pyd.Panel)
@@ -214,3 +229,20 @@ def post_entry_by_panel_id(
     entry = crud.create_entry_by_panel_id(db, **new_entry.model_dump(), user_id=user.id)
 
     return entry
+
+
+@api.get("/metrics/panels/consistency")
+def get_panel_consistency_by_user_id(
+    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
+):
+
+    panels = crud.read_all_panels_by_user(db=db, user_id=user.id)
+
+    resp = []
+
+    for panel in panels:
+        item = {"panel_id": panel.id, "panel_pos": panel.position, "consistency": random.random()}
+        resp.append(item)
+
+    time.sleep(2)
+    return resp

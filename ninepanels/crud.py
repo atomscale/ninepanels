@@ -305,8 +305,12 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
         if current_entry:
             current_entry_d = instance_to_dict(current_entry)
             panel_d["entries"].append(current_entry_d)
+            panel_d['is_complete'] = current_entry_d['is_complete']
+        else:
+            panel_d['is_complete'] = False
 
         panels_with_latest_entry_only.append(panel_d)
+
 
     return panels_with_latest_entry_only
 
