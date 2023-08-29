@@ -7,6 +7,7 @@ from .errors import EntryNotCreated
 from .errors import PanelNotDeleted
 from .errors import PanelNotCreated
 from .errors import PanelNotUpdated
+from .errors import EntriesNotDeleted
 
 import logging
 from sqlalchemy.orm import Session
@@ -490,9 +491,36 @@ def calc_consistency(db: Session, user_id: int):
         print(f"consistency for panel '{panel.title}': {panel_consistency}")
 
         panel_consistencies.append(
-            {"panel_pos": panel.position, "consistency": panel_consistency, "panel_age": panel_age, "days_complete": days_complete}
+            {
+                "panel_pos": panel.position,
+                "consistency": panel_consistency,
+                "panel_age": panel_age,
+                "days_complete": days_complete,
+            }
         )
 
         print()
 
     return panel_consistencies
+
+
+def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
+
+    panel = (
+        db.query(sql.Panel)
+        .join(sql.User)
+        .filter(sql.User.id == user_id, sql.Panel.id == panel_id)
+        .first()
+    )
+
+    if panel:
+        try:
+            panel.entries = []
+            panel.created_at = datetime.utcnow()
+            db.commit()
+            return True
+        except SQLAlchemyError as e:
+            raise EntriesNotDeleted(f'unable to delete entries on {panel_id=} for {user_id=} during db call')
+    else:
+        raise EntriesNotDeleted(f'unable to delete entries as no panel exists with that {panel_id=} for {user_id=}')
+
