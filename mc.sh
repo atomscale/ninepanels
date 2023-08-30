@@ -17,7 +17,7 @@ select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
     case $env in
         "MAIN")
             source set_env_main.sh
-            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment BE CAREFUL!!!"
+            echo "\033[1;31mYou selected\033[0m \033[1;32m$NINEPANELS_ENV\033[0m \033[1;31menvironment BE CAREFUL!!!\033[0m"
             echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase PRODUCTION db"
             echo
 

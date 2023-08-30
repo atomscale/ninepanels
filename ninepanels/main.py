@@ -175,9 +175,6 @@ def get_panels_by_user_id(
     return panels
 
 
-# add an is_complete col to panels table - how pop in prod? how reset every day?
-
-
 @api.patch("/panels/{panel_id}", response_model=pyd.Panel)
 def update_panel_by_id(
     panel_id: int,
@@ -211,15 +208,6 @@ def delete_panel_by_id(
         )
 
 
-@api.get("/entries", response_model=List[pyd.Entry])
-def get_current_entries_by_user_id(
-    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
-):
-    entries = crud.read_current_entries_by_user_id(db=db, user_id=user.id)
-
-    return entries
-
-
 @api.post("/entries", response_model=pyd.Entry)
 def post_entry_by_panel_id(
     new_entry: pyd.EntryCreate,
@@ -230,19 +218,27 @@ def post_entry_by_panel_id(
 
     return entry
 
+@api.delete("/panels/{panel_id}/entries")
+def delete_all_entries_by_panel_id(
+    panel_id: int,
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user)
+):
+    try:
+        conf = crud.delete_all_entries_by_panel_id(db=db, user_id=user.id, panel_id=panel_id)
+    except errors.EntriesNotDeleted as e:
+        print('error here')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Entries not deleted: {str(e)}")
+
+    return conf
 
 @api.get("/metrics/panels/consistency")
 def get_panel_consistency_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
 
-    panels = crud.read_all_panels_by_user(db=db, user_id=user.id)
+    resp = crud.calc_consistency(db=db, user_id=user.id)
 
-    resp = []
 
-    for panel in panels:
-        item = {"panel_id": panel.id, "panel_pos": panel.position, "consistency": random.random()}
-        resp.append(item)
 
-    time.sleep(2)
     return resp

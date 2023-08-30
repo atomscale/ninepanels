@@ -25,9 +25,10 @@ class User(Base):
 class Panel(Base):
     __tablename__ = "panels"
     id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime) # dev None, will be non-nullable
     title = Column(String)
     description = Column(String)
-    position = Column(Integer)
+    position = Column(Integer) # dev None, will be non-nullable
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship('User', back_populates="panels")
 
