@@ -74,6 +74,19 @@ def set_up_logger():
 
 set_up_logger()
 
+### MONITORING ###
+
+# import rollbar
+
+ROLLBAR_KEY = os.environ.get('ROLLBAR_KEY')
+# rollbar.init(access_token=ROLLBAR_KEY, environment=CURRENT_ENV)
+
+# rollbar.report_message(message='rollbar init from config', level='info')
+
+# logger = logging.getLogger(__name__)
+# handler = rollbar.Rollbar
+
+
 ### SECURITY ###
 
 SECRET_KEY = os.environ.get("JWT_SECRET")
