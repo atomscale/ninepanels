@@ -15,6 +15,9 @@ from fastapi import Body
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
+import rollbar
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
+
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -26,10 +29,12 @@ from pprint import PrettyPrinter
 
 import time
 import random
+from datetime import datetime
 
 pp = PrettyPrinter(indent=4)
 
-from datetime import datetime
+rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
+
 
 api = FastAPI()
 
@@ -40,6 +45,7 @@ api_origins = [
     "http://127.0.0.1",
 ]
 
+api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -80,7 +86,6 @@ print(
 def index():
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
-
 @api.post("/token", response_model=pyd.AccessToken)
 def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
@@ -116,6 +121,8 @@ def create_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}"
         )
+
+    rollbar.report_message(message=f"new user {user.name} just signed up!", level='info')
 
     return user
 
@@ -208,7 +215,7 @@ def delete_panel_by_id(
         )
 
 
-@api.post("/entries", response_model=pyd.Entry)
+@api.post("/entries", response_model=pyd.Entry) # TODO this needs to change to /panels/{id}/entries
 def post_entry_by_panel_id(
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
