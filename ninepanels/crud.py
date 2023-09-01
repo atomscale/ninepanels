@@ -621,7 +621,9 @@ def create_password_reset_token(
 
     """
 
+
     user = read_user_by_email(db=db, email=email)
+
 
     if user:
         token_hash = utils.generate_random_hash()

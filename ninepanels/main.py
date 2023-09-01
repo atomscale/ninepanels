@@ -273,6 +273,11 @@ def initiate_password_reset_flow(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not create password reset token",
         )
+    except errors.UserNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="That email doesn't exist",
+        )
 
 
     if prt_user:
@@ -281,11 +286,11 @@ def initiate_password_reset_flow(
 
         # dispatch email
         try:
-            sent = utils.dispatch_password_reset_email(email=prt_user.email, url=url)
+            sent = utils.dispatch_password_reset_email(recipient_email=prt_user.email, recipient_name=prt_user.name, url=url)
             return True
         except errors.PasswordResetTokenException:
             raise HTTPException(400, detail="Having trouble sending your password reset email. Sorry.")
-  
+
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -51,7 +51,6 @@ class User(UserBase):
 
     id: int
 
-
 class UserInDB(User):
     panels: list[Panel]
     hashed_password: str
