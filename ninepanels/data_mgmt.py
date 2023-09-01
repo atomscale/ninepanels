@@ -9,7 +9,6 @@ can change across branches and not have to merge or affect core branch code
 
 from . import sqlmodels as sql
 from . import config
-from . import crud
 from sqlalchemy import desc
 from sqlalchemy import inspect
 from .database import SessionLocal
