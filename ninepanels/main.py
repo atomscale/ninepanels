@@ -6,6 +6,7 @@ from . import pydmodels as pyd
 from . import auth
 from . import config
 from . import errors
+from . import utils
 
 from fastapi import FastAPI
 from fastapi import Depends
@@ -86,6 +87,7 @@ print(
 def index():
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
+
 @api.post("/token", response_model=pyd.AccessToken)
 def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
@@ -122,7 +124,9 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}"
         )
 
-    rollbar.report_message(message=f"new user {user.name} just signed up!", level='info')
+    # rollbar.report_message(
+    #     message=f"new user {user.name} just signed up!", level="info"
+    # )
 
     return user
 
@@ -131,9 +135,9 @@ def create_user(
 def read_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-    found = crud.read_user_by_id(db=db, user_id=user.id)
+    user = crud.read_user_by_id(db=db, user_id=user.id)
 
-    return found
+    return user
 
 
 @api.delete("/users")
@@ -173,7 +177,7 @@ def post_panel_by_user_id(
         )
 
 
-@api.get("/panels") # response_model=List[pyd.PanelResponse])
+@api.get("/panels")  # response_model=List[pyd.PanelResponse])
 def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
@@ -215,7 +219,9 @@ def delete_panel_by_id(
         )
 
 
-@api.post("/entries", response_model=pyd.Entry) # TODO this needs to change to /panels/{id}/entries
+@api.post(
+    "/entries", response_model=pyd.Entry
+)  # TODO this needs to change to /panels/{id}/entries
 def post_entry_by_panel_id(
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
@@ -225,27 +231,63 @@ def post_entry_by_panel_id(
 
     return entry
 
+
 @api.delete("/panels/{panel_id}/entries")
 def delete_all_entries_by_panel_id(
     panel_id: int,
     db: Session = Depends(get_db),
-    user: pyd.User = Depends(auth.get_current_user)
+    user: pyd.User = Depends(auth.get_current_user),
 ):
     try:
-        conf = crud.delete_all_entries_by_panel_id(db=db, user_id=user.id, panel_id=panel_id)
+        conf = crud.delete_all_entries_by_panel_id(
+            db=db, user_id=user.id, panel_id=panel_id
+        )
     except errors.EntriesNotDeleted as e:
-        print('error here')
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Entries not deleted: {str(e)}")
+        print("error here")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Entries not deleted: {str(e)}",
+        )
 
     return conf
+
 
 @api.get("/metrics/panels/consistency")
 def get_panel_consistency_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-
     resp = crud.calc_consistency(db=db, user_id=user.id)
 
-
-
     return resp
+
+
+@api.post("/request_password_reset")
+def initiate_password_reset_flow(
+    email: str = Form(),
+    db: Session = Depends(get_db),
+):
+    try:
+        prt_user, prt = crud.create_password_reset_token(db=db, email=email)
+    except errors.PasswordResetTokenException:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not create password reset token",
+        )
+
+
+    if prt_user:
+        # create url
+        url = f"https://ninepanels.com/password_reset?user_id={prt_user.id}&password_reset_token={prt}"
+
+        # dispatch email
+        try:
+            sent = utils.dispatch_password_reset_email(email=prt_user.email, url=url)
+            return True
+        except errors.PasswordResetTokenException:
+            raise HTTPException(400, detail="Having trouble sending your password reset email. Sorry.")
+  
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not start password reset process, sorry.",
+        )

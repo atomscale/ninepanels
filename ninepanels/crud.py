@@ -66,8 +66,13 @@ def create_user(db: Session, new_user: dict):
     return user
 
 
-def read_user_by_id(db: Session, user_id: int):
-    """read user by user_id"""
+def read_user_by_id(db: Session, user_id: int) -> sql.User:
+    """read user by user_id
+
+    Returns:
+        sql.User
+
+    """
 
     user = db.query(sql.User).where(sql.User.id == user_id).first()
 
@@ -591,7 +596,7 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
 
 def create_password_reset_token(
     db: Session, email: int, ts: datetime | None = None
-) -> sql.PasswordResetToken:
+) -> sql.User:
     """Check user exists by email (This needs to work both for a logged in
     and logged out user based on email), create a random hash for token, store in db.
 
@@ -609,7 +614,7 @@ def create_password_reset_token(
         ts: for testing only
 
     Returns:
-        sql.PasswordResetToken
+        sql.User so that calling route can interpolate the user.id in the url TODO is this secure?
 
     Raises:
         PasswordResetTokenException(exception detail)
@@ -638,7 +643,7 @@ def create_password_reset_token(
         try:
             user.password_reset_tokens.append(password_reset_token_obj)
             db.commit()
-            return password_reset_token_obj
+            return user, token_hash
         except SQLAlchemyError as e:
             raise PasswordResetTokenException(str(e))
 
