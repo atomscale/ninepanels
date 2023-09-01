@@ -15,7 +15,7 @@ echo "Select environment:"
 select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
     case $env in
         "MAIN")
-            if [[ "$current_branch" != "MAIN" ]]; then
+            if [[ "$current_branch" != "main" ]]; then
                 echo "you cannot select MAIN env while on branch $current_branch"
                 return 1
             else
@@ -30,7 +30,7 @@ select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
         "STAGING")
             current_branch=$(git symbolic-ref --short HEAD)
 
-            if [[ "$current_branch" != "STAGING" ]]; then
+            if [[ "$current_branch" != "staging" ]]; then
                 echo "you cannot select STAGING env while on branch $current_branch"
                 return 1
             else
@@ -45,7 +45,7 @@ select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
         "FEATURE")
             current_branch=$(git symbolic-ref --short HEAD)
 
-            if [[ "$current_branch" == "STAGING" || "$current_branch" == "MAIN" ]]; then
+            if [[ "$current_branch" == "staging" || "$current_branch" == "main" ]]; then
                 echo "you cannot select FEATURE env while on branch $current_branch"
                 return 1
             else
