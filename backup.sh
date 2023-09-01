@@ -11,7 +11,7 @@ select backup_opt in "Full dump" "Data only" "Exit"; do
         # establish a timestamp to id this process
         clone_ts=$(date +"%Y%m%d%H%M%S")
 
-        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
+        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
         echo "Database backup complete for selected tables"
         break
         ;;
@@ -21,7 +21,7 @@ select backup_opt in "Full dump" "Data only" "Exit"; do
         # establish a timestamp to id this process
         clone_ts=$(date +"%Y%m%d%H%M%S")
 
-        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
+        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
         echo "Database backup complete for selected tables"
         break
         ;;

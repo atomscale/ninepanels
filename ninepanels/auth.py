@@ -117,21 +117,16 @@ def get_current_user(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
-    )  # minimising code dup as can be raised in three places below, note is very vague and apilied to many type of auth failure
-
+    )
     try:
-        # this func is being called in the path for a user to see logged in stuff ("/me")
-        # the client will send back the JWT is recieved after hitting the token endpoint at somepoint in the past,
-        # having stored it locally on the device / browser
 
         # check if jwt  is in blacklist
-        # func will return the
-        # if crud.get_blacklisted_access_token(db, token):
-        #     # if it is in blacklist raise an exception, client can handle redirect to relogin
-        #     raise HTTPException(
-        #         status_code=status.HTTP_401_UNAUTHORIZED,
-        #         detail="session expired, please log in again",
-        #     )
+        if crud.access_token_is_blacklisted(db=db, access_token=access_token):
+            # if it is in blacklist raise an exception, client can handle redirect to relogin
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="session expired, please log in again",
+            )
 
         # if not in blacklist proceed
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[JWT_ALGORITHM])

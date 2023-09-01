@@ -1,6 +1,9 @@
 import pytest
 from ninepanels import crud
 from ninepanels import errors
+from ninepanels import utils
+
+
 
 
 def test_read_all_users(test_db):
@@ -214,7 +217,6 @@ def test_update_panel_by_panel_id(test_db):
         )
 
 
-
 def test_delete_panel_by_panel_id(test_db):
     test_user_id = 1
     is_deleted = crud.delete_panel_by_panel_id(
@@ -228,3 +230,28 @@ def test_delete_panel_by_panel_id(test_db):
         is_deleted = crud.delete_panel_by_panel_id(
             db=test_db, user_id=test_user_id, panel_id=2
         )
+
+
+def test_access_token_blacklist(test_db):
+
+    # insert a token
+
+    test_token_to_blacklist = utils.generate_random_hash()
+
+    conf = crud.blacklist_an_access_token(db=test_db, access_token=test_token_to_blacklist)
+
+    assert conf.access_token == test_token_to_blacklist
+
+    # check if the token is in the blacklist table
+
+    blacklisted_check = crud.access_token_is_blacklisted(db=test_db, access_token=test_token_to_blacklist)
+
+    assert blacklisted_check == True
+
+    # check a non balcklisted token returns false
+
+    non_blacklisted_token = utils.generate_random_hash()
+
+    non_blacklisted_check = crud.access_token_is_blacklisted(db=test_db, access_token=non_blacklisted_token)
+
+    assert non_blacklisted_check == False

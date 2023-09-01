@@ -13,7 +13,6 @@ class EntryCreate(BaseModel):
 
 class Entry(EntryCreate):
     model_config = {"from_attributes": True}
-
     id: int
     timestamp: datetime
 
@@ -37,14 +36,6 @@ class PanelUpdate(BaseModel):
 
     title: str = None
     description: str = None
-
-    # @model_validator(mode="before")
-    # def check_at_least_one_field(cls, values):
-    #     non_none_values = [value for value in values.values() if value is not None]
-    #     if len(non_none_values) == 0:
-    #         raise ValueError("At least one field must be provided")
-    #     return values
-
 
 class UserBase(BaseModel):
     email: EmailStr = Field(examples=["james@bond.com"])
