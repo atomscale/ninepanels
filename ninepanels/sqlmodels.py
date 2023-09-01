@@ -1,4 +1,10 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, LargeBinary
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import DateTime
+from sqlalchemy import Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import declarative_base
 
@@ -42,7 +48,12 @@ class Entry(Base):
     panel_id = Column(Integer, ForeignKey('panels.id'))
     panel = relationship('Panel', back_populates="entries")
 
+class BlacklistedAccessToken(Base):
+    __tablename__ = "blacklisted_access_tokens"
+    id = Column(Integer, primary_key=True)
+    access_token = Column(String, unique=True)
+    blacklisted_at = Column(DateTime)
 
-
+Index('access_token_index', BlacklistedAccessToken.access_token)
 
 

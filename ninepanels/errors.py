@@ -33,3 +33,6 @@ class EntriesNotDeleted(Exception):
 
 class ConfigurationException(Exception):
     pass
+
+class BlacklistedAccessTokenException(Exception):
+    pass

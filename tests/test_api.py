@@ -17,7 +17,7 @@ def test_create_user(test_server):
         "/users",
         data={
             "email": "new@new.com",
-            "name": "NewPerson",
+            "name": "Testing New Person",
             "password": "password",
         },
     )

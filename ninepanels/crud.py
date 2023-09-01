@@ -8,6 +8,7 @@ from .errors import PanelNotDeleted
 from .errors import PanelNotCreated
 from .errors import PanelNotUpdated
 from .errors import EntriesNotDeleted
+from .errors import BlacklistedAccessTokenException
 
 import logging
 from sqlalchemy.orm import Session
@@ -505,7 +506,6 @@ def calc_consistency(db: Session, user_id: int):
 
 
 def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
-
     panel = (
         db.query(sql.Panel)
         .join(sql.User)
@@ -520,7 +520,66 @@ def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> 
             db.commit()
             return True
         except SQLAlchemyError as e:
-            raise EntriesNotDeleted(f'unable to delete entries on {panel_id=} for {user_id=} during db call')
+            raise EntriesNotDeleted(
+                f"unable to delete entries on {panel_id=} for {user_id=} during db call"
+            )
     else:
-        raise EntriesNotDeleted(f'unable to delete entries as no panel exists with that {panel_id=} for {user_id=}')
+        raise EntriesNotDeleted(
+            f"unable to delete entries as no panel exists with that {panel_id=} for {user_id=}"
+        )
 
+
+def blacklist_an_access_token(
+    db: Session, access_token: str
+) -> sql.BlacklistedAccessToken:
+    """Insert an entry in the table `blacklisted_access_tokens`.
+
+    `blacklisted_at` is generated within this fucntion.
+
+    Returns:
+        sql.BlacklistedAccessToken: the new row from the db
+
+    Raises:
+        BlacklistedAccessTokenException if problems with db
+
+    """
+
+    access_token_to_blacklist = sql.BlacklistedAccessToken(
+        access_token=access_token, blacklisted_at=datetime.utcnow()
+    )
+    try:
+        db.add(access_token_to_blacklist)
+        db.commit()
+        return access_token_to_blacklist
+
+    except SQLAlchemyError as e:
+        raise BlacklistedAccessTokenException(
+            f"problem inserting token to blacklist table {str(e)}"
+        )
+
+
+def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
+    """lookup access_token in `blacklisted_access_tokens`
+
+    Returns:
+        true if token found - it has been blacklisted
+        false if not found - it has not been blacklisted
+
+    Raises:
+        BlacklistedAccessTokenException if problems with db
+    """
+    try:
+        blacklisted_access_token = (
+            db.query(sql.BlacklistedAccessToken)
+            .filter(sql.BlacklistedAccessToken.access_token == access_token)
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise BlacklistedAccessTokenException(
+            f"problem reading blacklist table {str(e)}"
+        )
+
+    if blacklisted_access_token:
+        return True
+    else:
+        return False
