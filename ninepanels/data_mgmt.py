@@ -212,26 +212,7 @@ def create_data():
 
 def update_data():
 
-    users = db.query(sql.User).order_by(sql.User.id).all()
-
-    if users:
-        for user in users:
-            if user.panels:
-                for panel in user.panels:
-                    print(f"Panel '{panel.title}':")
-                    if panel.entries:
-                        sorted_entries = sorted(panel.entries, key=lambda x:x.timestamp)
-
-                        earliest_entry = sorted_entries[0].timestamp
-                        print(f"earliest record is {earliest_entry}, {type(earliest_entry)}")
-                        print()
-                        panel.created_at = earliest_entry
-                    else:
-                        print(f"panel has had no entries, assginig now...")
-                        panel.created_at = datetime.utcnow()
-                db.commit()
-            else:
-                print(f"user {user.name} has no panels")
+    pass
 
 
 def delete_schema():
