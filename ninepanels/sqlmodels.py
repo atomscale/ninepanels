@@ -17,6 +17,7 @@ class User(Base):
     name = Column(String)
     hashed_password = Column(String)
     panels = relationship('Panel', back_populates="user")
+    password_reset_tokens = relationship('PasswordResetToken', back_populates="user")
 
     MAX_PANELS = 3
 
@@ -56,4 +57,13 @@ class BlacklistedAccessToken(Base):
 
 Index('access_token_index', BlacklistedAccessToken.access_token)
 
-
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    id = Column(Integer, primary_key=True)
+    password_reset_token = Column(String, unique=True, nullable=False)
+    issued_at = Column(DateTime, nullable=False)
+    expiry = Column(DateTime, nullable=False)
+    is_valid = Column(Boolean, default=True)
+    invalidated_at = Column(DateTime)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship('User', back_populates="password_reset_tokens")

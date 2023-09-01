@@ -9,6 +9,10 @@ from .errors import PanelNotCreated
 from .errors import PanelNotUpdated
 from .errors import EntriesNotDeleted
 from .errors import BlacklistedAccessTokenException
+from .errors import PasswordResetTokenException
+
+from . import utils
+from . import config
 
 import logging
 from sqlalchemy.orm import Session
@@ -89,7 +93,7 @@ def delete_user_by_id(db: Session, user_id: int):
 def read_user_by_email(db: Session, email: str):
     """read user by email"""
 
-    user = db.query(sql.User).where(sql.User.email == email).first()
+    user = db.query(sql.User).filter(sql.User.email == email).first()
 
     return user
 
@@ -583,3 +587,132 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
         return True
     else:
         return False
+
+
+def create_password_reset_token(
+    db: Session, email: int, ts: datetime | None = None
+) -> sql.PasswordResetToken:
+    """Check user exists by email (This needs to work both for a logged in
+    and logged out user based on email), create a random hash for token, store in db.
+
+    db cols set in this function:
+        `password_reset_token`
+        `issued_at`
+        `expiry`
+
+    not set:
+        `is_valid` - default to true in sqlmodel
+        `invalidated_at` - remains null in db until invalidation
+
+    Params:
+        email: email address for a user
+        ts: for testing only
+
+    Returns:
+        sql.PasswordResetToken
+
+    Raises:
+        PasswordResetTokenException(exception detail)
+
+    """
+
+    user = read_user_by_email(db=db, email=email)
+
+    if user:
+        token_hash = utils.generate_random_hash()
+
+        if ts:
+            password_reset_token_obj = sql.PasswordResetToken(
+                password_reset_token=token_hash,
+                issued_at=datetime.utcnow(),
+                expiry=ts + timedelta(minutes=config.PASSWORD_ACCESS_TOKEN_MINUTES),
+            )
+        else:
+            password_reset_token_obj = sql.PasswordResetToken(
+                password_reset_token=token_hash,
+                issued_at=datetime.utcnow(),
+                expiry=datetime.utcnow()
+                + timedelta(minutes=config.PASSWORD_ACCESS_TOKEN_MINUTES),
+            )
+
+        try:
+            user.password_reset_tokens.append(password_reset_token_obj)
+            db.commit()
+            return password_reset_token_obj
+        except SQLAlchemyError as e:
+            raise PasswordResetTokenException(str(e))
+
+    else:
+        raise UserNotFound("user not found")
+
+
+def password_reset_token_is_valid(
+    db: Session, password_reset_token: str, user_id: int
+) -> bool:
+    """Check if password reset token:
+    - has expiry >= now
+    - is_valid == True
+    - user_id matches requesting user.id
+
+    Returns:
+        bool: true means is valid... false, not valid
+
+    """
+
+    try:
+        prt = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.password_reset_token == password_reset_token,
+                sql.PasswordResetToken.expiry >= datetime.utcnow(),
+                sql.PasswordResetToken.is_valid == True,
+                sql.PasswordResetToken.user_id == user_id,
+            )
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise PasswordResetTokenException(str(e))
+
+    if prt:
+        return True
+    else:
+        return False
+
+
+def invalidate_password_reset_token(
+    db: Session, password_reset_token: str, user_id
+) -> sql.PasswordResetToken:
+    """update the password_reset_tokens table to invalidate the prt
+
+    Returns:
+        updated sql.PasswordResetToken
+
+    Raises:
+        PasswordResetTokenException
+
+    """
+
+    try:
+        prt = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.password_reset_token == password_reset_token,
+                sql.PasswordResetToken.expiry >= datetime.utcnow(),
+                sql.PasswordResetToken.is_valid == True,
+                sql.PasswordResetToken.user_id == user_id,
+            )
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise PasswordResetTokenException(str(e))
+
+    if prt:
+        try:
+            prt.is_valid = False
+            prt.invalidated_at = datetime.utcnow()
+            db.commit()
+            return prt
+        except SQLAlchemyError as e:
+            raise PasswordResetTokenException(f"could not update prt {str(e)}")
+    else:
+        raise PasswordResetTokenException(f"prt does not exist {str(e)}")

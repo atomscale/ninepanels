@@ -71,7 +71,7 @@ def run_migrations():
 
 run_migrations()
 
-sql.Base.metadata.create_all(bind=engine)
+# sql.Base.metadata.create_all(bind=engine)
 
 version_ts = datetime.utcnow()
 

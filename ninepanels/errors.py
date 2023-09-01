@@ -36,3 +36,6 @@ class ConfigurationException(Exception):
 
 class BlacklistedAccessTokenException(Exception):
     pass
+
+class PasswordResetTokenException(Exception):
+    pass
