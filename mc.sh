@@ -7,7 +7,6 @@ echo
 # manage
 # backup
 # migrate
-# clone
 
 
 continue_script=true
@@ -16,34 +15,52 @@ echo "Select environment:"
 select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
     case $env in
         "MAIN")
-            source set_env_main.sh
-            echo "\033[1;31mYou selected\033[0m \033[1;32m$NINEPANELS_ENV\033[0m \033[1;31menvironment BE CAREFUL!!!\033[0m"
-            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase PRODUCTION db"
-            echo
+            if [[ "$current_branch" != "MAIN" ]]; then
+                echo "you cannot select MAIN env while on branch $current_branch"
+                return 1
+            else
+                source set_env_main.sh
+                echo "\033[1;31mYou selected\033[0m \033[1;32m$NINEPANELS_ENV\033[0m \033[1;31menvironment BE CAREFUL!!!\033[0m"
+                echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase PRODUCTION db"
+                echo
+            fi
 
             break
             ;;
         "STAGING")
-            source set_env_staging.sh
-            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase staging db"
-            echo
+            current_branch=$(git symbolic-ref --short HEAD)
+
+            if [[ "$current_branch" != "STAGING" ]]; then
+                echo "you cannot select STAGING env while on branch $current_branch"
+                return 1
+            else
+                source set_env_staging.sh
+                echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
+                echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to supabase staging db"
+                echo
+            fi
 
             break
             ;;
         "FEATURE")
-            source set_env_feature.sh
-            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment."
-            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
-            echo
+            current_branch=$(git symbolic-ref --short HEAD)
+
+            if [[ "$current_branch" == "STAGING" || "$current_branch" == "MAIN" ]]; then
+                echo "you cannot select FEATURE env while on branch $current_branch"
+                return 1
+            else
+                echo "You are on branch: \e[1;34m$current_branch\e[0m"
+                source set_env_feature.sh
+                echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment, so that's okay."
+                echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
+                echo
+            fi
 
             break
             ;;
         "Exit")
             echo "Finishing..."
-            continue_script=false
-            clear
-            break
+            return 1
             ;;
         *)
             echo "invalid, try again"
