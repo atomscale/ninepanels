@@ -279,20 +279,64 @@ def initiate_password_reset_flow(
             detail="That email doesn't exist",
         )
 
-
     if prt_user:
         # create url
-        url = f"https://ninepanels.com/password_reset?user_id={prt_user.id}&password_reset_token={prt}"
+        url = f"localhost:5173/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
         # dispatch email
         try:
-            sent = utils.dispatch_password_reset_email(recipient_email=prt_user.email, recipient_name=prt_user.name, url=url)
+            sent = utils.dispatch_password_reset_email(
+                recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
+            )
             return True
         except errors.PasswordResetTokenException:
-            raise HTTPException(400, detail="Having trouble sending your password reset email. Sorry.")
+            raise HTTPException(
+                400, detail="Having trouble sending your password reset email. Sorry."
+            )
 
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not start password reset process, sorry.",
+        )
+
+
+@api.post("/password_reset")
+def password_reset(
+    new_password: str = Form(),
+    email: str = Form(),
+    password_reset_token: str = Form(),
+    db: Session = Depends(get_db),
+):
+    try:
+        user = crud.read_user_by_email(db=db, email=email)
+    except errors.UserNotFound:
+        raise HTTPException(404, detail="user not found")
+
+    try:
+        token_valid = crud.password_reset_token_is_valid(
+            db=db, password_reset_token=password_reset_token, user_id=user.id
+        )
+    except errors.PasswordResetTokenException:
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Problem with the password reset process...",
+        )
+
+    if token_valid:
+        new_password_hash = auth.get_password_hash(new_password)
+
+        update = {'hashed_password': new_password_hash}
+
+        try:
+            updated_user = crud.update_user_by_id(db=db, user_id=user.id, update=update)
+        except errors.UserNotUpdated:
+            raise HTTPException(400, detail="Could not update your password.")
+
+        # TODO udpate PasswordResetToken crud and test
+
+    else:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            detail="Please request a new password reset token.",
         )

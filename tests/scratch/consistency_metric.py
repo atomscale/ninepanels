@@ -171,7 +171,7 @@ panels = [
 
 
 def today() -> datetime:
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return today
 
 

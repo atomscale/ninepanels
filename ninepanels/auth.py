@@ -29,7 +29,7 @@ def verify_password(plain_password, hashed_password) -> bool:
     )  # returns a bool of match/no match
 
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     return hash_context.hash(password)
 
 

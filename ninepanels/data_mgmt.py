@@ -192,7 +192,7 @@ def create_data():
 
     ben = sql.User(
         name="Ben",
-        email="ben@ben.com",
+        email="bwdyer@gmail.com",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
         panels=new_panels,
     )
