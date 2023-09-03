@@ -409,31 +409,32 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     # now = now + timedelta(days=1)
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
-    for panel in panels:
-        # convert the user_panel to a regular dict:
-        panel_d = utils.instance_to_dict(panel)
-        # pp.pprint("user_panel_d in loop:", user_panel_d )
+    if panels:
+        for panel in panels:
+            # convert the user_panel to a regular dict:
+            panel_d = utils.instance_to_dict(panel)
+            # pp.pprint("user_panel_d in loop:", user_panel_d )
 
-        # clear the list of entries on the object: TODO this is a hack
-        panel_d["entries"] = []
+            # clear the list of entries on the object: TODO this is a hack
+            panel_d["entries"] = []
 
-        # get the current entry for the panel
-        current_entry = (
-            db.query(sql.Entry)
-            .where(sql.Entry.panel_id == panel_d["id"])
-            .where(sql.Entry.timestamp > trimmed_now)
-            .order_by(sql.Entry.timestamp.desc())
-            .first()
-        )
+            # get the current entry for the panel
+            current_entry = (
+                db.query(sql.Entry)
+                .where(sql.Entry.panel_id == panel_d["id"])
+                .where(sql.Entry.timestamp > trimmed_now)
+                .order_by(sql.Entry.timestamp.desc())
+                .first()
+            )
 
-        if current_entry:
-            current_entry_d = utils.instance_to_dict(current_entry)
-            panel_d["entries"].append(current_entry_d)
-            panel_d["is_complete"] = current_entry_d["is_complete"]
-        else:
-            panel_d["is_complete"] = False
+            if current_entry:
+                current_entry_d = utils.instance_to_dict(current_entry)
+                panel_d["entries"].append(current_entry_d)
+                panel_d["is_complete"] = current_entry_d["is_complete"]
+            else:
+                panel_d["is_complete"] = False
 
-        panels_with_latest_entry_only.append(panel_d)
+            panels_with_latest_entry_only.append(panel_d)
 
     return panels_with_latest_entry_only
 
