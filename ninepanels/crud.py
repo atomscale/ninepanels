@@ -230,8 +230,8 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
 
     if panels:
         return panels
-    else:
-        raise PanelNotFound(f"panels were not found for {user_id=}")
+    # else:
+    #     raise PanelNotFound(f"panels were not found for {user_id=}")
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
@@ -730,7 +730,7 @@ def create_password_reset_token(
     user = read_user_by_email(db=db, email=email)
 
     # TODO this needs error handled
-    
+
     invalidate_all_user_prts(db=db, user_id=user.id)
 
     if user:
