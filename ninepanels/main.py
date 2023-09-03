@@ -281,7 +281,7 @@ def initiate_password_reset_flow(
 
     if prt_user:
         # create url
-        url = f"localhost:5173/password_reset?email={prt_user.email}&password_reset_token={prt}"
+        url = f"https://preview.ninepanels.com/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
         # dispatch email
         try:
