@@ -101,7 +101,8 @@ def post_credentials_for_access_token(
 
     access_token = auth.create_access_token({"sub": email})
 
-    crud.invalidate_all_user_prts(db=db, user_id=user.id)
+    if user:
+        crud.invalidate_all_user_prts(db=db, user_id=user.id)
 
     return {"access_token": access_token}
 

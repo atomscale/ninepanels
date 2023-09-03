@@ -12,6 +12,7 @@ from fastapi import Depends, HTTPException, status
 from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import crud
+from . import errors
 from .database import get_db
 
 from datetime import datetime, timedelta
@@ -33,24 +34,26 @@ def get_password_hash(password: str) -> str:
     return hash_context.hash(password)
 
 
-def authenticate_user(db: Session, email: str, password: str):
+def authenticate_user(db: Session, email: str, password: str) -> sql.User:
 
     """ find the user in the db and check their stored password
 
 
-    returns User
+    Returns:
+        sql.User
 
     raises HTTP Unauth error if user not found
     """
 
-    user = crud.read_user_by_email(db, email)  # will return None if not found
-
-    if not user:  # authenticate_user func return false if password hashes do not match
+    try:
+        user = crud.read_user_by_email(db, email)  # will return None if not found
+    except errors.UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,  # the cool status helper
             detail="Incorrect email or password",  # some extra info
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     if not verify_password(
         password, user.hashed_password
     ):  # note user is a pydantic instance of UserInDb, can see that if hover over user
