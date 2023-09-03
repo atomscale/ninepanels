@@ -288,7 +288,7 @@ def initiate_password_reset_flow(
             sent = utils.dispatch_password_reset_email(
                 recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
             )
-            return True
+            return True # initiation of password flow successful
         except errors.PasswordResetTokenException:
             raise HTTPException(
                 400, detail="Having trouble sending your password reset email. Sorry."
@@ -333,8 +333,12 @@ def password_reset(
         except errors.UserNotUpdated:
             raise HTTPException(400, detail="Could not update your password.")
 
-        # TODO udpate PasswordResetToken crud and test
+        try:
+            token_invalidated = crud.invalidate_password_reset_token(db=db, password_reset_token=password_reset_token, user_id=user.id)
+        except errors.PasswordResetTokenException:
+            raise HTTPException(400, detail="Error in invalidating password")
 
+        return True # password updated
     else:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
