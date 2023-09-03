@@ -235,7 +235,7 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
-    """ Read a panel by id and user_id to check ownership
+    """Read a panel by id and user_id to check ownership
 
     Returns:
         sql.Panel
@@ -245,7 +245,12 @@ def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
     """
 
     try:
-        panel = db.query(sql.Panel).join(sql.User).filter(sql.Panel.id == panel_id, sql.User.id == user_id).first()
+        panel = (
+            db.query(sql.Panel)
+            .join(sql.User)
+            .filter(sql.Panel.id == panel_id, sql.User.id == user_id)
+            .first()
+        )
     except SQLAlchemyError as e:
         raise PanelNotFound(f"panel not foudn due to db error: {str(e)}")
 
@@ -724,6 +729,10 @@ def create_password_reset_token(
 
     user = read_user_by_email(db=db, email=email)
 
+    # TODO this needs error handled
+    
+    invalidate_all_user_prts(db=db, user_id=user.id)
+
     if user:
         token_hash = utils.generate_random_hash()
 
@@ -752,7 +761,7 @@ def create_password_reset_token(
         raise UserNotFound("user not found")
 
 
-def password_reset_token_is_valid(
+def check_password_reset_token_is_valid(
     db: Session, password_reset_token: str, user_id: int
 ) -> bool:
     """Check if password reset token:
@@ -825,3 +834,28 @@ def invalidate_password_reset_token(
             raise PasswordResetTokenException(f"could not update prt {str(e)}")
     else:
         raise PasswordResetTokenException(f"prt does not exist {str(e)}")
+
+
+def invalidate_all_user_prts(db: Session, user_id):
+    """invalidated all prior prts for a user that:
+
+    - belong to the user,
+    - are currently valid
+
+    """
+
+    prts = (
+        db.query(sql.PasswordResetToken)
+        .filter(
+            sql.PasswordResetToken.user_id == user_id,
+            sql.PasswordResetToken.is_valid == True,
+        )
+        .all()
+    )
+
+    if prts:
+        for prt in prts:
+            prt.is_valid = False
+            prt.invalidated_at = datetime.utcnow()
+        db.commit()
+

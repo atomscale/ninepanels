@@ -10,7 +10,9 @@ from . import utils
 
 from fastapi import FastAPI
 from fastapi import Depends
-from fastapi import HTTPException, status
+from fastapi import HTTPException
+from fastapi import status
+from fastapi import BackgroundTasks
 from fastapi import Form
 from fastapi import Body
 from fastapi.security import OAuth2PasswordRequestForm
@@ -98,6 +100,8 @@ def post_credentials_for_access_token(
     user = auth.authenticate_user(db=db, email=email, password=plain_password)
 
     access_token = auth.create_access_token({"sub": email})
+
+    crud.invalidate_all_user_prts(db=db, user_id=user.id)
 
     return {"access_token": access_token}
 
@@ -281,14 +285,18 @@ def initiate_password_reset_flow(
 
     if prt_user:
         # create url
-        url = f"https://preview.ninepanels.com/password_reset?email={prt_user.email}&password_reset_token={prt}"
+        url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
         # dispatch email
         try:
-            sent = utils.dispatch_password_reset_email(
+            if utils.dispatch_password_reset_email(
                 recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
+            ):
+                return True # initiation of password flow successful
+            else:
+                raise HTTPException(
+                400, detail="Having trouble sending your password reset email. Sorry."
             )
-            return True # initiation of password flow successful
         except errors.PasswordResetTokenException:
             raise HTTPException(
                 400, detail="Having trouble sending your password reset email. Sorry."
@@ -314,7 +322,7 @@ def password_reset(
         raise HTTPException(404, detail="user not found")
 
     try:
-        token_valid = crud.password_reset_token_is_valid(
+        token_valid = crud.check_password_reset_token_is_valid(
             db=db, password_reset_token=password_reset_token, user_id=user.id
         )
     except errors.PasswordResetTokenException:

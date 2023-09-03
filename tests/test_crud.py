@@ -297,7 +297,7 @@ def test_create_password_reset_token(test_db):
 
     # check the created prt is valid
 
-    test_prt_is_valid = crud.password_reset_token_is_valid(
+    test_prt_is_valid = crud.check_password_reset_token_is_valid(
         db=test_db, password_reset_token=token_hash, user_id=user_id
     )
 
@@ -327,7 +327,7 @@ def test_create_password_reset_token(test_db):
 
     # check the created prt is invalid due to exprity
 
-    test_prt_is_valid = crud.password_reset_token_is_valid(
+    test_prt_is_valid = crud.check_password_reset_token_is_valid(
         db=test_db, password_reset_token=token_hash, user_id=user_id
     )
 
