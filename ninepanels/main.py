@@ -103,6 +103,7 @@ def post_credentials_for_access_token(
 
     if user:
         crud.invalidate_all_user_prts(db=db, user_id=user.id)
+        rollbar.report_message(message=f"{user.name} logged in", level="info")
 
     return {"access_token": access_token}
 
@@ -129,9 +130,21 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}"
         )
 
-    # rollbar.report_message(
-    #     message=f"new user {user.name} just signed up!", level="info"
-    # )
+    rollbar.report_message(
+        message=f"new user {user.name} just signed up!", level="info"
+    )
+
+    try:
+        sent = utils.dispatch_welcome_email(user.email, user.name)
+    except errors.WelcomeEmailException:
+        rollbar.report_message(
+            message=f"new user welcome email to {user.name} failed", level="error"
+        )
+
+    if sent:
+        rollbar.report_message(
+            message=f"new user welcome email to {user.name} sent", level="info"
+        )
 
     return user
 
@@ -175,6 +188,7 @@ def post_panel_by_user_id(
             new_panel = crud.create_panel_by_user_id(
                 db=db, position=position, user_id=user.id, title=title
             )
+        rollbar.report_message(message=f"{user.name} created a panel", level="info")
         return new_panel
     except errors.PanelNotCreated:
         raise HTTPException(
@@ -233,7 +247,7 @@ def post_entry_by_panel_id(
     db: Session = Depends(get_db),
 ):
     entry = crud.create_entry_by_panel_id(db, **new_entry.model_dump(), user_id=user.id)
-
+    rollbar.report_message(message=f"{user.name} tapped a panel", level="info")
     return entry
 
 
@@ -293,11 +307,16 @@ def initiate_password_reset_flow(
             if utils.dispatch_password_reset_email(
                 recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
             ):
-                return True # initiation of password flow successful
+                rollbar.report_message(
+                    message=f"{prt_user.name} requested to reset their password",
+                    level="info",
+                )
+                return True  # initiation of password flow successful
             else:
                 raise HTTPException(
-                400, detail="Having trouble sending your password reset email. Sorry."
-            )
+                    400,
+                    detail="Having trouble sending your password reset email. Sorry.",
+                )
         except errors.PasswordResetTokenException:
             raise HTTPException(
                 400, detail="Having trouble sending your password reset email. Sorry."
@@ -335,7 +354,7 @@ def password_reset(
     if token_valid:
         new_password_hash = auth.get_password_hash(new_password)
 
-        update = {'hashed_password': new_password_hash}
+        update = {"hashed_password": new_password_hash}
 
         try:
             updated_user = crud.update_user_by_id(db=db, user_id=user.id, update=update)
@@ -343,11 +362,16 @@ def password_reset(
             raise HTTPException(400, detail="Could not update your password.")
 
         try:
-            token_invalidated = crud.invalidate_password_reset_token(db=db, password_reset_token=password_reset_token, user_id=user.id)
+            token_invalidated = crud.invalidate_password_reset_token(
+                db=db, password_reset_token=password_reset_token, user_id=user.id
+            )
         except errors.PasswordResetTokenException:
             raise HTTPException(400, detail="Error in invalidating password")
 
-        return True # password updated
+        rollbar.report_message(
+            message=f"{user.name} successfully updated their password", level="info"
+        )
+        return True  # password updated
     else:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,

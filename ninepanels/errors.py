@@ -58,3 +58,6 @@ class BlacklistedAccessTokenException(Exception):
 
 class PasswordResetTokenException(Exception):
     pass
+
+class WelcomeEmailException(Exception):
+    pass
