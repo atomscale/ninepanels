@@ -557,7 +557,7 @@ def calc_consistency(db: Session, user_id: int):
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     panel_consistencies = []
-    if panel:
+    if panels:
         for panel in panels:
             print(f"Panel '{panel.title}':")
 
