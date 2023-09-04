@@ -141,10 +141,14 @@ def get_current_user(
         # handle some decode error, perhaps if JWT is malformed due to network interrupt or soemthing.
         raise credentials_exception
     # check if the user is in the db using the email we decoded out from the JWT "sub" field
-    user = crud.read_user_by_email(db, email)
+
+    try:
+        user = crud.read_user_by_email(db, email)
+    except errors.UserNotFound:
+        raise credentials_exception
 
     # if it fails to find a user, again raise auth expcetion
-    if user is None:
+    if not user:
         raise credentials_exception
 
     # if it does find the user, return all the user data
