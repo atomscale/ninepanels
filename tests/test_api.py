@@ -73,11 +73,14 @@ def test_delete_user_by_id(test_server):
 
 
 def test_post_panel_by_user_id(test_server, test_access_token):
-
     # test with both title and desc
     resp = test_server.post(
         "/panels",
-        data={"position": 4, "title": "test api panel", "description": "this is the api testy testy panel desc"},  # form
+        data={
+            "position": 4,
+            "title": "test api panel",
+            "description": "this is the api testy testy panel desc",
+        },  # form
         headers={"Authorization": "Bearer " + test_access_token},
     )
 
@@ -120,11 +123,17 @@ def test_update_panel_by_id(test_server, test_access_token):
     # create new panel for test:
 
     resp = test_server.post(
-        "/panels", data={"position": 4, "title": "test api panel for udpate", "description": "testy desc"}, headers=headers
+        "/panels",
+        data={
+            "position": 4,
+            "title": "test api panel for udpate",
+            "description": "testy desc",
+        },
+        headers=headers,
     )
     assert resp.status_code == 200
 
-    test_panel_id = resp.json()['id']
+    test_panel_id = resp.json()["id"]
     # test failure:
 
     # panel id wrong
@@ -144,9 +153,8 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422 # pydantic will send back 'unprocessable
-    assert "detail" in resp.json() # just check pydantic respd with detail
-
+    assert resp.status_code == 422  # pydantic will send back 'unprocessable
+    assert "detail" in resp.json()  # just check pydantic respd with detail
 
     # panel update field that not in pydantic PanelUpdate obj caught
     resp = test_server.patch(
@@ -155,7 +163,7 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422 # this is not validated by pydantic
+    assert resp.status_code == 422  # this is not validated by pydantic
     assert "detail" in resp.json()
 
     ### test success ###
@@ -168,9 +176,9 @@ def test_update_panel_by_id(test_server, test_access_token):
 
     resp_body = resp.json()
 
-    assert resp_body['id'] == test_panel_id
-    assert resp_body['title'] == "the update worked"
-    assert resp_body['position']
+    assert resp_body["id"] == test_panel_id
+    assert resp_body["title"] == "the update worked"
+    assert resp_body["position"]
 
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
@@ -180,9 +188,9 @@ def test_update_panel_by_id(test_server, test_access_token):
 
     resp_body = resp.json()
 
-    assert resp_body['id'] == test_panel_id
-    assert resp_body['title'] == "the update worked"
-    assert resp_body['position'] == 1
+    assert resp_body["id"] == test_panel_id
+    assert resp_body["title"] == "the update worked"
+    assert resp_body["position"] == 1
 
 
 def test_delete_panel_by_id(test_server, test_access_token):
@@ -202,3 +210,14 @@ def test_post_entry_on_panel(test_server, test_access_token):
     )
 
     assert resp.status_code == 200
+
+
+def test_initial_password_reset_flow(test_server):
+    """route must handle unauth users"""
+
+    resp = test_server.post("/request_password_reset", data={"email": "ben@ben.com"})
+
+    assert resp.status_code == 200
+
+    resp = resp.json()
+    assert resp

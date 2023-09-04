@@ -2,15 +2,22 @@ from . import sqlmodels as sql
 from .errors import UserNotCreated
 from .errors import UserAlreadyExists
 from .errors import UserNotFound
+from .errors import UserNotUpdated
 from .errors import UserNotDeleted
 from .errors import EntryNotCreated
-from .errors import PanelNotDeleted
 from .errors import PanelNotCreated
+from .errors import PanelNotFound
 from .errors import PanelNotUpdated
+from .errors import PanelNotDeleted
 from .errors import EntriesNotDeleted
 from .errors import BlacklistedAccessTokenException
+from .errors import PasswordResetTokenException
+
+from . import utils
+from . import config
 
 import logging
+
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
@@ -21,12 +28,7 @@ from pprint import PrettyPrinter
 
 pp = PrettyPrinter(indent=4)
 
-
-def instance_to_dict(instance):
-    _dict = {}
-    for key in instance.__mapper__.c.keys():
-        _dict[key] = getattr(instance, key)
-    return _dict
+### USERS ###
 
 
 def create_user(db: Session, new_user: dict):
@@ -62,15 +64,87 @@ def create_user(db: Session, new_user: dict):
     return user
 
 
-def read_user_by_id(db: Session, user_id: int):
-    """read user by user_id"""
+def read_user_by_id(db: Session, user_id: int) -> sql.User:
+    """read user by user_id
 
-    user = db.query(sql.User).where(sql.User.id == user_id).first()
+    Returns:
+        sql.User
+
+    Raises:
+        UserNotFound
+
+    """
+
+    try:
+        user = db.query(sql.User).filter(sql.User.id == user_id).first()
+    except SQLAlchemyError as e:
+        raise UserNotFound(f"db error checking for {user_id=}")
 
     if user:
         return user
     else:
-        raise UserNotFound
+        raise UserNotFound(f"user not found")
+
+
+def read_user_by_email(db: Session, email: str) -> sql.User:
+    """read user by email
+
+    Returns
+        sql.User
+
+    Raises:
+        UserNotFound - in case of DB error and not found
+    """
+
+    try:
+        user = db.query(sql.User).filter(sql.User.email == email).first()
+    except SQLAlchemyError as e:
+        raise UserNotFound(f"db error {str(e)}")
+
+    if user:
+        return user
+    else:
+        raise UserNotFound(f"user not found")
+
+
+def read_all_users(db: Session) -> list:
+    """read all users in the db"""
+
+    users = db.query(sql.User).all()
+
+    return users
+
+
+def update_user_by_id(db: Session, user_id: str, update: dict) -> sql.User:
+    """Update the user instance and commit to db
+
+    Params:
+        user_id
+        update - a dict of the col: new_value.
+
+    Returns:
+        sql.User - the update user instance
+
+    Raises:
+        UserNotUpdated
+    """
+
+    try:
+        user = read_user_by_id(db=db, user_id=user_id)
+    except UserNotFound:
+        raise UserNotUpdated(f"user was not found {user_id=}")
+
+    for col, new_value in update.items():
+        if hasattr(user, col):
+            setattr(user, col, new_value)
+        else:
+            raise UserNotUpdated(f"user instance does not have attr {col=}")
+
+    try:
+        db.commit()
+        return user
+    except SQLAlchemyError as e:
+        raise UserNotUpdated(f"db error writing updated user back to db {str(e)}")
 
 
 def delete_user_by_id(db: Session, user_id: int):
@@ -86,20 +160,7 @@ def delete_user_by_id(db: Session, user_id: int):
         raise UserNotDeleted
 
 
-def read_user_by_email(db: Session, email: str):
-    """read user by email"""
-
-    user = db.query(sql.User).where(sql.User.email == email).first()
-
-    return user
-
-
-def read_all_users(db: Session) -> list:
-    """read all users in the db"""
-
-    users = db.query(sql.User).all()
-
-    return users
+### PANELS ###
 
 
 def create_panel_by_user_id(
@@ -137,15 +198,86 @@ def create_panel_by_user_id(
         raise PanelNotCreated(e)
 
 
-def update_panel_by_id(db: Session, user_id: int, panel_id: int, update: dict):
+def read_all_panels(db: Session) -> list:
+    """read all panels for all users"""
+
+    panels = db.query(sql.Panel).all()
+
+    return panels
+
+
+def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
+    """Returns a list of all panels for a user sorted by position
+
+    Returns:
+        List of sql.Panel instances - can be empty
+
+    Raises:
+        Panel Not Found - in all failure cases
+
+    """
+
+    try:
+        panels = (
+            db.query(sql.Panel)
+            .join(sql.User)
+            .filter(sql.User.id == user_id)
+            .order_by(sql.Panel.position)
+            .all()
+        )
+    except SQLAlchemyError as e:
+        raise PanelNotFound(f"error in db call to find panels {str(e)}")
+
+    if panels:
+        return panels
+    # else:
+    #     raise PanelNotFound(f"panels were not found for {user_id=}")
+
+
+def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
+    """Read a panel by id and user_id to check ownership
+
+    Returns:
+        sql.Panel
+
+    Raises:
+        PanelNotFound
+    """
+
+    try:
+        panel = (
+            db.query(sql.Panel)
+            .join(sql.User)
+            .filter(sql.Panel.id == panel_id, sql.User.id == user_id)
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise PanelNotFound(f"panel not foudn due to db error: {str(e)}")
+
+    if panel:
+        return panel
+    else:
+        raise PanelNotFound(f"panel with id {panel_id=} not found for user {user_id=}")
+
+
+def update_panel_by_id(
+    db: Session, user_id: int, panel_id: int, update: dict
+) -> sql.Panel:
     """
     update dict will contain only the fields to be updated
     grab the panel, assing the new value, commit
 
-    return the upate panel instance
+    Returns:
+        sql.Panel - the update panel instance
+
+    Raises:
+        PanelNotUpdated - all failure cases
     """
     if update:
-        panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
+        try:
+            panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
+        except PanelNotFound:
+            raise PanelNotUpdated(f"Panel not found")
 
         if panel:
             for update_field, update_value in update.items():
@@ -208,26 +340,7 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
         raise PanelNotDeleted
 
 
-def read_all_panels(db: Session) -> list:
-    """read all panels for all users"""
-
-    panels = db.query(sql.Panel).all()
-
-    return panels
-
-
-def read_all_panels_by_user(db: Session, user_id: int) -> list:
-    """Returns a list of all panels for a user sorted by position"""
-
-    panels = (
-        db.query(sql.Panel)
-        .join(sql.User)
-        .where(sql.User.id == user_id)
-        .order_by(sql.Panel.position)
-        .all()
-    )
-
-    return panels
+### ENTRIES ###
 
 
 def create_entry_by_panel_id(
@@ -287,7 +400,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
     """
 
-    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     panels_with_latest_entry_only = []
 
@@ -296,31 +409,32 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     # now = now + timedelta(days=1)
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
-    for panel in panels:
-        # convert the user_panel to a regular dict:
-        panel_d = instance_to_dict(panel)
-        # pp.pprint("user_panel_d in loop:", user_panel_d )
+    if panels:
+        for panel in panels:
+            # convert the user_panel to a regular dict:
+            panel_d = utils.instance_to_dict(panel)
+            # pp.pprint("user_panel_d in loop:", user_panel_d )
 
-        # clear the list of entries on the object: TODO this is a hack
-        panel_d["entries"] = []
+            # clear the list of entries on the object: TODO this is a hack
+            panel_d["entries"] = []
 
-        # get the current entry for the panel
-        current_entry = (
-            db.query(sql.Entry)
-            .where(sql.Entry.panel_id == panel_d["id"])
-            .where(sql.Entry.timestamp > trimmed_now)
-            .order_by(sql.Entry.timestamp.desc())
-            .first()
-        )
+            # get the current entry for the panel
+            current_entry = (
+                db.query(sql.Entry)
+                .where(sql.Entry.panel_id == panel_d["id"])
+                .where(sql.Entry.timestamp > trimmed_now)
+                .order_by(sql.Entry.timestamp.desc())
+                .first()
+            )
 
-        if current_entry:
-            current_entry_d = instance_to_dict(current_entry)
-            panel_d["entries"].append(current_entry_d)
-            panel_d["is_complete"] = current_entry_d["is_complete"]
-        else:
-            panel_d["is_complete"] = False
+            if current_entry:
+                current_entry_d = utils.instance_to_dict(current_entry)
+                panel_d["entries"].append(current_entry_d)
+                panel_d["is_complete"] = current_entry_d["is_complete"]
+            else:
+                panel_d["is_complete"] = False
 
-        panels_with_latest_entry_only.append(panel_d)
+            panels_with_latest_entry_only.append(panel_d)
 
     return panels_with_latest_entry_only
 
@@ -341,7 +455,7 @@ def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
 
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
-    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
     for p in panels:
         print(p.position, p.title)
 
@@ -394,7 +508,7 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
     else:
         raise PanelNotUpdated(f"That's where the panel already is 🙂")
     print("FINAL POSITIONS:")
-    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
     for p in panels:
         print(p.position, p.title)
     print("END ")
@@ -417,7 +531,7 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
 
     """
 
-    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     try:
         for panel in panels:
@@ -430,7 +544,7 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
 
 
 def today() -> datetime:
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return today
 
 
@@ -440,7 +554,7 @@ def calc_panel_age(created_at: datetime) -> int:
 
 
 def calc_consistency(db: Session, user_id: int):
-    panels = read_all_panels_by_user(db=db, user_id=user_id)
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     panel_consistencies = []
     for panel in panels:
@@ -583,3 +697,166 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
         return True
     else:
         return False
+
+
+def create_password_reset_token(
+    db: Session, email: int, ts: datetime | None = None
+) -> (sql.User, str):
+    """Check user exists by email (This needs to work both for a logged in
+    and logged out user based on email), create a random hash for token, store in db.
+
+    db cols set in this function:
+        `password_reset_token`
+        `issued_at`
+        `expiry`
+
+    not set:
+        `is_valid` - default to true in sqlmodel
+        `invalidated_at` - remains null in db until invalidation
+
+    Params:
+        email: email address for a user
+        ts: for testing only
+
+    Returns:
+        tuple of (
+            sql.User - so that calling route can interpolate user identifiers in the url;
+            token_hash - the token to be used as the password_reset_token
+
+    Raises:
+        PasswordResetTokenException(exception detail)
+
+    """
+
+    user = read_user_by_email(db=db, email=email)
+
+    # TODO this needs error handled
+
+    invalidate_all_user_prts(db=db, user_id=user.id)
+
+    if user:
+        token_hash = utils.generate_random_hash()
+
+        if ts:
+            password_reset_token_obj = sql.PasswordResetToken(
+                password_reset_token=token_hash,
+                issued_at=datetime.utcnow(),
+                expiry=ts + timedelta(minutes=config.PASSWORD_ACCESS_TOKEN_MINUTES),
+            )
+        else:
+            password_reset_token_obj = sql.PasswordResetToken(
+                password_reset_token=token_hash,
+                issued_at=datetime.utcnow(),
+                expiry=datetime.utcnow()
+                + timedelta(minutes=config.PASSWORD_ACCESS_TOKEN_MINUTES),
+            )
+
+        try:
+            user.password_reset_tokens.append(password_reset_token_obj)
+            db.commit()
+            return user, token_hash
+        except SQLAlchemyError as e:
+            raise PasswordResetTokenException(str(e))
+
+    else:
+        raise UserNotFound("user not found")
+
+
+def check_password_reset_token_is_valid(
+    db: Session, password_reset_token: str, user_id: int
+) -> bool:
+    """Check if password reset token:
+    - has expiry >= now
+    - is_valid == True
+    - user_id matches requesting user.id
+
+    Returns:
+        bool: true means is valid... false, not valid
+
+    Raises:
+        PasswordResetTokenException on db failure, passes failure in args
+
+    """
+
+    try:
+        prt = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.password_reset_token == password_reset_token,
+                sql.PasswordResetToken.expiry >= datetime.utcnow(),
+                sql.PasswordResetToken.is_valid == True,
+                sql.PasswordResetToken.user_id == user_id,
+            )
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise PasswordResetTokenException(str(e))
+
+    if prt:
+        return True
+    else:
+        return False
+
+
+def invalidate_password_reset_token(
+    db: Session, password_reset_token: str, user_id
+) -> sql.PasswordResetToken:
+    """update the password_reset_tokens table to invalidate the prt
+
+    Returns:
+        updated sql.PasswordResetToken
+
+    Raises:
+        PasswordResetTokenException
+
+    """
+
+    try:
+        prt = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.password_reset_token == password_reset_token,
+                sql.PasswordResetToken.expiry >= datetime.utcnow(),
+                sql.PasswordResetToken.is_valid == True,
+                sql.PasswordResetToken.user_id == user_id,
+            )
+            .first()
+        )
+    except SQLAlchemyError as e:
+        raise PasswordResetTokenException(str(e))
+
+    if prt:
+        try:
+            prt.is_valid = False
+            prt.invalidated_at = datetime.utcnow()
+            db.commit()
+            return prt
+        except SQLAlchemyError as e:
+            raise PasswordResetTokenException(f"could not update prt {str(e)}")
+    else:
+        raise PasswordResetTokenException(f"prt does not exist {str(e)}")
+
+
+def invalidate_all_user_prts(db: Session, user_id):
+    """invalidated all prior prts for a user that:
+
+    - belong to the user,
+    - are currently valid
+
+    """
+
+    prts = (
+        db.query(sql.PasswordResetToken)
+        .filter(
+            sql.PasswordResetToken.user_id == user_id,
+            sql.PasswordResetToken.is_valid == True,
+        )
+        .all()
+    )
+
+    if prts:
+        for prt in prts:
+            prt.is_valid = False
+            prt.invalidated_at = datetime.utcnow()
+        db.commit()
+

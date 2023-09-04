@@ -20,12 +20,13 @@ class Entry(EntryCreate):
 class Panel(BaseModel):
     model_config = {"from_attributes": True}
     id: int
-    created_at: datetime | None = None # dev None, will be non-nullable
+    created_at: datetime | None = None  # dev None, will be non-nullable
     title: str
     description: str | None = None
-    position: int | None = None # dev None, will be non-nullable
+    position: int | None = None  # dev None, will be non-nullable
     user_id: int
     entries: list[Entry]
+
 
 class PanelResponse(Panel):
     is_complete: bool
@@ -36,6 +37,7 @@ class PanelUpdate(BaseModel):
 
     title: str = None
     description: str = None
+
 
 class UserBase(BaseModel):
     email: EmailStr = Field(examples=["james@bond.com"])

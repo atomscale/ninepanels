@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 from .config import (
     SECRET_KEY,
     JWT_ALGORITHM,
-    AUTH_CODE_EXPIRE_MINUTES,
-    AUTH_CODE_LEN,
 )
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -14,6 +12,7 @@ from fastapi import Depends, HTTPException, status
 from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import crud
+from . import errors
 from .database import get_db
 
 from datetime import datetime, timedelta
@@ -31,28 +30,30 @@ def verify_password(plain_password, hashed_password) -> bool:
     )  # returns a bool of match/no match
 
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     return hash_context.hash(password)
 
 
-def authenticate_user(db: Session, email: str, password: str):
+def authenticate_user(db: Session, email: str, password: str) -> sql.User:
 
     """ find the user in the db and check their stored password
 
 
-    returns User
+    Returns:
+        sql.User
 
     raises HTTP Unauth error if user not found
     """
 
-    user = crud.read_user_by_email(db, email)  # will return None if not found
-
-    if not user:  # authenticate_user func return false if password hashes do not match
+    try:
+        user = crud.read_user_by_email(db, email)  # will return None if not found
+    except errors.UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,  # the cool status helper
             detail="Incorrect email or password",  # some extra info
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     if not verify_password(
         password, user.hashed_password
     ):  # note user is a pydantic instance of UserInDb, can see that if hover over user
@@ -183,36 +184,3 @@ def get_current_admin_user(
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-
-def create_auth_code(db: Session, user_id: int):
-
-    """ NOT IMPLEMENETED YET """
-
-    code_data = {
-        "code": random.randint(10 ** (AUTH_CODE_LEN - 1), 10**AUTH_CODE_LEN - 1),
-        "user_id": user_id,
-        "expiry": datetime.utcnow() + timedelta(minutes=AUTH_CODE_EXPIRE_MINUTES),
-        "is_valid": True,
-    }
-
-    auth_code_db = sql.AuthCode(**code_data)
-
-    db.add(auth_code_db)
-    db.commit()
-
-
-    return auth_code_db.code
-
-
-def invalidate_prev_auth_codes_for_user(db: Session, user_id: int):
-    """ NOT IMPLEMENETED YET """
-
-    prev_codes_for_user = (
-        db.query(sql.AuthCode).where(sql.AuthCode.user_id == user_id).all()
-    )
-
-    if prev_codes_for_user:
-        for prev_code in prev_codes_for_user:
-            prev_code.is_valid = False
-
-    db.commit()

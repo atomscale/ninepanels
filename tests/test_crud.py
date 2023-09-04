@@ -2,8 +2,7 @@ import pytest
 from ninepanels import crud
 from ninepanels import errors
 from ninepanels import utils
-
-
+from datetime import datetime, timedelta
 
 
 def test_read_all_users(test_db):
@@ -36,6 +35,37 @@ def test_read_user_by_id(test_db):
         user = crud.read_user_by_id(test_db, user_id)
 
 
+def test_read_user_by_email(test_db):
+    email = "ben@ben.com"
+
+    ben = crud.read_user_by_email(test_db, email)
+
+    assert ben.email == email
+    assert ben.id == 1
+
+
+def test_update_user_by_id(test_db):
+    # get user obejct and check name reads 'bennyboy'
+    user = crud.read_user_by_id(db=test_db, user_id=1)
+
+    assert user.name == "Bennyboy"
+
+    # udpate  a non-existant column and check for fialure
+
+    with pytest.raises(errors.UserNotUpdated):
+        crud.update_user_by_id(
+            db=test_db, user_id=user.id, update={"col_not_exist": "newname"}
+        )
+
+    # update user name and check has changed
+
+    updated_user = crud.update_user_by_id(
+        db=test_db, user_id=user.id, update={"name": "newname"}
+    )
+
+    assert updated_user.name == "newname"
+
+
 def test_delete_user_by_id(test_db):
     user_id = 2  # delete christy
 
@@ -50,15 +80,6 @@ def test_delete_user_by_id(test_db):
     # check correct error raised when try to delete again
     with pytest.raises(errors.UserNotDeleted):
         conf = crud.delete_user_by_id(test_db, user_id)
-
-
-def test_read_user_by_email(test_db):
-    email = "ben@ben.com"
-
-    ben = crud.read_user_by_email(test_db, email)
-
-    assert ben.email == email
-    assert ben.id == 1
 
 
 def test_read_all_panels(test_db):
@@ -233,18 +254,21 @@ def test_delete_panel_by_panel_id(test_db):
 
 
 def test_access_token_blacklist(test_db):
-
     # insert a token
 
     test_token_to_blacklist = utils.generate_random_hash()
 
-    conf = crud.blacklist_an_access_token(db=test_db, access_token=test_token_to_blacklist)
+    conf = crud.blacklist_an_access_token(
+        db=test_db, access_token=test_token_to_blacklist
+    )
 
     assert conf.access_token == test_token_to_blacklist
 
     # check if the token is in the blacklist table
 
-    blacklisted_check = crud.access_token_is_blacklisted(db=test_db, access_token=test_token_to_blacklist)
+    blacklisted_check = crud.access_token_is_blacklisted(
+        db=test_db, access_token=test_token_to_blacklist
+    )
 
     assert blacklisted_check == True
 
@@ -252,6 +276,59 @@ def test_access_token_blacklist(test_db):
 
     non_blacklisted_token = utils.generate_random_hash()
 
-    non_blacklisted_check = crud.access_token_is_blacklisted(db=test_db, access_token=non_blacklisted_token)
+    non_blacklisted_check = crud.access_token_is_blacklisted(
+        db=test_db, access_token=non_blacklisted_token
+    )
 
     assert non_blacklisted_check == False
+
+
+def test_create_password_reset_token(test_db):
+    # check a sql object is returned successfully
+    user_id = 1
+    user_email = "ben@ben.com"
+
+    test_prt, token_hash = crud.create_password_reset_token(
+        db=test_db, email=user_email
+    )
+
+    assert test_prt.id
+    assert test_prt.id == user_id
+
+    # check the created prt is valid
+
+    test_prt_is_valid = crud.check_password_reset_token_is_valid(
+        db=test_db, password_reset_token=token_hash, user_id=user_id
+    )
+
+    assert test_prt_is_valid
+
+    # invalidate the prt
+
+    invalid_prt = crud.invalidate_password_reset_token(
+        db=test_db, password_reset_token=token_hash, user_id=user_id
+    )
+
+    # check prt is now invalid
+    assert invalid_prt.user_id == 1
+    assert invalid_prt.password_reset_token == token_hash
+    assert invalid_prt.is_valid == False
+    assert isinstance(invalid_prt.invalidated_at, datetime)
+
+    # create past prt to test expiry and check invalid
+    past_time = datetime.utcnow() + timedelta(hours=-1)
+
+    test_prt, toekn_hash = crud.create_password_reset_token(
+        db=test_db, email=user_email, ts=past_time
+    )
+
+    assert test_prt.id
+    assert test_prt.id == user_id
+
+    # check the created prt is invalid due to exprity
+
+    test_prt_is_valid = crud.check_password_reset_token_is_valid(
+        db=test_db, password_reset_token=token_hash, user_id=user_id
+    )
+
+    assert not test_prt_is_valid
