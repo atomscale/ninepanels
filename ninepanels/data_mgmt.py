@@ -686,23 +686,23 @@ def create_data():
         ),
     ]
 
-    ben = sql.User(
-        name="Ben",
+    bwdyer = sql.User(
+        name="bwdyer",
         email="bwdyer@gmail.com",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
         panels=new_panels,
     )
 
-    db.add(ben)
+    db.add(bwdyer)
     db.commit()
 
-    bec = sql.User(
-        name="Bec",
-        email="bec@bec.com",
+    ben = sql.User(
+        name="Ben",
+        email="ben@atomscale.co",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
     )
 
-    db.add(bec)
+    db.add(ben)
     db.commit()
 
 
