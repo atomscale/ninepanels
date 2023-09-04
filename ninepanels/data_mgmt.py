@@ -13,6 +13,7 @@ from sqlalchemy import desc
 from sqlalchemy import inspect
 from .database import SessionLocal
 from .database import engine, text
+from . import errors
 
 import argparse
 from datetime import datetime, timedelta
@@ -708,7 +709,16 @@ def create_data():
 
 def update_data():
 
-    pass
+    from . import utils
+    users = db.query(sql.User).order_by(sql.User.id).all()
+
+    for user in users:
+        try:
+            conf = utils.dispatch_welcome_catch_up(user.email, user.name)
+            if conf:
+                print("email sent")
+        except errors.WelcomeEmailException:
+            print("email not sent")
 
 
 def delete_schema():
