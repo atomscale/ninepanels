@@ -557,64 +557,65 @@ def calc_consistency(db: Session, user_id: int):
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     panel_consistencies = []
-    for panel in panels:
-        print(f"Panel '{panel.title}':")
+    if panels:
+        for panel in panels:
+            print(f"Panel '{panel.title}':")
 
-        panel_age = calc_panel_age(created_at=panel.created_at)
-        print(f"{panel_age=}")
+            panel_age = calc_panel_age(created_at=panel.created_at)
+            print(f"{panel_age=}")
 
-        date_range = []
-        start_date = panel.created_at
-        start_date = start_date.replace(
-            hour=23, minute=59, second=59, microsecond=100000
-        )
+            date_range = []
+            start_date = panel.created_at
+            start_date = start_date.replace(
+                hour=23, minute=59, second=59, microsecond=100000
+            )
 
-        date_range = []
-        date_range.append(start_date)
+            date_range = []
+            date_range.append(start_date)
 
-        day_counter = 0
+            day_counter = 0
 
-        for i in range(panel_age):
-            day_counter += 1
-            new_date = start_date + timedelta(days=day_counter)
-            date_range.append(new_date)
+            for i in range(panel_age):
+                day_counter += 1
+                new_date = start_date + timedelta(days=day_counter)
+                date_range.append(new_date)
 
-        # # pp.pprint(date_range)
+            # # pp.pprint(date_range)
 
-        days_complete = 0
-        for date in date_range:
-            day_matches = []
+            days_complete = 0
+            for date in date_range:
+                day_matches = []
 
-            for entry in panel.entries:
-                if (
-                    date.date() == entry.timestamp.date()
-                ):  #  TODO needs to compare whole dates
-                    day_matches.append(entry)
+                for entry in panel.entries:
+                    if (
+                        date.date() == entry.timestamp.date()
+                    ):  #  TODO needs to compare whole dates
+                        day_matches.append(entry)
 
-            if day_matches:
-                sorted_day_match = sorted(
-                    day_matches, key=lambda x: x.timestamp, reverse=True
-                )
-                if sorted_day_match[0].is_complete == True:
-                    days_complete += 1
+                if day_matches:
+                    sorted_day_match = sorted(
+                        day_matches, key=lambda x: x.timestamp, reverse=True
+                    )
+                    if sorted_day_match[0].is_complete == True:
+                        days_complete += 1
 
-        if panel_age > 0:
-            panel_consistency = days_complete / panel_age
-        else:
-            panel_consistency = 0
-        print(f"{days_complete=}")
-        print(f"consistency for panel '{panel.title}': {panel_consistency}")
+            if panel_age > 0:
+                panel_consistency = days_complete / panel_age
+            else:
+                panel_consistency = 0
+            print(f"{days_complete=}")
+            print(f"consistency for panel '{panel.title}': {panel_consistency}")
 
-        panel_consistencies.append(
-            {
-                "panel_pos": panel.position,
-                "consistency": panel_consistency,
-                "panel_age": panel_age,
-                "days_complete": days_complete,
-            }
-        )
+            panel_consistencies.append(
+                {
+                    "panel_pos": panel.position,
+                    "consistency": panel_consistency,
+                    "panel_age": panel_age,
+                    "days_complete": days_complete,
+                }
+            )
 
-        print()
+            print()
 
     return panel_consistencies
 

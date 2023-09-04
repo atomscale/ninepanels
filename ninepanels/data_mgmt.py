@@ -64,28 +64,61 @@ def create_data():
             "timestamp": datetime(2023, 8, 1, 18, 3),
         },
         {
-            "is_complete": False,
-            "timestamp": datetime(2023, 8, 1, 18),
-        },
-        {
             "is_complete": True,
-            "timestamp": datetime(2023, 8, 1, 14),
+            "timestamp": datetime(2023, 8, 2, 14),
         },
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 4, 22),
         },
-        {
-            "is_complete": True,
-            "timestamp": datetime(2023, 8, 10, 13),
-        },
+
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 11, 13),
         },
         {
-            "is_complete": False,
-            "timestamp": datetime(2023, 8, 11, 13, 0, 1),
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 15, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 16, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 17, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 26, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
         },
         {
             "is_complete": True,
@@ -128,6 +161,26 @@ def create_data():
         },
         {
             "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
             "timestamp": datetime.utcnow() + timedelta(hours=-1),
         },
         {
@@ -139,6 +192,44 @@ def create_data():
     entries_c = [
         {
             "is_complete": True,
+            "timestamp": datetime(2023, 8, 3, 23),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
             "timestamp": datetime.utcnow(),
         },
     ]
@@ -146,10 +237,376 @@ def create_data():
     entries_d = [
         {
             "is_complete": True,
-            "timestamp": datetime.utcnow() + timedelta(days=-1),
+            "timestamp": datetime(2023, 8, 4, 22),
         },
         {
-            "is_complete": False,
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 15, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 17, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_e = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_f = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 15, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 17, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_g = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+
+
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_h = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 15, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 17, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime.utcnow(),
+        },
+    ]
+
+    entries_i = [
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 4, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 5, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 6, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 8, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 9, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 13, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 15, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 17, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 20, 22),
+        },
+
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 22, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 3, 13),
+        },
+        {
+            "is_complete": True,
             "timestamp": datetime.utcnow(),
         },
     ]
@@ -158,55 +615,94 @@ def create_data():
     sql_entries_b = [sql.Entry(**entry) for entry in entries_b]
     sql_entries_c = [sql.Entry(**entry) for entry in entries_c]
     sql_entries_d = [sql.Entry(**entry) for entry in entries_d]
+    sql_entries_e = [sql.Entry(**entry) for entry in entries_e]
+    sql_entries_f = [sql.Entry(**entry) for entry in entries_f]
+    sql_entries_g = [sql.Entry(**entry) for entry in entries_g]
+    sql_entries_h = [sql.Entry(**entry) for entry in entries_h]
+    sql_entries_i = [sql.Entry(**entry) for entry in entries_i]
 
     new_panels = [
         sql.Panel(
             position=0,
-            title="A",
-            description="AAAAH this is cool",
+            title="Morning yoga - 15 mins",
+            description="Remember how good you feel once you've done your yoga! 💪😎",
             entries=sql_entries_a,
             created_at=datetime(2023, 8, 1, 13),
         ),
         sql.Panel(
             position=1,
-            title="B",
-            description="to make it look lvery  nice",
+            title="Do 10 minutes of house cleaning/tidy",
             entries=sql_entries_b,
             created_at=datetime(2023, 8, 20, 13),
         ),
         sql.Panel(
             position=2,
-            title="C",
+            title="Find and email one contact with app link 🚀",
             description="See ya later...geddit?",
             entries=sql_entries_c,
-            created_at=datetime.utcnow() + timedelta(minutes=-2),
+            created_at=datetime(2023, 9, 2, 13),
         ),
         sql.Panel(
             position=3,
-            title="D",
+            title="Deep flow at work, connect with purpose of job",
             description="Donkey Kong",
             entries=sql_entries_d,
-            created_at=datetime.utcnow() + timedelta(days=-1),
+            created_at=datetime(2023, 8, 1, 13),
+        ),
+        sql.Panel(
+            position=4,
+            title="Read in bed before sleep",
+            description="Donkey Kong",
+            entries=sql_entries_e,
+            created_at=datetime(2023, 8, 23, 13),
+        ),
+        sql.Panel(
+            position=5,
+            title="Cook from scratch, no snacks",
+            description="Donkey Kong",
+            entries=sql_entries_f,
+            created_at=datetime(2023, 8, 1, 13),
+        ),
+        sql.Panel(
+            position=6,
+            title="Aerobic heavy breathing",
+            description="Donkey Kong",
+            entries=sql_entries_g,
+            created_at=datetime(2023, 8, 18, 13),
+        ),
+        sql.Panel(
+            position=7,
+            title="Meditate",
+            description="Donkey Kong",
+            entries=sql_entries_h,
+            created_at=datetime(2023, 8, 5, 13),
+        ),
+        sql.Panel(
+            position=8,
+            title="Focussed time with D, play games",
+            description="Donkey Kong",
+            entries=sql_entries_i,
+            created_at=datetime(2023, 8, 5, 13),
         ),
     ]
 
-    ben = sql.User(
-        name="Ben",
+    bwdyer = sql.User(
+        name="bwdyer",
         email="bwdyer@gmail.com",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
         panels=new_panels,
     )
 
-    db.add(ben)
+    db.add(bwdyer)
     db.commit()
 
-    bec = sql.User(
-        name="Bec",
-        email="bec@bec.com",
+    ben = sql.User(
+        name="Ben",
+        email="ben@atomscale.co",
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
     )
 
-    db.add(bec)
+    db.add(ben)
     db.commit()
 
 
