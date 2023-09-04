@@ -210,7 +210,7 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
     """Returns a list of all panels for a user sorted by position
 
     Returns:
-        List of sql.Panel instances
+        List of sql.Panel instances - can be empty
 
     Raises:
         Panel Not Found - in all failure cases
