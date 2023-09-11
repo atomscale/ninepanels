@@ -13,10 +13,10 @@ def get_git_branch():
         )
         return branch_name
     except subprocess.CalledProcessError:
-        print("An error occurred while trying to fetch the Git branch.")
+        # print("An error occurred while trying to fetch the Git branch.")
         return None
     except FileNotFoundError:
-        print("Git is not installed or not in the PATH.")
+        # print("Git is not installed or not in the PATH.")
         return None
 
 
@@ -29,10 +29,10 @@ def get_git_commit():
         )
         return branch_commit
     except subprocess.CalledProcessError:
-        print("An error occurred while trying to fetch the Git branch.")
+        # print("An error occurred while trying to fetch the Git branch.")
         return None
     except FileNotFoundError:
-        print("Git is not installed or not in the PATH.")
+        # print("Git is not installed or not in the PATH.")
         return None
 
 

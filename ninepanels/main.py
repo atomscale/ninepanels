@@ -202,6 +202,8 @@ def get_panels_by_user_id(
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
+    # import time
+    # time.sleep(2)
     return panels
 
 
@@ -262,7 +264,7 @@ def delete_all_entries_by_panel_id(
             db=db, user_id=user.id, panel_id=panel_id
         )
     except errors.EntriesNotDeleted as e:
-        print("error here")
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Entries not deleted: {str(e)}",

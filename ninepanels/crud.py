@@ -283,13 +283,13 @@ def update_panel_by_id(
             for update_field, update_value in update.items():
                 if hasattr(panel, update_field):
                     if update_field == "position":
-                        print()
-                        print(f"RUNNING udpate fpr {update_field}")
+                        # print()
+                        # print(f"RUNNING udpate fpr {update_field}")
 
-                        print(f"running sort on {panel.title=}")
+                        # print(f"running sort on {panel.title=}")
                         panel_sort_on_update(db, user_id, panel_id, update_value)
                     else:
-                        print(f"RUNNING udpate fpr {update_field}")
+                        # print(f"RUNNING udpate fpr {update_field}")
                         setattr(panel, update_field, update_value)
                         try:
                             db.commit()
@@ -456,11 +456,11 @@ def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-    for p in panels:
-        print(p.position, p.title)
+    # for p in panels:
+    #     print(p.position, p.title)
 
     max_pos = len(panels) - 1
-    print(f"{max_pos=}")
+    # print(f"{max_pos=}")
     min_pos = 0
 
     for i, panel in enumerate(panels):
@@ -476,7 +476,7 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
     # remove from the list that will be iterated over to update the other positions
     # this panel will have had its position update already in the caller func
     panels.pop(panel_to_move_cur_index)
-    print(f"moving {panel_to_move.title} from {cur_pos} -> {new_pos}")
+    # print(f"moving {panel_to_move.title} from {cur_pos} -> {new_pos}")
 
     if new_pos != cur_pos:
         if new_pos <= max_pos:
@@ -507,11 +507,11 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
 
     else:
         raise PanelNotUpdated(f"That's where the panel already is 🙂")
-    print("FINAL POSITIONS:")
+    # print("FINAL POSITIONS:")
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-    for p in panels:
-        print(p.position, p.title)
-    print("END ")
+    # for p in panels:
+    #     print(p.position, p.title)
+    # print("END ")
 
 
 def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
@@ -559,10 +559,10 @@ def calc_consistency(db: Session, user_id: int):
     panel_consistencies = []
     if panels:
         for panel in panels:
-            print(f"Panel '{panel.title}':")
+            # print(f"Panel '{panel.title}':")
 
             panel_age = calc_panel_age(created_at=panel.created_at)
-            print(f"{panel_age=}")
+            # print(f"{panel_age=}")
 
             date_range = []
             start_date = panel.created_at
@@ -603,8 +603,8 @@ def calc_consistency(db: Session, user_id: int):
                 panel_consistency = days_complete / panel_age
             else:
                 panel_consistency = 0
-            print(f"{days_complete=}")
-            print(f"consistency for panel '{panel.title}': {panel_consistency}")
+            # print(f"{days_complete=}")
+            # print(f"consistency for panel '{panel.title}': {panel_consistency}")
 
             panel_consistencies.append(
                 {
@@ -615,7 +615,7 @@ def calc_consistency(db: Session, user_id: int):
                 }
             )
 
-            print()
+
 
     return panel_consistencies
 
