@@ -23,6 +23,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime, timedelta
+import pytz
 
 from pprint import PrettyPrinter
 
@@ -396,7 +397,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     """return only the latest status for each panel belonging to a user
     ie the up do date daily view
 
-    TODO examine if this can be refactored into the db, and i think it can be optimised
+    TODO examine if this can be refactored into the db call, and i think it can be optimised
 
     """
 
@@ -404,9 +405,12 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
     panels_with_latest_entry_only = []
 
-    now = datetime.utcnow()
-    # mock now for testing as one day ahead of entries
-    # now = now + timedelta(days=1)
+
+    # could lookup user sepcified timezone once set in db, create it here
+    uk_tz = pytz.timezone('Europe/London')
+    now = datetime.now(uk_tz)
+    print(now)
+
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
     if panels:

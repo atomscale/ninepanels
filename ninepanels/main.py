@@ -219,10 +219,10 @@ def update_panel_by_id(
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
             return updated_panel
         except errors.PanelNotUpdated as e:
-            raise HTTPException(status_code=422, detail=f"{str(e)}")
+            raise HTTPException(status_code=400, detail=f"{str(e)}")
 
     else:
-        raise HTTPException(status_code=422, detail="No update object")
+        raise HTTPException(status_code=400, detail="No update object")
 
 
 @api.delete("/panels/{panel_id}")
