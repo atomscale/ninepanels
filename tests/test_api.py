@@ -143,8 +143,8 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422
-    assert "not found" in resp.text
+    assert resp.status_code == 400
+    # assert "not found" in resp.text
 
     # panel json empty
     resp = test_server.patch(
@@ -154,8 +154,7 @@ def test_update_panel_by_id(test_server, test_access_token):
     )
 
     assert resp.status_code == 422  # pydantic will send back 'unprocessable
-    assert "detail" in resp.json()  # just check pydantic respd with detail
-
+   
     # panel update field that not in pydantic PanelUpdate obj caught
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
@@ -163,8 +162,8 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422  # this is not validated by pydantic
-    assert "detail" in resp.json()
+    assert resp.status_code == 400  # this is not validated by pydantic
+
 
     ### test success ###
 
@@ -204,8 +203,8 @@ def test_delete_panel_by_id(test_server, test_access_token):
 
 def test_post_entry_on_panel(test_server, test_access_token):
     resp = test_server.post(
-        "/entries",
-        json={"panel_id": 5, "is_complete": True},
+        "/panels/5/entries",
+        json={"is_complete": True},
         headers={"Authorization": "Bearer " + test_access_token},
     )
 

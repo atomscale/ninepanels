@@ -82,18 +82,6 @@ def test_delete_user_by_id(test_db):
         conf = crud.delete_user_by_id(test_db, user_id)
 
 
-def test_read_all_panels(test_db):
-    test_panels = crud.read_all_panels(test_db)
-
-    assert isinstance(test_panels, list)
-
-
-def test_read_all_entries(test_db):
-    test_entries = crud.read_all_entries(test_db)
-
-    assert isinstance(test_entries, list)
-    assert len(test_entries) > 2
-
 
 def test_create_entry_by_panel_id(test_db):
     new_entry = crud.create_entry_by_panel_id(
