@@ -186,5 +186,5 @@ def get_current_admin_user(
     if current_user.role == pyd.Role.admin:
         return current_user
     else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not an admin user")
 
