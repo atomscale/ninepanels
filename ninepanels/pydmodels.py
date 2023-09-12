@@ -38,6 +38,9 @@ class PanelUpdate(BaseModel):
     title: str = None
     description: str = None
 
+class HTTPError(BaseModel):
+    """error repsonse model for docs"""
+    detail: str
 
 class UserBase(BaseModel):
     email: EmailStr = Field(examples=["james@bond.com"])
