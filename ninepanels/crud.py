@@ -199,12 +199,6 @@ def create_panel_by_user_id(
         raise PanelNotCreated(e)
 
 
-def read_all_panels(db: Session) -> list:
-    """read all panels for all users"""
-
-    panels = db.query(sql.Panel).all()
-
-    return panels
 
 
 def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
@@ -383,14 +377,6 @@ def create_entry_by_panel_id(
         raise EntryNotCreated(msg)
 
     return entry
-
-
-def read_all_entries(db: Session) -> list:
-    """read all entries for all users"""
-
-    entries = db.query(sql.Entry).all()
-
-    return entries
 
 
 def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:

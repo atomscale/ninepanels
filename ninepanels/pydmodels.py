@@ -8,12 +8,12 @@ class AccessToken(BaseModel):
 
 class EntryCreate(BaseModel):
     is_complete: bool = Field(examples=[True])
-    panel_id: int
 
 
 class Entry(EntryCreate):
     model_config = {"from_attributes": True}
     id: int
+    panel_id: int
     timestamp: datetime
 
 
@@ -38,6 +38,9 @@ class PanelUpdate(BaseModel):
     title: str = None
     description: str = None
 
+class HTTPError(BaseModel):
+    """error repsonse model for docs"""
+    detail: str
 
 class UserBase(BaseModel):
     email: EmailStr = Field(examples=["james@bond.com"])

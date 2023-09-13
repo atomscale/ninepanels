@@ -90,7 +90,7 @@ def index():
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
-@api.post("/token", response_model=pyd.AccessToken)
+@api.post("/token", response_model=pyd.AccessToken, responses={401: {"model": pyd.HTTPError, "description": 'Unauthorised'}})
 def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
@@ -207,7 +207,7 @@ def get_panels_by_user_id(
     return panels
 
 
-@api.patch("/panels/{panel_id}", response_model=pyd.Panel)
+@api.patch("/panels/{panel_id}", response_model=pyd.Panel, responses={400: {"model": pyd.HTTPError, "description": 'Panel was not updated'}})
 def update_panel_by_id(
     panel_id: int,
     update: dict = Body(),
@@ -219,7 +219,7 @@ def update_panel_by_id(
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
             return updated_panel
         except errors.PanelNotUpdated as e:
-            raise HTTPException(status_code=400, detail=f"{str(e)}")
+            raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
         raise HTTPException(status_code=400, detail="No update object")
@@ -241,14 +241,15 @@ def delete_panel_by_id(
 
 
 @api.post(
-    "/entries", response_model=pyd.Entry
+    "/panels/{panel_id}/entries", response_model=pyd.Entry
 )  # TODO this needs to change to /panels/{id}/entries
 def post_entry_by_panel_id(
+    panel_id: int,
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    entry = crud.create_entry_by_panel_id(db, **new_entry.model_dump(), user_id=user.id)
+    entry = crud.create_entry_by_panel_id(db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id)
     rollbar.report_message(message=f"{user.name} tapped a panel", level="info")
     return entry
 
