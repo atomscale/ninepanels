@@ -712,9 +712,11 @@ def update_data():
     from . import utils
     users = db.query(sql.User).order_by(sql.User.id).all()
 
+
+
     for user in users:
         try:
-            conf = utils.dispatch_welcome_catch_up(user.email, user.name)
+            conf = utils.dispatch_mid_sept(user.email, user.name)
             if conf:
                 print("email sent")
         except errors.WelcomeEmailException:
