@@ -395,7 +395,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     # could lookup user sepcified timezone once set in db, create it here
     uk_tz = pytz.timezone('Europe/London')
     now = datetime.now(uk_tz)
-    print(now)
+    # print(now)
 
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
