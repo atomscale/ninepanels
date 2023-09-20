@@ -211,8 +211,6 @@ def get_panels_by_user_id(
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
-    # import time
-    # time.sleep(2)
     return panels
 
 
@@ -268,13 +266,16 @@ def post_entry_by_panel_id(
     db: Session = Depends(get_db),
 ):
     entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
-
+    start = datetime.utcnow()
     entry_monitor.start()
     entry = crud.create_entry_by_panel_id(
         db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
     )
     rollbar.report_message(message=f"{user.name} tapped a panel", level="info")
     entry_monitor.stop()
+    end = datetime.utcnow()
+    diff = end - start
+    print(f"{diff =}")
     return entry
 
 
