@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from . import errors
+from . import utils
 
 
 def get_git_branch():
@@ -104,6 +105,8 @@ ROLLBAR_KEY = os.environ.get("ROLLBAR_KEY")
 
 DB_CALL_AVG_WINDOW = 100
 DB_PERF_ALERT_THRESHOLD = 100
+
+monitors = utils.MonitorFactory()
 
 
 ### SECURITY ###

@@ -61,3 +61,6 @@ class PasswordResetTokenException(Exception):
 
 class WelcomeEmailException(Exception):
     pass
+
+class MonitorError(Exception):
+    pass
