@@ -98,15 +98,12 @@ set_up_logger()
 
 ### MONITORING ###
 
-# import rollbar
-
 ROLLBAR_KEY = os.environ.get("ROLLBAR_KEY")
-# rollbar.init(access_token=ROLLBAR_KEY, environment=CURRENT_ENV)
 
-# rollbar.report_message(message='rollbar init from config', level='info')
+### PERFORMANCE ###
 
-# logger = logging.getLogger(__name__)
-# handler = rollbar.Rollbar
+DB_CALL_AVG_WINDOW = 10
+DB_PERF_ALERT_THRESHOLD = 10
 
 
 ### SECURITY ###

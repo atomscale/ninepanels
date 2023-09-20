@@ -1,6 +1,12 @@
-first = ['a', 'b']
-second = ['c', 'd']
+from collections import deque
 
-first.append(second)
+example = deque([], maxlen=3)
 
-print(first)
+# example.pop(0)
+example.append(1)
+example.append(2)
+example.append(3)
+example.append(4)
+
+if example:
+    print(sum(example) / len(example))
