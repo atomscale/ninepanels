@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from collections import deque
 import rollbar
 
+
+
 engine = create_engine(
     config.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True, pool_timeout=30
 )
@@ -38,7 +40,7 @@ class DBPerformanceMonitor:
         logging.info(f"avg db call: {self.avg}ms")
         if self.avg > config.DB_PERF_ALERT_THRESHOLD:
             logging.warn(f"avg db call: {self.avg}ms over threshold {config.DB_PERF_ALERT_THRESHOLD}ms")
-            rollbar.warn(f"api: avg db call: {self.avg}ms over threshold {config.DB_PERF_ALERT_THRESHOLD}ms")
+            rollbar.report_message(f"api: avg db call: {self.avg}ms over threshold {config.DB_PERF_ALERT_THRESHOLD}ms", level="warning")
 
     def add_reading(
         self, perf_reading_start: datetime, perf_reading_end: datetime
