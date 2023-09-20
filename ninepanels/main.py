@@ -1,7 +1,7 @@
 from pydantic import EmailStr
-from .database import get_db, engine
+from .database import get_db
 from . import crud
-from . import sqlmodels as sql
+
 from . import pydmodels as pyd
 from . import auth
 from . import config
@@ -12,16 +12,15 @@ from fastapi import FastAPI
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import status
-from fastapi import BackgroundTasks
 from fastapi import Form
+from fastapi import Request
+from fastapi import Response
 from fastapi import Body
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
 import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
-
-from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -30,8 +29,6 @@ from alembic import command
 
 from pprint import PrettyPrinter
 
-import time
-import random
 from datetime import datetime
 
 pp = PrettyPrinter(indent=4)
