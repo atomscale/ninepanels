@@ -275,7 +275,7 @@ def post_entry_by_panel_id(
     entry_monitor.stop()
     end = datetime.utcnow()
     diff = end - start
-    print(f"{diff =}")
+    print(f"{diff=}")
     return entry
 
 

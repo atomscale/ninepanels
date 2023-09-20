@@ -241,7 +241,7 @@ class Monitor:
 
     def report(self):
         report = f"{self.name}: {self.in_alert=}, {self.avg=}, {self.alert_threshold_ms=}, {self.running=}, {len(self.readings)=}"
-        logging.info(report)
+        # logging.info(report)
         return report
 
     def _measure(self):
@@ -251,6 +251,7 @@ class Monitor:
             self.stop()
 
         diff_timedelta = self.stop_ts - self.start_ts
+        print(diff_timedelta)
 
         diff_ms: float = diff_timedelta.total_seconds() * 1000
         self.readings.append(diff_ms)
@@ -281,7 +282,7 @@ class MonitorFactory:
             cls._existing_monitors[name] = Monitor(
                 name=name, window_size=window_size, alert_threshold_ms=alert_threshold_ms
             )
-    
+
         return cls._existing_monitors[name]
 
     @classmethod
