@@ -45,7 +45,7 @@ api = FastAPI()
 
 api_origins = [
     "http://localhost:5173",
-    "https://preview.ninepanels.com",
+    # "https://preview.ninepanels.com",
     "https://ninepanels.com"
 ]
 
