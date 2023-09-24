@@ -1,7 +1,7 @@
-from pydantic import EmailStr
-from .database import get_db
-from . import crud
 
+from .database import get_db
+from .middleware import ResponseWrapperMiddleware
+from . import crud
 from . import pydmodels as pyd
 from . import auth
 from . import config
@@ -13,12 +13,14 @@ from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import status
 from fastapi import Form
-from fastapi import Request
-from fastapi import Response
 from fastapi import Body
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+from pydantic import EmailStr
 import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
@@ -30,6 +32,8 @@ from alembic import command
 from pprint import PrettyPrinter
 
 from datetime import datetime
+
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -45,6 +49,7 @@ api_origins = [
     "http://127.0.0.1",
 ]
 
+api.add_middleware(ResponseWrapperMiddleware)
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,
@@ -53,7 +58,6 @@ api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
@@ -77,13 +81,9 @@ version_ts = datetime.utcnow()
 
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
 
-print(
-    f"this is the ninepanels api in env: {config.CURRENT_ENV}. Version: {version_date}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}"
-)
-
 
 @api.get("/")
-def index():
+def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
@@ -127,14 +127,11 @@ def create_user(
         user = crud.create_user(
             db, {"name": name, "email": email, "hashed_password": hashed_password}
         )
-    except errors.UserAlreadyExists:
+    except errors.UserNotCreated as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}"
-        )
+
 
     rollbar.report_message(
         message=f"new user {user.name} just signed up!", level="info"
@@ -248,10 +245,10 @@ def delete_panel_by_id(
 ):
     try:
         is_deleted = crud.delete_panel_by_panel_id(db, user.id, panel_id)
-        return is_deleted
-    except errors.PanelNotDeleted:
+        return {"success": is_deleted}
+    except errors.PanelNotDeleted as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error deleting panel"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e.detail)}"
         )
 
 
@@ -263,16 +260,17 @@ def post_entry_by_panel_id(
     db: Session = Depends(get_db),
 ):
     entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
-    start = datetime.utcnow()
     entry_monitor.start()
-    entry = crud.create_entry_by_panel_id(
-        db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
-    )
-    rollbar.report_message(message=f"{user.name} tapped a panel", level="info")
+
+    try:
+        entry = crud.create_entry_by_panel_id(
+            db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
+        )
+    except errors.EntryNotCreated as e:
+        raise HTTPException(status_code=400, detail=e.detail)
+
     entry_monitor.stop()
-    end = datetime.utcnow()
-    diff = end - start
-    print(f"{diff=}")
+
     return entry
 
 
