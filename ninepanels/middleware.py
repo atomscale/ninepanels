@@ -17,7 +17,6 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/redoc",
             "/openapi.json",
-            "/token"
         ]
 
         if path in unwrapped_paths:
@@ -47,22 +46,25 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             wrapped_response.is_error = True
             wrapped_response.status_code = response.status_code
             wrapped_response.error_message = "Not Found"
-            return JSONResponse(wrapped_response.model_dump())
+            return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
 
         if response.status_code >= 400:
             wrapped_response.data = original_json
             wrapped_response.is_error = True
             wrapped_response.status_code = response.status_code
             try:
-                wrapped_response.error_message = original_json['detail']
+                if response.status_code == 422:
+                    wrapped_response.error_message = original_json['detail'][0]['msg']
+                else:
+                    wrapped_response.error_message = original_json['detail']
             except KeyError:
                 wrapped_response.error_message = "No error detail provided"
-            return JSONResponse(wrapped_response.model_dump())
+            return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
 
         else:
             wrapped_response.data = original_json
             wrapped_response.is_error = False
             wrapped_response.status_code = response.status_code
 
-        return JSONResponse(wrapped_response.model_dump())
+        return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
 

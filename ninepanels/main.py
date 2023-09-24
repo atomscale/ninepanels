@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from fastapi import status
 from fastapi import Form
 from fastapi import Body
+from fastapi.exceptions import ValidationException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -75,7 +76,8 @@ def run_migrations():
 
 run_migrations()
 
-# sql.Base.metadata.create_all(bind=engine)
+
+
 
 version_ts = datetime.utcnow()
 
