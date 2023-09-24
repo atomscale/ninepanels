@@ -106,7 +106,7 @@ def dispatch_welcome_email(recipient_email: str, recipient_name: str) -> bool:
     if resp.status_code == 200:
         return True
     else:
-        raise errors.WelcomeEmailException(f"problem sending welcome email {str(e)}")
+        raise errors.WelcomeEmailException(detail=f"problem sending welcome email {str(e)}")
 
 
 def dispatch_welcome_catch_up(recipient_email: str, recipient_name: str) -> bool:
