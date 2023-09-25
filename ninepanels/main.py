@@ -1,6 +1,6 @@
 
 from .database import get_db
-from .middleware import ResponseWrapperMiddleware
+from . import middleware
 from . import crud
 from . import pydmodels as pyd
 from . import auth
@@ -49,7 +49,8 @@ api_origins = [
     "https://ninepanels.com"
 ]
 
-api.add_middleware(ResponseWrapperMiddleware)
+api.add_middleware(middleware.ResponseWrapperMiddleware)
+api.add_middleware(middleware.TimingMiddleware)
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,

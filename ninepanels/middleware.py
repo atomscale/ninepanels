@@ -1,12 +1,13 @@
 import json
+import logging
 
 from starlette.responses import JSONResponse
 from starlette.responses import StreamingResponse
 from starlette.requests import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .pydmodels import WrappedResponse
-from .config import monitors
+from . import pydmodels as pyd
+from . import config
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -31,7 +32,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         if path in unwrapped_paths:
             return response
 
-        wrapped_response = WrappedResponse(
+        wrapped_response = pyd.WrappedResponse(
             data = {},
             status_code=200,
             is_error=False,
@@ -82,4 +83,30 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
 
 class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        pass
+
+        route_monitor = None
+
+        try:
+            path = request.url.path
+            route_monitor = config.monitors.create_monitor(path, 10, 100)
+            route_monitor.start()
+        except Exception as e:
+            msg = pyd.LogMessage(
+                level="warn",
+                detail="monitor failed to start"
+            )
+            logging.warn(msg)
+
+        response = await call_next(request)
+
+        try:
+            if route_monitor:
+                route_monitor.stop()
+        except Exception as e:
+            msg = pyd.LogMessage(
+                level="warn",
+                detail="monitor failed to stop"
+            )
+            logging.warn(msg)
+
+        return response

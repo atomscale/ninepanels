@@ -11,6 +11,7 @@ from datetime import datetime
 
 from . import errors
 from . import config
+from . import pydmodels as pyd
 
 
 def instance_to_dict(instance):
@@ -220,35 +221,54 @@ class Monitor:
         self.window_size = window_size
         self.alert_threshold_ms = alert_threshold_ms
 
-        self.running: bool = False
+        self.is_running: bool = False
         self.readings: deque[float] = deque([], maxlen=self.window_size)
         self.start_ts: datetime = None
         self.stop_ts: datetime = None
         self.avg: float = None
+        self.last: float = None
+        self.max: float = None
+        self.min: float = None
         self.in_alert = False
 
     def start(self):
-        if self.running:
+        if self.is_running:
             raise errors.MonitorError(f"already started")
-        self.running = True
+        self.is_running = True
         self.start_ts = datetime.utcnow()
 
     def stop(self):
-        if not self.running:
+        if not self.is_running:
             raise errors.MonitorError(f"cannot stop as not started")
-        self.running = False
+        self.is_running = False
         self.stop_ts = datetime.utcnow()
         self._measure()
-        self._monitor()
+        self._calculate()
+        self._measure()
 
     def report(self):
-        report = f"{self.name}: {self.in_alert=}, {self.avg=}, {self.alert_threshold_ms=}, {self.running=}, {len(self.readings)=}"
+
+        self._calculate()
+
+        report = {
+            'name': self.name,
+            'window_size': self.window_size,
+            'is_running': self.is_running,
+            'alert_threshold': self.alert_threshold_ms,
+            'in_alert': self.in_alert,
+            'last': self.last,
+            'max': self.max,
+            'min': self.min,
+            'avg': self.avg,
+            'num_readings': len(self.readings)
+        }
+        
         return report
 
     def _measure(self):
         if not self.start_ts:
             raise errors.MonitorError(f"Monitor {self.name} has not started")
-        if self.running == True:
+        if self.is_running == True:
             self.stop()
 
         diff_timedelta = self.stop_ts - self.start_ts
@@ -256,17 +276,26 @@ class Monitor:
         diff_ms: float = diff_timedelta.total_seconds() * 1000
         self.readings.append(diff_ms)
 
-    def _monitor(self):
-        if len(self.readings) == self.window_size:
+    def _calculate(self):
+        if self.readings:
             self.avg = sum(self.readings) / len(self.readings)
+            self.last = self.readings[len(self.readings) -1]
+            self.min = min(self.readings)
+            self.max = max(self.readings)
 
-            if self.avg > self.alert_threshold_ms:
-                self.in_alert = True
-                logging.warn(
-                    f"monitor name: `{self.name}` at avg {round(self.avg, 3)}ms, over threshold {self.alert_threshold_ms}ms"
-                )
-            else:
-                self.in_alert = False
+    def _monitor(self):
+        if self.avg > self.alert_threshold_ms:
+            self.in_alert = True
+
+            msg = pyd.LogMessage(
+                timestamp=datetime.utcnow(),
+                level="warn",
+                detail="monitor exceeded threshold",
+                monitor_name=self.name
+            )
+            logging.warn(msg)
+        else:
+            self.in_alert = False
 
 
 class MonitorFactory:
