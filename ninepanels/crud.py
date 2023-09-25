@@ -40,7 +40,7 @@ def create_user(db: Session, new_user: dict) -> sql.User:
     except (SQLAlchemyError, TypeError, IntegrityError) as e:
         db.rollback()
         raise errors.UserNotCreated(
-            detail=f"Error creating new user",
+            detail=f"Do you have an account already?",
             context_msg=f"user not created due to: {str(e)}",
             **new_user,
         )
