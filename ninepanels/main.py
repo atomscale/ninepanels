@@ -1,7 +1,7 @@
-from pydantic import EmailStr
-from .database import get_db, engine
+
+from .database import get_db
+from .middleware import ResponseWrapperMiddleware
 from . import crud
-from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import auth
 from . import config
@@ -12,16 +12,18 @@ from fastapi import FastAPI
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import status
-from fastapi import BackgroundTasks
 from fastapi import Form
 from fastapi import Body
+from fastapi.exceptions import ValidationException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+from pydantic import EmailStr
 import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
-
-from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -30,9 +32,9 @@ from alembic import command
 
 from pprint import PrettyPrinter
 
-import time
-import random
 from datetime import datetime
+
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -43,20 +45,19 @@ api = FastAPI()
 
 api_origins = [
     "http://localhost:5173",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1",
+    "https://preview.ninepanels.com",
+    "https://ninepanels.com"
 ]
 
+api.add_middleware(ResponseWrapperMiddleware)
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=api_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
@@ -74,23 +75,29 @@ def run_migrations():
 
 run_migrations()
 
-# sql.Base.metadata.create_all(bind=engine)
+
+
 
 version_ts = datetime.utcnow()
 
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
 
-print(
-    f"this is the ninepanels api in env: {config.CURRENT_ENV}. Version: {version_date}. Branch: {config.RENDER_GIT_BRANCH}, commit: {config.RENDER_GIT_COMMIT}"
-)
-
 
 @api.get("/")
-def index():
+def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
-@api.post("/token", response_model=pyd.AccessToken, responses={401: {"model": pyd.HTTPError, "description": 'Unauthorised'}})
+@api.get("/monitors")
+def monitors():
+    return config.monitors.report_all()
+
+
+@api.post(
+    "/token",
+    response_model=pyd.AccessToken,
+    responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
+)
 def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
@@ -121,14 +128,11 @@ def create_user(
         user = crud.create_user(
             db, {"name": name, "email": email, "hashed_password": hashed_password}
         )
-    except errors.UserAlreadyExists:
+    except errors.UserNotCreated as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email already exists"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"undefined error: {str(e)}"
-        )
+
 
     rollbar.report_message(
         message=f"new user {user.name} just signed up!", level="info"
@@ -202,26 +206,35 @@ def get_panels_by_user_id(
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
-    # import time
-    # time.sleep(2)
     return panels
 
 
-@api.patch("/panels/{panel_id}", response_model=pyd.Panel, responses={400: {"model": pyd.HTTPError, "description": 'Panel was not updated'}})
+@api.patch(
+    "/panels/{panel_id}",
+    response_model=pyd.Panel,
+    responses={400: {"model": pyd.HTTPError, "description": "Panel was not updated"}},
+)
 def update_panel_by_id(
     panel_id: int,
     update: dict = Body(),
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
+    update_monitor = config.monitors.create_monitor("update_panel", 5, 20)
+
+    update_monitor.start()
+
     if update:
         try:
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
+            update_monitor.stop()
             return updated_panel
         except errors.PanelNotUpdated as e:
+            update_monitor.stop()
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
+        update_monitor.stop()
         raise HTTPException(status_code=400, detail="No update object")
 
 
@@ -233,24 +246,32 @@ def delete_panel_by_id(
 ):
     try:
         is_deleted = crud.delete_panel_by_panel_id(db, user.id, panel_id)
-        return is_deleted
-    except errors.PanelNotDeleted:
+        return {"success": is_deleted}
+    except errors.PanelNotDeleted as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error deleting panel"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e.detail)}"
         )
 
 
-@api.post(
-    "/panels/{panel_id}/entries", response_model=pyd.Entry
-)  # TODO this needs to change to /panels/{id}/entries
+@api.post("/panels/{panel_id}/entries", response_model=pyd.Entry)
 def post_entry_by_panel_id(
     panel_id: int,
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    entry = crud.create_entry_by_panel_id(db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id)
-    rollbar.report_message(message=f"{user.name} tapped a panel", level="info")
+    entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
+    entry_monitor.start()
+
+    try:
+        entry = crud.create_entry_by_panel_id(
+            db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
+        )
+    except errors.EntryNotCreated as e:
+        raise HTTPException(status_code=400, detail=e.detail)
+
+    entry_monitor.stop()
+
     return entry
 
 
@@ -265,7 +286,6 @@ def delete_all_entries_by_panel_id(
             db=db, user_id=user.id, panel_id=panel_id
         )
     except errors.EntriesNotDeleted as e:
-
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Entries not deleted: {str(e)}",
@@ -295,10 +315,10 @@ def initiate_password_reset_flow(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not create password reset token",
         )
-    except errors.UserNotFound:
+    except errors.UserNotFound as e:
         raise HTTPException(
             status_code=404,
-            detail="That email doesn't exist",
+            detail=e.detail,
         )
 
     if prt_user:
@@ -341,8 +361,8 @@ def password_reset(
 ):
     try:
         user = crud.read_user_by_email(db=db, email=email)
-    except errors.UserNotFound:
-        raise HTTPException(404, detail="user not found")
+    except errors.UserNotFound as e:
+        raise HTTPException(404, detail=e.detail)
 
     try:
         token_valid = crud.check_password_reset_token_is_valid(

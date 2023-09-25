@@ -60,3 +60,17 @@ class User(UserBase):
 class UserInDB(User):
     panels: list[Panel]
     hashed_password: str
+
+class LogMessage(BaseModel):
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    level: str = Field(default='info')
+    detail: str
+    context_msg: str | None = None
+    context_data: dict | None = None
+
+class WrappedResponse(BaseModel):
+    data: dict | list | None = None
+    status_code: int
+    is_error: bool
+    error_message: str | None = None
+    meta: dict | list | None = None

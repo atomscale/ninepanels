@@ -1,63 +1,109 @@
-class DatabaseConnectionError(Exception):
-    """the database was not available"""
+import logging
+from .pydmodels import LogMessage
 
+
+class NinePanelsBaseException(Exception):
+
+    """Base exception for all custom exceptions.
+    Standardises logging schema and behaviours for exceptions
+    using the .pydmodels.LogMessage model.
+
+    Args:
+        detail: user friendly message that may make it to the
+                front end (aligns with HTTPException's `detail` arg).
+                Defaults to the name of the class if omitted. Please do not omit unless
+                absolutely necessary.
+        context_msg: space for a techincally detailed message
+        context_data: kwargs to accept additonal key=value pairs of contextual data
+
+    Returns: None
+    Raises: None
+    """
+
+    def __init__(
+        self, detail: str = None, context_msg: str = None, **context_data: dict
+    ):
+        if detail:
+            self.detail = detail
+        else:
+            self.detail = self.__class__.__name__
+
+        super().__init__(self.detail)
+
+        log_message = LogMessage(
+            detail=self.detail,
+            level="error",
+            context_msg=context_msg,
+            context_data=context_data,
+        )
+
+        logging.error(log_message.model_dump())
+        # TODO this is where push to the async db write call feature will happen
+
+
+class DatabaseConnectionError(NinePanelsBaseException):
     pass
 
 
-class UserNotCreated(Exception):
+class UserNotCreated(NinePanelsBaseException):
     pass
 
 
-class UserNotFound(Exception):
+class UserNotFound(NinePanelsBaseException):
     pass
 
 
-class UserAlreadyExists(Exception):
+class UserNotUpdated(NinePanelsBaseException):
     pass
 
 
-class UserNotUpdated(Exception):
+class UserNotDeleted(NinePanelsBaseException):
     pass
 
 
-class UserNotDeleted(Exception):
+class EntryNotCreated(NinePanelsBaseException):
     pass
 
 
-class EntryNotCreated(Exception):
+class PanelNotCreated(NinePanelsBaseException):
     pass
 
 
-class PanelNotCreated(Exception):
+class PanelNotFound(NinePanelsBaseException):
     pass
 
 
-class PanelNotFound(Exception):
+class PanelNotUpdated(NinePanelsBaseException):
     pass
 
 
-class PanelNotUpdated(Exception):
+class PanelNotDeleted(NinePanelsBaseException):
     pass
 
 
-class PanelNotDeleted(Exception):
+class PanelsNotSorted(NinePanelsBaseException):
     pass
 
 
-class EntriesNotDeleted(Exception):
+class EntriesNotDeleted(NinePanelsBaseException):
     pass
 
 
-class ConfigurationException(Exception):
+class ConfigurationException(NinePanelsBaseException):
     pass
 
 
-class BlacklistedAccessTokenException(Exception):
+class BlacklistedAccessTokenException(NinePanelsBaseException):
     pass
 
 
-class PasswordResetTokenException(Exception):
+class PasswordResetTokenException(NinePanelsBaseException):
     pass
 
-class WelcomeEmailException(Exception):
+
+class WelcomeEmailException(NinePanelsBaseException):
+    pass
+
+
+class MonitorError(NinePanelsBaseException):
     pass

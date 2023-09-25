@@ -1,18 +1,6 @@
 from . import sqlmodels as sql
-from .errors import UserNotCreated
-from .errors import UserAlreadyExists
-from .errors import UserNotFound
-from .errors import UserNotUpdated
-from .errors import UserNotDeleted
-from .errors import EntryNotCreated
-from .errors import PanelNotCreated
-from .errors import PanelNotFound
-from .errors import PanelNotUpdated
-from .errors import PanelNotDeleted
-from .errors import EntriesNotDeleted
-from .errors import BlacklistedAccessTokenException
-from .errors import PasswordResetTokenException
 
+from . import errors
 from . import utils
 from . import config
 
@@ -29,10 +17,8 @@ from pprint import PrettyPrinter
 
 pp = PrettyPrinter(indent=4)
 
-### USERS ###
 
-
-def create_user(db: Session, new_user: dict):
+def create_user(db: Session, new_user: dict) -> sql.User:
     """Create a user in the db.
 
     Args:
@@ -51,16 +37,13 @@ def create_user(db: Session, new_user: dict):
         user = sql.User(**new_user)
         db.add(user)
         db.commit()
-    except TypeError as e:
-        msg = f"error creating new user"
-        logging.error(msg + str(e))
+    except (SQLAlchemyError, TypeError, IntegrityError) as e:
         db.rollback()
-        raise UserNotCreated(msg)
-    except IntegrityError as e:
-        msg = f"error creating new user"
-        logging.error(msg + str(e))
-        db.rollback()
-        raise UserAlreadyExists(msg)
+        raise errors.UserNotCreated(
+            detail=f"Do you have an account already?",
+            context_msg=f"user not created due to: {str(e)}",
+            **new_user,
+        )
 
     return user
 
@@ -79,12 +62,12 @@ def read_user_by_id(db: Session, user_id: int) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.id == user_id).first()
     except SQLAlchemyError as e:
-        raise UserNotFound(f"db error checking for {user_id=}")
+        raise errors.UserNotFound(detail=f"db error checking for {user_id=}")
 
     if user:
         return user
     else:
-        raise UserNotFound(f"user not found")
+        raise errors.UserNotFound(detail=f"user not found")
 
 
 def read_user_by_email(db: Session, email: str) -> sql.User:
@@ -100,12 +83,12 @@ def read_user_by_email(db: Session, email: str) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.email == email).first()
     except SQLAlchemyError as e:
-        raise UserNotFound(f"db error {str(e)}")
+        raise errors.UserNotFound(detail=f"db error {str(e)}")
 
     if user:
         return user
     else:
-        raise UserNotFound(f"user not found")
+        raise errors.UserNotFound(detail=f"Email not found", context_msg="lookup of user by email failed", email=email)
 
 
 def read_all_users(db: Session) -> list:
@@ -132,20 +115,22 @@ def update_user_by_id(db: Session, user_id: str, update: dict) -> sql.User:
 
     try:
         user = read_user_by_id(db=db, user_id=user_id)
-    except UserNotFound:
-        raise UserNotUpdated(f"user was not found {user_id=}")
+    except errors.UserNotFound:
+        raise errors.UserNotUpdated(detail=f"user was not found {user_id=}")
 
     for col, new_value in update.items():
         if hasattr(user, col):
             setattr(user, col, new_value)
         else:
-            raise UserNotUpdated(f"user instance does not have attr {col=}")
+            raise errors.UserNotUpdated(detail=f"user instance does not have attr {col=}")
 
     try:
         db.commit()
         return user
     except SQLAlchemyError as e:
-        raise UserNotUpdated(f"db error writing updated user back to db {str(e)}")
+        raise errors.UserNotUpdated(
+            detail=f"db error writing updated user back to db {str(e)}"
+        )
 
 
 def delete_user_by_id(db: Session, user_id: int):
@@ -156,12 +141,9 @@ def delete_user_by_id(db: Session, user_id: int):
     if user:
         db.delete(user)
         db.commit()
-        return True  # TODO what is the best way to confirmt he success of a delete op?
+        return True  # TODO what is the best way to confirm the success of a delete op?
     else:
-        raise UserNotDeleted
-
-
-### PANELS ###
+        raise errors.UserNotDeleted(user_id=user_id)
 
 
 def create_panel_by_user_id(
@@ -196,9 +178,7 @@ def create_panel_by_user_id(
         db.commit()
         return new_panel
     except SQLAlchemyError as e:
-        raise PanelNotCreated(e)
-
-
+        raise errors.PanelNotCreated(context_msg=str(e))
 
 
 def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
@@ -221,12 +201,11 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
             .all()
         )
     except SQLAlchemyError as e:
-        raise PanelNotFound(f"error in db call to find panels {str(e)}")
+        raise errors.PanelNotFound(detail=f"error in db call to find panels {str(e)}")
 
     if panels:
         return panels
-    # else:
-    #     raise PanelNotFound(f"panels were not found for {user_id=}")
+
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
@@ -247,12 +226,14 @@ def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
             .first()
         )
     except SQLAlchemyError as e:
-        raise PanelNotFound(f"panel not foudn due to db error: {str(e)}")
+        raise errors.PanelNotFound(detail=f"panel not foudn due to db error: {str(e)}")
 
     if panel:
         return panel
     else:
-        raise PanelNotFound(f"panel with id {panel_id=} not found for user {user_id=}")
+        raise errors.PanelNotFound(
+            detail=f"panel with id {panel_id=} not found for user {user_id=}"
+        )
 
 
 def update_panel_by_id(
@@ -271,8 +252,8 @@ def update_panel_by_id(
     if update:
         try:
             panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-        except PanelNotFound:
-            raise PanelNotUpdated(f"Panel not found")
+        except errors.PanelNotFound:
+            raise errors.PanelNotUpdated(detail=f"Panel not found")
 
         if panel:
             for update_field, update_value in update.items():
@@ -289,15 +270,19 @@ def update_panel_by_id(
                         try:
                             db.commit()
                         except Exception as e:
-                            raise PanelNotUpdated(f"some issue in this commit {e}")
+                            raise errors.PanelNotUpdated(
+                                detail=f"some issue in this commit {e}"
+                            )
                 else:
-                    raise PanelNotUpdated(f"no field '{update_field}' found on panel")
+                    raise errors.PanelNotUpdated(
+                        detail=f"no field '{update_field}' found on panel"
+                    )
             return panel
         else:
-            raise PanelNotUpdated(f"panel with id {panel_id} not found")
+            raise errors.PanelNotUpdated(detail=f"panel with id {panel_id} not found")
 
     else:
-        raise PanelNotUpdated(f"no update body in call to ")
+        raise errors.PanelNotUpdated(detail=f"no update body in call to ")
 
 
 def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
@@ -308,34 +293,40 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
     raises: PanelNotDeleted on failure
     """
 
-    panel = (
-        db.query(sql.Panel)
-        .join(sql.User)
-        .filter(sql.Panel.id == panel_id)
-        .filter(sql.User.id == user_id)
-        .first()
-    )
+    try:
+        panel = (
+            db.query(sql.Panel)
+            .join(sql.User)
+            .filter(sql.Panel.id == panel_id)
+            .filter(sql.User.id == user_id)
+            .first()
+        )
 
-    if panel:
-        # capture pos for re-sort on delete
+        if not panel:
+            raise errors.PanelNotDeleted(
+                detail="Panel not found",
+                context_msg="in outer scope of crud.py call",
+                user_id=user_id,
+                panel_id=panel_id,
+            )
+
         panel_pos = panel.position
 
         db.delete(panel)
         db.commit()
 
-        # call re-sort here
-        # TODO this needs erorr handled as if
-        try:
-            panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
-        except PanelNotUpdated:
-            pass
+        panel_sort_on_delete(db=db, del_panel_pos=panel_pos, user_id=user_id)
 
         return True
-    else:
-        raise PanelNotDeleted
 
-
-### ENTRIES ###
+    except (SQLAlchemyError, errors.PanelNotUpdated) as e:
+        db.rollback()
+        raise errors.PanelNotDeleted(
+            detail="panel was not updated",
+            context_msg=f"transaction rolled back, panel was found, must be error in panel_sort_on_delete...: {str(e)}",
+            user_id=user_id,
+            panel_id=panel_id,
+        )
 
 
 def create_entry_by_panel_id(
@@ -355,13 +346,16 @@ def create_entry_by_panel_id(
 
     """
 
+    panel_entry_crud = config.monitors.create_monitor("panel_entry_crud", 10, 10)
+
+    panel_entry_crud.start()
     panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
 
     # check user_id on panel matches supplied user_id
     if not panel.user_id == user_id:
         msg = f"error creating new entry"
         logging.error(msg)
-        raise EntryNotCreated(msg)
+        raise errors.EntryNotCreated(msg)
 
     try:
         entry = sql.Entry(
@@ -374,8 +368,9 @@ def create_entry_by_panel_id(
         msg = f"error creating new entry"
         logging.error(msg + str(e))
         db.rollback()
-        raise EntryNotCreated(msg)
+        raise errors.EntryNotCreated(msg)
 
+    panel_entry_crud.stop()
     return entry
 
 
@@ -384,6 +379,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     ie the up do date daily view
 
     TODO examine if this can be refactored into the db call, and i think it can be optimised
+    TODO this needs error handling
 
     """
 
@@ -391,9 +387,8 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
     panels_with_latest_entry_only = []
 
-
     # could lookup user sepcified timezone once set in db, create it here
-    uk_tz = pytz.timezone('Europe/London')
+    uk_tz = pytz.timezone("Europe/London")
     now = datetime.now(uk_tz)
     # print(now)
 
@@ -445,12 +440,13 @@ def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
 
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
+    """
+    TODO this needs error hadnling
+    """
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-    # for p in panels:
-    #     print(p.position, p.title)
 
     max_pos = len(panels) - 1
-    # print(f"{max_pos=}")
+
     min_pos = 0
 
     for i, panel in enumerate(panels):
@@ -463,10 +459,7 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
     else:
         cur_pos = panel_to_move_cur_index
 
-    # remove from the list that will be iterated over to update the other positions
-    # this panel will have had its position update already in the caller func
     panels.pop(panel_to_move_cur_index)
-    # print(f"moving {panel_to_move.title} from {cur_pos} -> {new_pos}")
 
     if new_pos != cur_pos:
         if new_pos <= max_pos:
@@ -487,53 +480,41 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
                                 panel.position = panel.position - 1
                         db.commit()
                 except Exception as e:
-                    raise PanelNotUpdated(f"wihtin the try block: {e}")
+                    raise errors.PanelNotUpdated(f"wihtin the try block: {e}")
 
                 user = db.query(sql.User).where(sql.User.id == user_id).first()
                 user.panels.append(panel_to_move)
                 db.commit()
         else:
-            raise PanelNotUpdated(f"That's where the panel already is 🙂")
+            raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     else:
-        raise PanelNotUpdated(f"That's where the panel already is 🙂")
-    # print("FINAL POSITIONS:")
-    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-    # for p in panels:
-    #     print(p.position, p.title)
-    # print("END ")
-
-
-def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int):
-    """
-
-    panel is gone from table, but know the positon it did occupy
-
-    every panel above that position needs to be decremented by 1
-
-    so if it del_panel_pos=0,
-    loop all panels (that are left)
-    if the panels pos > del_panel_pos, postion - 1
-    else just leave it, so panel at pos 1 becomes pos 0, panel at pos 5, becomes 4 etc. yes
-
-    for del_panel_pos =5
-    panel pos 6 is decremented to 5, but not panel 4
-
-    """
+        raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
+
+
+def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
+    """Resort panels when a panel is deleted
+
+    Returns: None
+    Raises: PanelsNotSorted
+
+    """
 
     try:
+        panels = read_all_panels_by_user_id(db=db, user_id=user_id)
         for panel in panels:
             if panel.position > del_panel_pos:
                 panel.position = panel.position - 1
-
         db.commit()
-    except Exception as e:
-        raise PanelNotUpdated(f"{str(e)}")
+    except (SQLAlchemyError, AttributeError, TypeError, errors.PanelNotFound) as e:
+        db.rollback()
+        raise errors.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
 
 
 def today() -> datetime:
+    """TODO wherever this is called it can just be 'date'"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return today
 
@@ -605,8 +586,6 @@ def calc_consistency(db: Session, user_id: int):
                 }
             )
 
-
-
     return panel_consistencies
 
 
@@ -625,11 +604,11 @@ def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> 
             db.commit()
             return True
         except SQLAlchemyError as e:
-            raise EntriesNotDeleted(
+            raise errors.EntriesNotDeleted(
                 f"unable to delete entries on {panel_id=} for {user_id=} during db call"
             )
     else:
-        raise EntriesNotDeleted(
+        raise errors.EntriesNotDeleted(
             f"unable to delete entries as no panel exists with that {panel_id=} for {user_id=}"
         )
 
@@ -658,7 +637,7 @@ def blacklist_an_access_token(
         return access_token_to_blacklist
 
     except SQLAlchemyError as e:
-        raise BlacklistedAccessTokenException(
+        raise errors.BlacklistedAccessTokenException(
             f"problem inserting token to blacklist table {str(e)}"
         )
 
@@ -680,7 +659,7 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
             .first()
         )
     except SQLAlchemyError as e:
-        raise BlacklistedAccessTokenException(
+        raise errors.BlacklistedAccessTokenException(
             f"problem reading blacklist table {str(e)}"
         )
 
@@ -747,10 +726,10 @@ def create_password_reset_token(
             db.commit()
             return user, token_hash
         except SQLAlchemyError as e:
-            raise PasswordResetTokenException(str(e))
+            raise errors.PasswordResetTokenException(str(e))
 
     else:
-        raise UserNotFound("user not found")
+        raise errors.UserNotFound("user not found")
 
 
 def check_password_reset_token_is_valid(
@@ -781,7 +760,7 @@ def check_password_reset_token_is_valid(
             .first()
         )
     except SQLAlchemyError as e:
-        raise PasswordResetTokenException(str(e))
+        raise errors.PasswordResetTokenException(str(e))
 
     if prt:
         return True
@@ -814,7 +793,7 @@ def invalidate_password_reset_token(
             .first()
         )
     except SQLAlchemyError as e:
-        raise PasswordResetTokenException(str(e))
+        raise errors.PasswordResetTokenException(str(e))
 
     if prt:
         try:
@@ -823,9 +802,9 @@ def invalidate_password_reset_token(
             db.commit()
             return prt
         except SQLAlchemyError as e:
-            raise PasswordResetTokenException(f"could not update prt {str(e)}")
+            raise errors.PasswordResetTokenException(f"could not update prt {str(e)}")
     else:
-        raise PasswordResetTokenException(f"prt does not exist {str(e)}")
+        raise errors.PasswordResetTokenException(f"prt does not exist {str(e)}")
 
 
 def invalidate_all_user_prts(db: Session, user_id):
@@ -850,4 +829,3 @@ def invalidate_all_user_prts(db: Session, user_id):
             prt.is_valid = False
             prt.invalidated_at = datetime.utcnow()
         db.commit()
-

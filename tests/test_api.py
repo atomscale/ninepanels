@@ -1,6 +1,6 @@
 import pytest
-from fastapi import HTTPException
 
+from ninepanels import pydmodels as pyd
 
 def test_index(test_server):
     resp = test_server.get("/")
@@ -9,7 +9,7 @@ def test_index(test_server):
 
     payload = resp.json()
 
-    assert "branch" in payload.keys()
+    assert pyd.WrappedResponse(**payload)
 
 
 def test_create_user(test_server):
@@ -26,7 +26,7 @@ def test_create_user(test_server):
 
     payload = resp.json()
 
-    assert isinstance(payload["id"], int)
+    assert isinstance(payload['data']["id"], int)
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def test_read_user_by_id(test_server, test_access_token):
 
     payload = resp.json()
 
-    assert payload["email"] == "chris@chris.com"
+    assert payload['data']['email'] == "chris@chris.com"
 
 
 def test_delete_user_by_id(test_server):
@@ -69,7 +69,7 @@ def test_delete_user_by_id(test_server):
     assert resp.status_code == 200
     payload = resp.json()
 
-    assert payload["success"] == True
+    assert payload['data']["success"] == True
 
 
 def test_post_panel_by_user_id(test_server, test_access_token):
@@ -114,7 +114,7 @@ def test_get_panels_by_user_id(test_server, test_access_token):
 
     payload = resp.json()
 
-    assert isinstance(payload, list)
+    assert isinstance(payload['data'], list)
 
 
 def test_update_panel_by_id(test_server, test_access_token):
@@ -133,7 +133,9 @@ def test_update_panel_by_id(test_server, test_access_token):
     )
     assert resp.status_code == 200
 
-    test_panel_id = resp.json()["id"]
+    test_panel = resp.json()
+    test_panel_id = test_panel['data']['id']
+
     # test failure:
 
     # panel id wrong
@@ -143,8 +145,8 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 400
-    # assert "not found" in resp.text
+    test_panel = resp.json()
+    assert test_panel['status_code'] == 400
 
     # panel json empty
     resp = test_server.patch(
@@ -153,8 +155,9 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 422  # pydantic will send back 'unprocessable
-   
+    test_panel = resp.json()
+    assert test_panel['status_code'] == 422  # pydantic will send back 'unprocessable
+
     # panel update field that not in pydantic PanelUpdate obj caught
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
@@ -162,7 +165,8 @@ def test_update_panel_by_id(test_server, test_access_token):
         headers=headers,
     )
 
-    assert resp.status_code == 400  # this is not validated by pydantic
+    test_panel = resp.json()
+    assert test_panel['status_code'] == 400  # this is not validated by pydantic
 
 
     ### test success ###
@@ -175,9 +179,9 @@ def test_update_panel_by_id(test_server, test_access_token):
 
     resp_body = resp.json()
 
-    assert resp_body["id"] == test_panel_id
-    assert resp_body["title"] == "the update worked"
-    assert resp_body["position"]
+    assert resp_body['data']["id"] == test_panel_id
+    assert resp_body['data']["title"] == "the update worked"
+    assert resp_body['data']["position"]
 
     resp = test_server.patch(
         f"/panels/{test_panel_id}",
@@ -187,9 +191,9 @@ def test_update_panel_by_id(test_server, test_access_token):
 
     resp_body = resp.json()
 
-    assert resp_body["id"] == test_panel_id
-    assert resp_body["title"] == "the update worked"
-    assert resp_body["position"] == 1
+    assert resp_body['data']["id"] == test_panel_id
+    assert resp_body['data']["title"] == "the update worked"
+    assert resp_body['data']["position"] == 1
 
 
 def test_delete_panel_by_id(test_server, test_access_token):
@@ -199,6 +203,9 @@ def test_delete_panel_by_id(test_server, test_access_token):
     )
 
     assert resp.status_code == 200
+
+    delete_op = resp.json()
+    assert delete_op['data']['success'] == True
 
 
 def test_post_entry_on_panel(test_server, test_access_token):

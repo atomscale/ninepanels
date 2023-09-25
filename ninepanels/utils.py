@@ -1,6 +1,13 @@
 import hashlib
 import os
 import requests
+import logging
+import rollbar
+from typing import Dict
+
+from dataclasses import dataclass
+from collections import deque
+from datetime import datetime
 
 from . import errors
 from . import config
@@ -60,9 +67,7 @@ def dispatch_password_reset_email(
         raise errors.PasswordResetTokenException(f"problem sending email {str(e)}")
 
 
-def dispatch_welcome_email(
-    recipient_email: str, recipient_name: str
-) -> bool:
+def dispatch_welcome_email(recipient_email: str, recipient_name: str) -> bool:
     """send email using mail provider api
 
     Returns:
@@ -101,12 +106,12 @@ def dispatch_welcome_email(
     if resp.status_code == 200:
         return True
     else:
-        raise errors.WelcomeEmailException(f"problem sending welcome email {str(e)}")
+        raise errors.WelcomeEmailException(
+            detail=f"problem sending welcome email {str(e)}"
+        )
 
 
-def dispatch_welcome_catch_up(
-    recipient_email: str, recipient_name: str
-) -> bool:
+def dispatch_welcome_catch_up(recipient_email: str, recipient_name: str) -> bool:
     """send email using mail provider api
 
     Returns:
@@ -154,9 +159,8 @@ def dispatch_welcome_catch_up(
     else:
         raise errors.WelcomeEmailException(f"problem sending welcome email {str(e)}")
 
-def dispatch_mid_sept(
-    recipient_email: str, recipient_name: str
-) -> bool:
+
+def dispatch_mid_sept(recipient_email: str, recipient_name: str) -> bool:
     """send email using mail provider api
 
     Returns:
@@ -197,3 +201,94 @@ def dispatch_mid_sept(
         return True
     else:
         raise errors.WelcomeEmailException(f"problem sending mid sept email {str(e)}")
+
+
+class Monitor:
+
+    """Calculate an average of monitored times and ensure over threshold results are logged and sent to monitoring.
+
+
+    name: str of unique name
+    window_size: int of timing events to average over
+    alert_threshold_ms: int of the monitored time in ms over which to trigger an alert
+
+
+    """
+
+    def __init__(self, name: str, window_size: int, alert_threshold_ms: int) -> None:
+        self.name = name
+        self.window_size = window_size
+        self.alert_threshold_ms = alert_threshold_ms
+
+        self.running: bool = False
+        self.readings: deque[float] = deque([], maxlen=self.window_size)
+        self.start_ts: datetime = None
+        self.stop_ts: datetime = None
+        self.avg: float = None
+        self.in_alert = False
+
+    def start(self):
+        if self.running:
+            raise errors.MonitorError(f"already started")
+        self.running = True
+        self.start_ts = datetime.utcnow()
+
+    def stop(self):
+        if not self.running:
+            raise errors.MonitorError(f"cannot stop as not started")
+        self.running = False
+        self.stop_ts = datetime.utcnow()
+        self._measure()
+        self._monitor()
+
+    def report(self):
+        report = f"{self.name}: {self.in_alert=}, {self.avg=}, {self.alert_threshold_ms=}, {self.running=}, {len(self.readings)=}"
+        return report
+
+    def _measure(self):
+        if not self.start_ts:
+            raise errors.MonitorError(f"Monitor {self.name} has not started")
+        if self.running == True:
+            self.stop()
+
+        diff_timedelta = self.stop_ts - self.start_ts
+
+        diff_ms: float = diff_timedelta.total_seconds() * 1000
+        self.readings.append(diff_ms)
+
+    def _monitor(self):
+        if len(self.readings) == self.window_size:
+            self.avg = sum(self.readings) / len(self.readings)
+
+            if self.avg > self.alert_threshold_ms:
+                self.in_alert = True
+                logging.warn(
+                    f"monitor name: `{self.name}` at avg {round(self.avg, 3)}ms, over threshold {self.alert_threshold_ms}ms"
+                )
+            else:
+                self.in_alert = False
+
+
+class MonitorFactory:
+    _existing_monitors: Dict[str, Monitor] = {}
+
+    @classmethod
+    def create_monitor(
+        cls, name: str, window_size: int, alert_threshold_ms: int
+    ) -> Monitor:
+        if name not in cls._existing_monitors:
+            cls._existing_monitors[name] = Monitor(
+                name=name,
+                window_size=window_size,
+                alert_threshold_ms=alert_threshold_ms,
+            )
+
+        return cls._existing_monitors[name]
+
+    @classmethod
+    def report_all(cls) -> list[Monitor]:
+        all_monitors = []
+        for name, monitor in cls._existing_monitors.items():
+            all_monitors.append(monitor.report())
+
+        return all_monitors

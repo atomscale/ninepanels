@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from . import errors
+from . import utils
 
 
 def get_git_branch():
@@ -64,7 +65,7 @@ def compare_env_and_branch():
     if CURRENT_ENV == "FEATURE":
         if branch == "main" or branch == "staging":
             raise errors.ConfigurationException(
-                f"you are on the wrong branch (main or staging) to run a local feature branch"
+                detail=f"you are on the wrong branch (main or staging) to run a local feature branch"
             )
 
 
@@ -98,15 +99,14 @@ set_up_logger()
 
 ### MONITORING ###
 
-# import rollbar
-
 ROLLBAR_KEY = os.environ.get("ROLLBAR_KEY")
-# rollbar.init(access_token=ROLLBAR_KEY, environment=CURRENT_ENV)
 
-# rollbar.report_message(message='rollbar init from config', level='info')
+### PERFORMANCE ###
 
-# logger = logging.getLogger(__name__)
-# handler = rollbar.Rollbar
+DB_CALL_AVG_WINDOW = 100
+DB_PERF_ALERT_THRESHOLD = 100
+
+monitors = utils.MonitorFactory()
 
 
 ### SECURITY ###
