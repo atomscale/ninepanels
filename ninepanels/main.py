@@ -88,8 +88,10 @@ def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
-@api.get("/monitors")
-def monitors():
+@api.get("/monitors",)
+def monitors(
+    user: pyd.User = Depends(auth.get_current_user)
+):
     return config.monitors.report_all()
 
 

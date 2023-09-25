@@ -11,6 +11,7 @@ from .config import monitors
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
 
+
         response = await call_next(request)
 
         path = request.scope.get("path")
@@ -19,6 +20,13 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             "/redoc",
             "/openapi.json",
         ]
+
+
+        referer = request.headers.get('referer')
+
+        if referer:
+            if '/docs' in referer:
+                unwrapped_paths.append("/token")
 
         if path in unwrapped_paths:
             return response
