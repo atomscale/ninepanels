@@ -65,7 +65,7 @@ def get_db_uri():
 ### SERVER ###
 
 try:
-    SERVER_ROOT = get_env_var("NINEPANELS_SERVER_ROOT")
+    SERVER_ROOT = get_env_var("NINEPANELS_URL_ROOT")
 except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
