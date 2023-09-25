@@ -106,7 +106,9 @@ def dispatch_welcome_email(recipient_email: str, recipient_name: str) -> bool:
     if resp.status_code == 200:
         return True
     else:
-        raise errors.WelcomeEmailException(detail=f"problem sending welcome email {str(e)}")
+        raise errors.WelcomeEmailException(
+            detail=f"problem sending welcome email {str(e)}"
+        )
 
 
 def dispatch_welcome_catch_up(recipient_email: str, recipient_name: str) -> bool:
@@ -241,7 +243,6 @@ class Monitor:
 
     def report(self):
         report = f"{self.name}: {self.in_alert=}, {self.avg=}, {self.alert_threshold_ms=}, {self.running=}, {len(self.readings)=}"
-        # logging.info(report)
         return report
 
     def _measure(self):
@@ -251,12 +252,9 @@ class Monitor:
             self.stop()
 
         diff_timedelta = self.stop_ts - self.start_ts
-        print(diff_timedelta)
 
         diff_ms: float = diff_timedelta.total_seconds() * 1000
         self.readings.append(diff_ms)
-
-        # print(f"{self.name} {self.readings=}")
 
     def _monitor(self):
         if len(self.readings) == self.window_size:
@@ -280,13 +278,15 @@ class MonitorFactory:
     ) -> Monitor:
         if name not in cls._existing_monitors:
             cls._existing_monitors[name] = Monitor(
-                name=name, window_size=window_size, alert_threshold_ms=alert_threshold_ms
+                name=name,
+                window_size=window_size,
+                alert_threshold_ms=alert_threshold_ms,
             )
 
         return cls._existing_monitors[name]
 
     @classmethod
-    def report_all(cls):
+    def report_all(cls) -> list[Monitor]:
         all_monitors = []
         for name, monitor in cls._existing_monitors.items():
             all_monitors.append(monitor.report())

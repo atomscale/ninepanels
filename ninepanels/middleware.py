@@ -6,6 +6,7 @@ from starlette.requests import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .pydmodels import WrappedResponse
+from .config import monitors
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -23,7 +24,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             return response
 
         wrapped_response = WrappedResponse(
-            data = None,
+            data = {},
             status_code=200,
             is_error=False,
             error_message=None,
@@ -45,7 +46,10 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         if response.status_code == 404:
             wrapped_response.is_error = True
             wrapped_response.status_code = response.status_code
-            wrapped_response.error_message = "Not Found"
+            try:
+                wrapped_response.error_message = original_json['detail']
+            except KeyError:
+                wrapped_response.error_message = "Not found"
             return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
 
         if response.status_code >= 400:
@@ -68,3 +72,6 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
 
         return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
 
+class TimingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        pass

@@ -315,10 +315,10 @@ def initiate_password_reset_flow(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not create password reset token",
         )
-    except errors.UserNotFound:
+    except errors.UserNotFound as e:
         raise HTTPException(
             status_code=404,
-            detail="That email doesn't exist",
+            detail=e.detail,
         )
 
     if prt_user:
@@ -361,8 +361,8 @@ def password_reset(
 ):
     try:
         user = crud.read_user_by_email(db=db, email=email)
-    except errors.UserNotFound:
-        raise HTTPException(404, detail="user not found")
+    except errors.UserNotFound as e:
+        raise HTTPException(404, detail=e.detail)
 
     try:
         token_valid = crud.check_password_reset_token_is_valid(

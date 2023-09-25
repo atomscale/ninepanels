@@ -88,7 +88,7 @@ def read_user_by_email(db: Session, email: str) -> sql.User:
     if user:
         return user
     else:
-        raise errors.UserNotFound(detail=f"user not found")
+        raise errors.UserNotFound(detail=f"Email not found", context_msg="lookup of user by email failed", email=email)
 
 
 def read_all_users(db: Session) -> list:
