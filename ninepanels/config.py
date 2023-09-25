@@ -37,12 +37,23 @@ def get_git_commit():
         return None
 
 
+def get_env_var(var):
+    value = os.environ.get(var)
+    if not value:
+        raise EnvironmentError(f"env var {var} is missing")
+    return value
+
+
 ### DATABASE ###
 
-CURRENT_ENV = os.environ.get("NINEPANELS_ENV")
-DB_HOSTNAME = os.environ.get("DB_HOSTNAME")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_PORT = os.environ.get("DB_PORT")
+try:
+    CURRENT_ENV = get_env_var("NINEPANELS_ENV")
+    DB_HOSTNAME = get_env_var("DB_HOSTNAME")
+    DB_PASSWORD = get_env_var("DB_PASSWORD")
+    DB_PORT = get_env_var("DB_PORT")
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
 
@@ -53,7 +64,11 @@ def get_db_uri():
 
 ### SERVER ###
 
-SERVER_ROOT = os.environ.get("NINEPANELS_SERVER_ROOT")
+try:
+    SERVER_ROOT = get_env_var("NINEPANELS_SERVER_ROOT")
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 ### ENVIRONMENT ###
 
@@ -69,19 +84,19 @@ def compare_env_and_branch():
             )
 
 
-# if branch:
-#     compare_env_and_branch()
-
-
-RENDER_GIT_BRANCH = os.environ.get("RENDER_GIT_BRANCH")
-RENDER_GIT_COMMIT = os.environ.get("RENDER_GIT_COMMIT")
-
-if not RENDER_GIT_BRANCH:
+try:
+    RENDER_GIT_BRANCH = get_env_var("RENDER_GIT_BRANCH")
+    RENDER_GIT_COMMIT = get_env_var("RENDER_GIT_COMMIT")
+except EnvironmentError as e:
     RENDER_GIT_BRANCH = "local feature"
 
 ### FRONT END URL ###
 
-NINEPANELS_URL_ROOT = os.environ.get("NINEPANELS_URL_ROOT")
+try:
+    NINEPANELS_URL_ROOT = get_env_var("NINEPANELS_URL_ROOT")
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 ### LOGGING ###
 
@@ -99,23 +114,40 @@ set_up_logger()
 
 ### MONITORING ###
 
-ROLLBAR_KEY = os.environ.get("ROLLBAR_KEY")
+try:
+    ROLLBAR_KEY = get_env_var("ROLLBAR_KEY")
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 ### PERFORMANCE ###
 
-DB_CALL_AVG_WINDOW = 100
-DB_PERF_ALERT_THRESHOLD = 100
+try:
+    DB_CALL_AVG_WINDOW = 100
+    DB_PERF_ALERT_THRESHOLD = 100
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 monitors = utils.MonitorFactory()
 
 
 ### SECURITY ###
 
-SECRET_KEY = os.environ.get("JWT_SECRET")
-JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 100
-PASSWORD_ACCESS_TOKEN_MINUTES = int(os.environ.get("PASSWORD_ACCESS_TOKEN_MINUTES"))
+try:
+    CRYPT_CONTEXT_SCHEME = get_env_var("CRYPT_CONTEXT_SCHEME")
+    SECRET_KEY = get_env_var("JWT_SECRET")
+    JWT_ALGORITHM = get_env_var("JWT_ALGORITHM")
+    ACCESS_TOKEN_EXPIRE_DAYS = get_env_var("ACCESS_TOKEN_EXPIRE_DAYS")
+    PASSWORD_ACCESS_TOKEN_MINUTES = int(get_env_var("PASSWORD_ACCESS_TOKEN_MINUTES"))
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)
 
 ### COMMUNICATION ###
 
-POSTMARK_API_KEY = os.environ.get("POSTMARK_API_KEY")
+try:
+    POSTMARK_API_KEY = get_env_var("POSTMARK_API_KEY")
+except EnvironmentError as e:
+    print(f"missing env var error! startup aborted {e}")
+    exit(1)

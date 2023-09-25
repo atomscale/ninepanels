@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from .config import (
     SECRET_KEY,
     JWT_ALGORITHM,
+    CRYPT_CONTEXT_SCHEME
 )
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -19,7 +20,7 @@ from datetime import datetime, timedelta
 
 import random
 
-hash_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+hash_context = CryptContext(schemes=[CRYPT_CONTEXT_SCHEME], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
