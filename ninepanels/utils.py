@@ -216,8 +216,11 @@ class Monitor:
 
     """
 
-    def __init__(self, name: str, window_size: int, alert_threshold_ms: int) -> None:
+    def __init__(
+        self, name: str, request_id: str, path: str, window_size: int, alert_threshold_ms: int
+    ) -> None:
         self.name = name
+        self.request_id = request_id
         self.window_size = window_size
         self.alert_threshold_ms = alert_threshold_ms
 
@@ -247,22 +250,22 @@ class Monitor:
         self._measure()
 
     def report(self):
-
         self._calculate()
 
         report = {
-            'name': self.name,
-            'window_size': self.window_size,
-            'is_running': self.is_running,
-            'alert_threshold': self.alert_threshold_ms,
-            'in_alert': self.in_alert,
-            'last': self.last,
-            'max': self.max,
-            'min': self.min,
-            'avg': self.avg,
-            'num_readings': len(self.readings)
+            "name": self.name,
+            "request_id": self.request_id,
+            "window_size": self.window_size,
+            "is_running": self.is_running,
+            "alert_threshold": self.alert_threshold_ms,
+            "in_alert": self.in_alert,
+            "last": self.last,
+            "max": self.max,
+            "min": self.min,
+            "avg": self.avg,
+            "num_readings": len(self.readings),
         }
-        
+
         return report
 
     def _measure(self):
@@ -279,7 +282,7 @@ class Monitor:
     def _calculate(self):
         if self.readings:
             self.avg = sum(self.readings) / len(self.readings)
-            self.last = self.readings[len(self.readings) -1]
+            self.last = self.readings[len(self.readings) - 1]
             self.min = min(self.readings)
             self.max = max(self.readings)
 
@@ -291,7 +294,7 @@ class Monitor:
                 timestamp=datetime.utcnow(),
                 level="warn",
                 detail="monitor exceeded threshold",
-                monitor_name=self.name
+                monitor_name=self.name,
             )
             logging.warn(msg)
         else:
@@ -299,20 +302,22 @@ class Monitor:
 
 
 class MonitorFactory:
-    _existing_monitors: Dict[str, Monitor] = {}
+    _existing_monitors: Dict[str, Monitor] = {} # TODO work on how this uses keys to get 
 
     @classmethod
     def create_monitor(
-        cls, name: str, window_size: int, alert_threshold_ms: int
+        cls, name: str, request_id: str, path: str, window_size: int, alert_threshold_ms: int
     ) -> Monitor:
-        if name not in cls._existing_monitors:
-            cls._existing_monitors[name] = Monitor(
+        if request_id not in cls._existing_monitors:
+            cls._existing_monitors[request_id] = Monitor(
                 name=name,
+                request_id=request_id,
+                path=path,
                 window_size=window_size,
                 alert_threshold_ms=alert_threshold_ms,
             )
 
-        return cls._existing_monitors[name]
+        return cls._existing_monitors[request_id]
 
     @classmethod
     def report_all(cls) -> list[Monitor]:

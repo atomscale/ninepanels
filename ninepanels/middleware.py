@@ -9,10 +9,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from . import pydmodels as pyd
 from . import config
 
+
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-
-
         response = await call_next(request)
 
         path = request.scope.get("path")
@@ -22,22 +21,17 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
         ]
 
-
-        referer = request.headers.get('referer')
+        referer = request.headers.get("referer")
 
         if referer:
-            if '/docs' in referer:
+            if "/docs" in referer:
                 unwrapped_paths.append("/token")
 
         if path in unwrapped_paths:
             return response
 
         wrapped_response = pyd.WrappedResponse(
-            data = {},
-            status_code=200,
-            is_error=False,
-            error_message=None,
-            meta=None
+            data={}, status_code=200, is_error=False, error_message=None, meta=None
         )
 
         # TODO when would it ever be a non-streaming response type?
@@ -56,10 +50,12 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             wrapped_response.is_error = True
             wrapped_response.status_code = response.status_code
             try:
-                wrapped_response.error_message = original_json['detail']
+                wrapped_response.error_message = original_json["detail"]
             except KeyError:
                 wrapped_response.error_message = "Not found"
-            return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
+            return JSONResponse(
+                wrapped_response.model_dump(), status_code=response.status_code
+            )
 
         if response.status_code >= 400:
             wrapped_response.data = original_json
@@ -67,34 +63,55 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
             wrapped_response.status_code = response.status_code
             try:
                 if response.status_code == 422:
-                    wrapped_response.error_message = original_json['detail'][0]['msg']
+                    wrapped_response.error_message = original_json["detail"][0]["msg"]
                 else:
-                    wrapped_response.error_message = original_json['detail']
+                    wrapped_response.error_message = original_json["detail"]
             except KeyError:
                 wrapped_response.error_message = "No error detail provided"
-            return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
+            return JSONResponse(
+                wrapped_response.model_dump(), status_code=response.status_code
+            )
 
         else:
             wrapped_response.data = original_json
             wrapped_response.is_error = False
             wrapped_response.status_code = response.status_code
 
-        return JSONResponse(wrapped_response.model_dump(), status_code=response.status_code)
+        return JSONResponse(
+            wrapped_response.model_dump(), status_code=response.status_code
+        )
+
 
 class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-
         route_monitor = None
+        request_id = "no_id"
+        path = "no_path"
+        headers = request.headers
+
+        try:
+            request_id = headers["X-Request-ID"]
+            print(request_id)
+        except KeyError as e:
+            print("no request id")
 
         try:
             path = request.url.path
-            route_monitor = config.monitors.create_monitor(path, 10, 100)
+            print(path)
+        except Exception as e:
+            print("no path")
+
+        try:
+            route_monitor = config.monitors.create_monitor(
+                name="route",
+                request_id=request_id,
+                path=path,
+                window_size=10,
+                alert_threshold_ms=100,
+            )
             route_monitor.start()
         except Exception as e:
-            msg = pyd.LogMessage(
-                level="warn",
-                detail="monitor failed to start"
-            )
+            msg = pyd.LogMessage(level="warn", detail="monitor failed to start")
             logging.warn(msg)
 
         response = await call_next(request)
@@ -103,10 +120,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
             if route_monitor:
                 route_monitor.stop()
         except Exception as e:
-            msg = pyd.LogMessage(
-                level="warn",
-                detail="monitor failed to stop"
-            )
+            msg = pyd.LogMessage(level="warn", detail="monitor failed to stop")
             logging.warn(msg)
 
         return response

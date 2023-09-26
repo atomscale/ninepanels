@@ -263,8 +263,8 @@ def post_entry_by_panel_id(
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
-    entry_monitor.start()
+    # entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
+    # entry_monitor.start()
 
     try:
         entry = crud.create_entry_by_panel_id(
@@ -273,7 +273,7 @@ def post_entry_by_panel_id(
     except errors.EntryNotCreated as e:
         raise HTTPException(status_code=400, detail=e.detail)
 
-    entry_monitor.stop()
+    # entry_monitor.stop()
 
     return entry
 
