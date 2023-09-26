@@ -322,6 +322,7 @@ class TimerFactory:
             method, path = method_path.split("_")
             output.append(
                 {
+                    "id": method_path,
                     "method": method,
                     "path": path,
                     "stats": self.stats[method_path],
