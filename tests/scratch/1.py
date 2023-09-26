@@ -1,18 +1,24 @@
-from pydantic import BaseModel
+a = "GET_/path"
+
+a, b = a.split('_')
+print(a, b)
 
 
-class Response(BaseModel):
-    data: dict | list | None = None
-    status: int
-    ui_message: list[str] | None = []
-
-test_dict = {"test":"hi"}
-test_list = [1,2,34]
-
-resp = Response(data=test_list, status=200, ui_message=['hello'])
+# from pydantic import BaseModel
 
 
-print(resp.model_dump())
+# class Response(BaseModel):
+#     data: dict | list | None = None
+#     status: int
+#     ui_message: list[str] | None = []
+
+# test_dict = {"test":"hi"}
+# test_list = [1,2,34]
+
+# resp = Response(data=test_list, status=200, ui_message=['hello'])
+
+
+# print(resp.model_dump())
 
 
 

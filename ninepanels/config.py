@@ -129,7 +129,7 @@ except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
 
-monitors = utils.MonitorFactory()
+timers = utils.TimerFactory()
 
 
 ### SECURITY ###

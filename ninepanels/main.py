@@ -1,12 +1,5 @@
-
-from .database import get_db
-from .middleware import ResponseWrapperMiddleware
-from . import crud
-from . import pydmodels as pyd
-from . import auth
-from . import config
-from . import errors
-from . import utils
+import rollbar
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from fastapi import FastAPI
 from fastapi import Depends
@@ -22,8 +15,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from pydantic import EmailStr
-import rollbar
-from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from sqlalchemy.orm import Session
 
@@ -34,7 +25,14 @@ from pprint import PrettyPrinter
 
 from datetime import datetime
 
-
+from .database import get_db
+from . import middleware
+from . import crud
+from . import pydmodels as pyd
+from . import auth
+from . import config
+from . import errors
+from . import utils
 
 pp = PrettyPrinter(indent=4)
 
@@ -49,7 +47,8 @@ api_origins = [
     "https://ninepanels.com"
 ]
 
-api.add_middleware(ResponseWrapperMiddleware)
+api.add_middleware(middleware.ResponseWrapperMiddleware)
+api.add_middleware(middleware.TimingMiddleware)
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,
@@ -76,8 +75,6 @@ def run_migrations():
 run_migrations()
 
 
-
-
 version_ts = datetime.utcnow()
 
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
@@ -88,11 +85,18 @@ def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
-@api.get("/monitors",)
-def monitors(
+@api.get("/admin/performance/routes",)
+def read_route_performance(
     user: pyd.User = Depends(auth.get_current_user)
 ):
-    return config.monitors.report_all()
+    return config.timers.route_performance
+
+@api.get("/admin/performance/requests",)
+def read_request_performance(
+    user: pyd.User = Depends(auth.get_current_user)
+):
+    return config.timers.request_performance
+
 
 
 @api.post(
@@ -222,21 +226,18 @@ def update_panel_by_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-    update_monitor = config.monitors.create_monitor("update_panel", 5, 20)
-
-    update_monitor.start()
 
     if update:
         try:
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
-            update_monitor.stop()
+
             return updated_panel
         except errors.PanelNotUpdated as e:
-            update_monitor.stop()
+
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
-        update_monitor.stop()
+
         raise HTTPException(status_code=400, detail="No update object")
 
 
@@ -262,8 +263,7 @@ def post_entry_by_panel_id(
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
-    entry_monitor.start()
+
 
     try:
         entry = crud.create_entry_by_panel_id(
@@ -271,8 +271,6 @@ def post_entry_by_panel_id(
         )
     except errors.EntryNotCreated as e:
         raise HTTPException(status_code=400, detail=e.detail)
-
-    entry_monitor.stop()
 
     return entry
 
