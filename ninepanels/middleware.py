@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 
 from starlette.responses import JSONResponse
 from starlette.responses import StreamingResponse
@@ -84,43 +85,43 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
 
 class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        route_monitor = None
-        request_id = "no_id"
+        route_timer = None
+        request_id = str(uuid.uuid4())
         path = "no_path"
         headers = request.headers
 
         try:
             request_id = headers["X-Request-ID"]
-            print(request_id)
         except KeyError as e:
-            print("no request id")
+            logging.warn("no request id (probably /docs calling)")
 
         try:
             path = request.url.path
-            print(path)
         except Exception as e:
-            print("no path")
+            logging.warn("no path")
 
         try:
-            route_monitor = config.monitors.create_monitor(
-                name="route",
+            method = request.method
+        except Exception as e:
+            logging.warn("no method")
+
+        try:
+            route_timer = config.timers.create_timer(
+                method=method,
                 request_id=request_id,
                 path=path,
-                window_size=10,
-                alert_threshold_ms=100,
             )
-            route_monitor.start()
+            route_timer.start()
         except Exception as e:
-            msg = pyd.LogMessage(level="warn", detail="monitor failed to start")
+            msg = pyd.LogMessage(level="warn", detail="issue with route timer at start call")
             logging.warn(msg)
-
         response = await call_next(request)
 
         try:
-            if route_monitor:
-                route_monitor.stop()
+            if route_timer:
+                route_timer.stop()
         except Exception as e:
-            msg = pyd.LogMessage(level="warn", detail="monitor failed to stop")
+            msg = pyd.LogMessage(level="warn", detail="issue with route timer at stop call")
             logging.warn(msg)
 
         return response

@@ -346,9 +346,7 @@ def create_entry_by_panel_id(
 
     """
 
-    # panel_entry_crud = config.monitors.create_monitor("panel_entry_crud", 10, 10)
 
-    # panel_entry_crud.start()
     panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
 
     # check user_id on panel matches supplied user_id
@@ -370,7 +368,7 @@ def create_entry_by_panel_id(
         db.rollback()
         raise errors.EntryNotCreated(msg)
 
-    # panel_entry_crud.stop()
+  
     return entry
 
 

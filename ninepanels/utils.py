@@ -1,12 +1,13 @@
 import hashlib
 import os
+import re
 import requests
 import logging
 import rollbar
-from typing import Dict
 
+from typing import Dict
 from dataclasses import dataclass
-from collections import deque
+from collections import defaultdict, deque
 from datetime import datetime
 
 from . import errors
@@ -204,125 +205,132 @@ def dispatch_mid_sept(recipient_email: str, recipient_name: str) -> bool:
         raise errors.WelcomeEmailException(f"problem sending mid sept email {str(e)}")
 
 
-class Monitor:
-
-    """Calculate an average of monitored times and ensure over threshold results are logged and sent to monitoring.
+pattern = re.compile(r"(?<=/)\d+(?=/|$)")
 
 
-    name: str of unique name
-    window_size: int of timing events to average over
-    alert_threshold_ms: int of the monitored time in ms over which to trigger an alert
+def replace_numbers_in_path(path: str) -> str:
+    return pattern.sub("x", path)
 
 
-    """
+class Timer:
+
+    """single, ephemeral per request"""
 
     def __init__(
-        self, name: str, request_id: str, path: str, window_size: int, alert_threshold_ms: int
+        self, factory: object, method: str, request_id: str, path: str
     ) -> None:
-        self.name = name
         self.request_id = request_id
-        self.window_size = window_size
-        self.alert_threshold_ms = alert_threshold_ms
-
-        self.is_running: bool = False
-        self.readings: deque[float] = deque([], maxlen=self.window_size)
+        self.path = path
+        self.method = method
         self.start_ts: datetime = None
         self.stop_ts: datetime = None
-        self.avg: float = None
-        self.last: float = None
-        self.max: float = None
-        self.min: float = None
-        self.in_alert = False
+        self.factory = factory
+
+        self.diff_ms: float = None
+        self.is_running: bool = False
 
     def start(self):
-        if self.is_running:
-            raise errors.MonitorError(f"already started")
-        self.is_running = True
         self.start_ts = datetime.utcnow()
+        self.is_running = True
 
-    def stop(self):
-        if not self.is_running:
-            raise errors.MonitorError(f"cannot stop as not started")
-        self.is_running = False
+    def stop(self) -> float:
         self.stop_ts = datetime.utcnow()
-        self._measure()
-        self._calculate()
-        self._measure()
-
-    def report(self):
-        self._calculate()
-
-        report = {
-            "name": self.name,
-            "request_id": self.request_id,
-            "window_size": self.window_size,
-            "is_running": self.is_running,
-            "alert_threshold": self.alert_threshold_ms,
-            "in_alert": self.in_alert,
-            "last": self.last,
-            "max": self.max,
-            "min": self.min,
-            "avg": self.avg,
-            "num_readings": len(self.readings),
-        }
-
-        return report
-
-    def _measure(self):
-        if not self.start_ts:
-            raise errors.MonitorError(f"Monitor {self.name} has not started")
-        if self.is_running == True:
-            self.stop()
-
+        self.is_running = False
         diff_timedelta = self.stop_ts - self.start_ts
 
-        diff_ms: float = diff_timedelta.total_seconds() * 1000
-        self.readings.append(diff_ms)
+        self.diff_ms: float = diff_timedelta.total_seconds() * 1000
+        self.factory.update(
+            method_path=f"{self.method}_{self.path}", request_id=self.request_id
+        )
 
-    def _calculate(self):
-        if self.readings:
-            self.avg = sum(self.readings) / len(self.readings)
-            self.last = self.readings[len(self.readings) - 1]
-            self.min = min(self.readings)
-            self.max = max(self.readings)
 
-    def _monitor(self):
-        if self.avg > self.alert_threshold_ms:
-            self.in_alert = True
+class TimerFactory:
+    timers = {}
+    stats = {}
 
-            msg = pyd.LogMessage(
-                timestamp=datetime.utcnow(),
-                level="warn",
-                detail="monitor exceeded threshold",
-                monitor_name=self.name,
-            )
-            logging.warn(msg)
+    window_size = 10
+    alert_thresholds = {
+        "GET_/": 35,
+        "GET_/users": 20,
+        "GET_/panels": 20,
+        "GET_/performance": 20,
+    }
+    alert_threshold = 100
+
+    def __init__(self) -> None:
+        self.readings = defaultdict(lambda: deque([], maxlen=self.window_size))
+        self.request_ids = deque([], maxlen=100)
+        self.component_timers = deque([], maxlen=100)
+
+    def create_timer(self, request_id, method, path) -> Timer:
+        path = replace_numbers_in_path(path)
+        method_path = f"{method}_{path}"
+
+        timer = Timer(factory=self, method=method, request_id=request_id, path=path)
+
+        if method_path not in self.timers:
+            self.timers[method_path] = deque(maxlen=self.window_size)
+            self.timers[method_path].append(timer)
         else:
-            self.in_alert = False
+            self.timers[method_path].append(timer)
+        return timer
 
+    def update(self, method_path, request_id):
+        path_timer_stats = {}
+        times = [
+            i.diff_ms
+            for i in self.timers[method_path]
+            if not i.is_running and i.diff_ms
+        ]
+        if times:
+            path_timer_stats = {
+                "avg": sum(times) / len(times),
+                "min": min(times),
+                "max": max(times),
+                "last": times[len(times) - 1],
+            }
 
-class MonitorFactory:
-    _existing_monitors: Dict[str, Monitor] = {} # TODO work on how this uses keys to get 
+            self.stats[method_path] = path_timer_stats
 
-    @classmethod
-    def create_monitor(
-        cls, name: str, request_id: str, path: str, window_size: int, alert_threshold_ms: int
-    ) -> Monitor:
-        if request_id not in cls._existing_monitors:
-            cls._existing_monitors[request_id] = Monitor(
-                name=name,
-                request_id=request_id,
-                path=path,
-                window_size=window_size,
-                alert_threshold_ms=alert_threshold_ms,
+            reading = {
+                "timestamp": datetime.utcnow(),
+                "request_id": request_id,
+                "reading": path_timer_stats["last"],
+            }
+            self.readings[method_path].append(reading)
+            self.request_ids.append(reading)
+
+        self.assess_performance()
+
+    def assess_performance(self):
+        for method_path in self.stats:
+            if method_path in self.alert_thresholds:
+                self.alert_threshold = self.alert_thresholds[method_path]
+
+            self.stats[method_path]["alert_threshold"] = self.alert_threshold
+            self.stats[method_path]["in_alert"] = False
+
+            if self.stats[method_path]["avg"] > self.alert_threshold:
+                self.stats[method_path]["in_alert"] = True
+                # TODO logging and monitoring code here
+
+    @property
+    def route_performance(self) -> list[dict]:
+        output = []
+
+        for method_path in self.stats:
+            method, path = method_path.split("_")
+            output.append(
+                {
+                    "method": method,
+                    "path": path,
+                    "stats": self.stats[method_path],
+                    "readings": self.readings[method_path],
+                }
             )
 
-        return cls._existing_monitors[request_id]
+        return output
 
-    @classmethod
-    def report_all(cls) -> list[Monitor]:
-        all_monitors = []
-        for name, monitor in cls._existing_monitors.items():
-            all_monitors.append(monitor.report())
-
-        return all_monitors
+    @property
+    def request_performance(self) -> list[dict]:
+        return self.request_ids
