@@ -258,7 +258,7 @@ class TimerFactory:
     alert_threshold = 100
 
     def __init__(self) -> None:
-        self.readings = defaultdict(lambda: deque([], maxlen=self.window_size))
+        self.readings =  defaultdict(lambda: deque([], maxlen=self.window_size))
         self.request_ids = deque([], maxlen=100)
         self.component_timers = deque([], maxlen=100)
 
@@ -318,7 +318,22 @@ class TimerFactory:
     def route_performance(self) -> list[dict]:
         output = []
 
+
         for method_path in self.stats:
+            ts_arr = []
+            req_arr = []
+            read_arr = []
+            for mp_reading in self.readings[method_path]:
+                ts_arr.append(mp_reading['timestamp'])
+                req_arr.append(mp_reading['request_id'])
+                read_arr.append(mp_reading['reading'])
+
+            reading_out = {
+                'timestamp': ts_arr,
+                'request_id': req_arr,
+                'reading': read_arr
+            }
+
             method, path = method_path.split("_")
             output.append(
                 {
@@ -326,9 +341,13 @@ class TimerFactory:
                     "method": method,
                     "path": path,
                     "stats": self.stats[method_path],
-                    "readings": self.readings[method_path],
+                    "readings": reading_out
                 }
             )
+
+
+
+
 
         return output
 
