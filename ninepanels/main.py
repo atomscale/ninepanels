@@ -1,3 +1,5 @@
+import asyncio
+
 import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
@@ -7,12 +9,10 @@ from fastapi import HTTPException
 from fastapi import status
 from fastapi import Form
 from fastapi import Body
-from fastapi.exceptions import ValidationException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 from pydantic import EmailStr
 
@@ -32,7 +32,8 @@ from . import pydmodels as pyd
 from . import auth
 from . import config
 from . import errors
-from . import utils
+from . import comms
+from . import queues
 
 pp = PrettyPrinter(indent=4)
 
@@ -44,7 +45,7 @@ api = FastAPI()
 api_origins = [
     "http://localhost:5173",
     "https://preview.ninepanels.com",
-    "https://ninepanels.com"
+    "https://ninepanels.com",
 ]
 
 api.add_middleware(middleware.ResponseWrapperMiddleware)
@@ -57,6 +58,7 @@ api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
@@ -80,23 +82,28 @@ version_ts = datetime.utcnow()
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
 
 
+@api.on_event("startup")
+def init_async_workers():
+    asyncio.create_task(queues.event_worker())
+
+
 @api.get("/")
 def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
-@api.get("/admin/performance/route",)
-def read_route_performance(
-    user: pyd.User = Depends(auth.get_current_user)
-):
+@api.get(
+    "/admin/performance/route",
+)
+def read_route_performance(user: pyd.User = Depends(auth.get_current_user)):
     return config.timers.route_performance
 
-@api.get("/admin/performance/request",)
-def read_request_performance(
-    user: pyd.User = Depends(auth.get_current_user)
-):
-    return config.timers.request_performance
 
+@api.get(
+    "/admin/performance/request",
+)
+def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
+    return config.timers.request_performance
 
 
 @api.post(
@@ -122,7 +129,7 @@ def post_credentials_for_access_token(
 
 
 @api.post("/users", response_model=pyd.User)
-def create_user(
+async def create_user(
     email: EmailStr = Form(),
     name: str = Form(),
     password: str = Form(),
@@ -139,22 +146,13 @@ def create_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
 
-
     rollbar.report_message(
         message=f"new user {user.name} just signed up!", level="info"
     )
 
-    try:
-        sent = utils.dispatch_welcome_email(user.email, user.name)
-    except errors.WelcomeEmailException:
-        rollbar.report_message(
-            message=f"new user welcome email to {user.name} failed", level="error"
-        )
-
-    if sent:
-        rollbar.report_message(
-            message=f"new user welcome email to {user.name} sent", level="info"
-        )
+    payload = {"recipient_email": user.email, "recipient_name": user.name}
+    event = pyd.Event(type="new_user_signed_up", payload=payload)
+    await queues.event_queue.put(event)
 
     return user
 
@@ -226,18 +224,15 @@ def update_panel_by_id(
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-
     if update:
         try:
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
 
             return updated_panel
         except errors.PanelNotUpdated as e:
-
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
-
         raise HTTPException(status_code=400, detail="No update object")
 
 
@@ -263,8 +258,6 @@ def post_entry_by_panel_id(
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-
-
     try:
         entry = crud.create_entry_by_panel_id(
             db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
@@ -304,7 +297,7 @@ def get_panel_consistency_by_user_id(
 
 
 @api.post("/request_password_reset")
-def initiate_password_reset_flow(
+async def initiate_password_reset_flow(
     email: str = Form(),
     db: Session = Depends(get_db),
 ):
@@ -322,28 +315,17 @@ def initiate_password_reset_flow(
         )
 
     if prt_user:
-        # create url
         url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
-        # dispatch email
-        try:
-            if utils.dispatch_password_reset_email(
-                recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
-            ):
-                rollbar.report_message(
-                    message=f"{prt_user.name} requested to reset their password",
-                    level="info",
-                )
-                return True  # initiation of password flow successful
-            else:
-                raise HTTPException(
-                    400,
-                    detail="Having trouble sending your password reset email. Sorry.",
-                )
-        except errors.PasswordResetTokenException:
-            raise HTTPException(
-                400, detail="Having trouble sending your password reset email. Sorry."
-            )
+        payload = {
+            "recipient_email": prt_user.email,
+            "recipient_name": prt_user.name,
+            "url": url,
+        }
+        event = pyd.Event(type="password_reset_requested", payload=payload)
+        await queues.event_queue.put(event)
+
+        return True  # initiation of password flow successful, used for ui logic only
 
     else:
         raise HTTPException(

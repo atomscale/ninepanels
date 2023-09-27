@@ -101,7 +101,7 @@ class PasswordResetTokenException(NinePanelsBaseException):
     pass
 
 
-class WelcomeEmailException(NinePanelsBaseException):
+class EmailException(NinePanelsBaseException):
     pass
 
 

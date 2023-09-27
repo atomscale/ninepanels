@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr, model_validator
 from datetime import datetime
+import uuid
 
 
 class AccessToken(BaseModel):
@@ -69,8 +70,13 @@ class LogMessage(BaseModel):
     context_data: dict | None = None
 
 class WrappedResponse(BaseModel):
-    data: dict | list | None = None
+    data: dict | list | bool | None = None
     status_code: int
     is_error: bool
     error_message: str | None = None
     meta: dict | list | None = None
+
+class Event(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type: str
+    payload: dict

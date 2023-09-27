@@ -7,16 +7,18 @@ can change across branches and not have to merge or affect core branch code
 
 """
 
-from . import sqlmodels as sql
-from . import config
+import argparse
+from datetime import datetime, timedelta
+
 from sqlalchemy import desc
 from sqlalchemy import inspect
+
 from .database import SessionLocal
 from .database import engine, text
 from . import errors
-
-import argparse
-from datetime import datetime, timedelta
+from . import sqlmodels as sql
+from . import config
+from . import comms
 
 db = SessionLocal()
 
@@ -709,19 +711,7 @@ def create_data():
 
 def update_data():
 
-    from . import utils
-    users = db.query(sql.User).order_by(sql.User.id).all()
-
-
-
-    for user in users:
-        try:
-            conf = utils.dispatch_mid_sept(user.email, user.name)
-            if conf:
-                print("email sent")
-        except errors.WelcomeEmailException:
-            print("email not sent")
-
+    ...
 
 def delete_schema():
     sql.Base.metadata.drop_all(bind=engine)

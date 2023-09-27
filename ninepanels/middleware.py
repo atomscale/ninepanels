@@ -119,7 +119,8 @@ class TimingMiddleware(BaseHTTPMiddleware):
 
         try:
             if route_timer:
-                route_timer.stop()
+                await route_timer.stop()
+
         except Exception as e:
             msg = pyd.LogMessage(level="warn", detail="issue with route timer at stop call")
             logging.warn(msg)
