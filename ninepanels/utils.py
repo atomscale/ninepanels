@@ -251,9 +251,9 @@ class TimerFactory:
     window_size = 100
     alert_thresholds = {
         "GET_/": 10,
-        "GET_/users": 20,
+        "GET_/users": 40,
         "GET_/panels": 40,
-        "GET_/admin/performance/route": 10,
+        "GET_/admin/performance/route": 20,
         "POST_/panels/x": 50,
         "POST_/panels/x/entries": 40,
         "PATCH_/panels/x": 40,
