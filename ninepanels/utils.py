@@ -248,19 +248,27 @@ class TimerFactory:
     timers = {}
     stats = {}
 
-    window_size = 10
+    window_size = 100
     alert_thresholds = {
-        "GET_/": 35,
+        "GET_/": 10,
         "GET_/users": 20,
-        "GET_/panels": 20,
-        "GET_/performance": 20,
+        "GET_/panels": 40,
+        "GET_/admin/performance/route": 10,
+        "POST_/panels/x": 50,
+        "POST_/panels/x/entries": 40,
+        "PATCH_/panels/x": 40,
+        "DELETE_/panels/x": 40,
+        "DELETE_/panels/x/entries": 40,
+        "POST_/token": 500,
+        "GET_/docs": 10,
+        "GET_/openapi.json": 40
     }
-    alert_threshold = 100
+    alert_threshold = 40
 
     def __init__(self) -> None:
         self.readings =  defaultdict(lambda: deque([], maxlen=self.window_size))
-        self.request_ids = deque([], maxlen=100)
-        self.component_timers = deque([], maxlen=100)
+        self.request_ids = deque([], maxlen=self.window_size)
+        self.component_timers = deque([], maxlen=self.window_size)
 
     def create_timer(self, request_id, method, path) -> Timer:
         path = replace_numbers_in_path(path)
