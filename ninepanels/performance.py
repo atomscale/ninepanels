@@ -1,4 +1,11 @@
 from . import pydmodels as pyd
 
-async def example_timing_handler(event: pyd.Event):
-    print(f"timing event handler")
+
+async def process_timing_events(event: pyd.Event):
+    # persist to 'timings' table
+
+    # process stats and emit
+
+    
+
+    ...

@@ -7,13 +7,15 @@ from datetime import datetime
 
 from . import pydmodels as pyd
 from . import queues
-
+from . import events
 
 
 pattern = re.compile(r"(?<=/)\d+(?=/|$)")
 
+
 def replace_numbers_in_path(path: str) -> str:
     return pattern.sub("x", path)
+
 
 class Timer:
 
@@ -55,13 +57,9 @@ class Timer:
             "diff_ms": self.diff_ms,
         }
 
-        timing_event = pyd.Event(
-            type="timer_completed",
-            payload=timing_payload
-        )
+        timing_event = pyd.Event(type=events.TIMING_COMPLETED, payload=timing_payload)
 
         await queues.event_queue.put(timing_event)
-
 
 
 class TimerFactory:
@@ -81,12 +79,12 @@ class TimerFactory:
         "DELETE_/panels/x/entries": 40,
         "POST_/token": 500,
         "GET_/docs": 10,
-        "GET_/openapi.json": 40
+        "GET_/openapi.json": 40,
     }
     alert_threshold = 40
 
     def __init__(self) -> None:
-        self.readings =  defaultdict(lambda: deque([], maxlen=self.window_size))
+        self.readings = defaultdict(lambda: deque([], maxlen=self.window_size))
         self.request_ids = deque([], maxlen=self.window_size)
         self.component_timers = deque([], maxlen=self.window_size)
 
@@ -146,20 +144,19 @@ class TimerFactory:
     def route_performance(self) -> list[dict]:
         output = []
 
-
         for method_path in self.stats:
             ts_arr = []
             req_arr = []
             read_arr = []
             for mp_reading in self.readings[method_path]:
-                ts_arr.append(mp_reading['timestamp'])
-                req_arr.append(mp_reading['request_id'])
-                read_arr.append(mp_reading['reading'])
+                ts_arr.append(mp_reading["timestamp"])
+                req_arr.append(mp_reading["request_id"])
+                read_arr.append(mp_reading["reading"])
 
             reading_out = {
-                'timestamp': ts_arr,
-                'request_id': req_arr,
-                'reading': read_arr
+                "timestamp": ts_arr,
+                "request_id": req_arr,
+                "reading": read_arr,
             }
 
             method, path = method_path.split("_")
@@ -169,13 +166,9 @@ class TimerFactory:
                     "method": method,
                     "path": path,
                     "stats": self.stats[method_path],
-                    "readings": reading_out
+                    "readings": reading_out,
                 }
             )
-
-
-
-
 
         return output
 

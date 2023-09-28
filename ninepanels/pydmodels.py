@@ -1,6 +1,13 @@
-from pydantic import BaseModel, Field, EmailStr, model_validator
-from datetime import datetime
 import uuid
+
+from typing import Any
+
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import EmailStr
+from pydantic import model_validator
+
+from datetime import datetime
 
 
 class AccessToken(BaseModel):
@@ -63,11 +70,11 @@ class UserInDB(User):
     hashed_password: str
 
 class LogMessage(BaseModel):
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: str = Field(default_factory=lambda: str(datetime.utcnow()))
     level: str = Field(default='info')
     detail: str
     context_msg: str | None = None
-    context_data: dict | None = None
+    context_data: dict | None = None # TODO this will need to change if it is to be persisted? or leverage postgres json?
 
 class WrappedResponse(BaseModel):
     data: dict | list | bool | None = None
@@ -78,5 +85,8 @@ class WrappedResponse(BaseModel):
 
 class Event(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: str(datetime.utcnow()))
     type: str
-    payload: dict
+    payload: Any
+    payload_type: Any | None = None
+    payload_desc: str | None = None

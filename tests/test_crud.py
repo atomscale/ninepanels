@@ -1,6 +1,6 @@
 import pytest
 from ninepanels import crud
-from ninepanels import errors
+from ninepanels import exceptions
 from ninepanels import utils
 from datetime import datetime, timedelta
 
@@ -30,7 +30,7 @@ def test_read_user_by_id(test_db):
 
     # check cexected errors:
 
-    with pytest.raises(errors.UserNotFound):
+    with pytest.raises(exceptions.UserNotFound):
         user_id = 42
         user = crud.read_user_by_id(test_db, user_id)
 
@@ -52,7 +52,7 @@ def test_update_user_by_id(test_db):
 
     # udpate  a non-existant column and check for fialure
 
-    with pytest.raises(errors.UserNotUpdated):
+    with pytest.raises(exceptions.UserNotUpdated):
         crud.update_user_by_id(
             db=test_db, user_id=user.id, update={"col_not_exist": "newname"}
         )
@@ -74,11 +74,11 @@ def test_delete_user_by_id(test_db):
     assert conf == True
 
     # check user no longer in db
-    with pytest.raises(errors.UserNotFound):
+    with pytest.raises(exceptions.UserNotFound):
         crud.read_user_by_id(test_db, user_id)
 
     # check correct error raised when try to delete again
-    with pytest.raises(errors.UserNotDeleted):
+    with pytest.raises(exceptions.UserNotDeleted):
         conf = crud.delete_user_by_id(test_db, user_id)
 
 
@@ -138,7 +138,7 @@ def test_update_panel_by_panel_id(test_db):
     # test failure cases:
 
     # test non-existent panel_id
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         crud.update_panel_by_id(
             db=test_db,
             user_id=test_user_id,
@@ -147,13 +147,13 @@ def test_update_panel_by_panel_id(test_db):
         )
 
     # test empty update obj
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=9999, update={}
         )
 
     # test update obj with keys that dont exist on object
-    with pytest.raises(errors.PanelNotUpdated) as e:
+    with pytest.raises(exceptions.PanelNotUpdated) as e:
         crud.update_panel_by_id(
             db=test_db,
             user_id=test_user_id,
@@ -211,7 +211,7 @@ def test_update_panel_by_panel_id(test_db):
     new_pos = 6
     update_d = {"position": new_pos}
 
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         updated_panel = crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
         )
@@ -220,7 +220,7 @@ def test_update_panel_by_panel_id(test_db):
     new_pos = 3
     update_d = {"position": new_pos}
 
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         updated_panel = crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
         )
@@ -235,7 +235,7 @@ def test_delete_panel_by_panel_id(test_db):
     assert is_deleted
 
     # try again, shoudl be idempotent
-    with pytest.raises(errors.PanelNotDeleted):
+    with pytest.raises(exceptions.PanelNotDeleted):
         is_deleted = crud.delete_panel_by_panel_id(
             db=test_db, user_id=test_user_id, panel_id=2
         )

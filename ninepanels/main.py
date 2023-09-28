@@ -31,9 +31,10 @@ from . import crud
 from . import pydmodels as pyd
 from . import auth
 from . import config
-from . import errors
-from . import comms
+from . import exceptions
 from . import queues
+from . import events
+from . import utils
 
 pp = PrettyPrinter(indent=4)
 
@@ -111,19 +112,59 @@ def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
     response_model=pyd.AccessToken,
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
-def post_credentials_for_access_token(
+async def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     email = credentials.username
     plain_password = credentials.password
 
-    user = auth.authenticate_user(db=db, email=email, password=plain_password)
+    try:
+        user = auth.authenticate_user(db=db, email=email, password=plain_password)
+    except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=events.EXC_RAISED_WARN,
+                payload=e.__dict__,
+                payload_type=type(e),
+            )
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    access_token = auth.create_access_token({"sub": email})
+    try:
+        access_token = auth.create_access_token(
+            data={"sub": email}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
+        )
+    except (TypeError, ValueError) as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=events.EXC_RAISED_ERROR,
+                payload=e,
+                payload_type=type(e),
+            )
+        )
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Issue creating the access token",
+        )
 
-    if user:
+    try:
         crud.invalidate_all_user_prts(db=db, user_id=user.id)
-        rollbar.report_message(message=f"{user.name} logged in", level="info")
+    except exceptions.PasswordResetTokenException as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=events.EXC_RAISED_WARN,
+                payload=e.__dict__,
+                payload_type=type(e),
+            )
+        )
+
+    await queues.event_queue.put(
+        pyd.Event(type=events.USER_LOGGED_IN, payload={"user": user.name})
+    )
 
     return {"access_token": access_token}
 
@@ -141,17 +182,15 @@ async def create_user(
         user = crud.create_user(
             db, {"name": name, "email": email, "hashed_password": hashed_password}
         )
-    except errors.UserNotCreated as e:
+    except exceptions.UserNotCreated as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
 
-    rollbar.report_message(
-        message=f"new user {user.name} just signed up!", level="info"
+    payload = utils.instance_to_dict(user)
+    event = pyd.Event(
+        type=events.NEW_USER_CREATED, payload=payload, payload_type=pyd.User
     )
-
-    payload = {"recipient_email": user.email, "recipient_name": user.name}
-    event = pyd.Event(type="new_user_signed_up", payload=payload)
     await queues.event_queue.put(event)
 
     return user
@@ -170,6 +209,7 @@ def read_user_by_id(
 def delete_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
+    # TODO event emission here
     is_deleted = crud.delete_user_by_id(db=db, user_id=user.id)
 
     return {"success": is_deleted}
@@ -198,7 +238,7 @@ def post_panel_by_user_id(
             )
         rollbar.report_message(message=f"{user.name} created a panel", level="info")
         return new_panel
-    except errors.PanelNotCreated:
+    except exceptions.PanelNotCreated:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel"
         )
@@ -229,7 +269,7 @@ def update_panel_by_id(
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
 
             return updated_panel
-        except errors.PanelNotUpdated as e:
+        except exceptions.PanelNotUpdated as e:
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
@@ -245,7 +285,7 @@ def delete_panel_by_id(
     try:
         is_deleted = crud.delete_panel_by_panel_id(db, user.id, panel_id)
         return {"success": is_deleted}
-    except errors.PanelNotDeleted as e:
+    except exceptions.PanelNotDeleted as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e.detail)}"
         )
@@ -262,7 +302,7 @@ def post_entry_by_panel_id(
         entry = crud.create_entry_by_panel_id(
             db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
         )
-    except errors.EntryNotCreated as e:
+    except exceptions.EntryNotCreated as e:
         raise HTTPException(status_code=400, detail=e.detail)
 
     return entry
@@ -278,7 +318,7 @@ def delete_all_entries_by_panel_id(
         conf = crud.delete_all_entries_by_panel_id(
             db=db, user_id=user.id, panel_id=panel_id
         )
-    except errors.EntriesNotDeleted as e:
+    except exceptions.EntriesNotDeleted as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Entries not deleted: {str(e)}",
@@ -303,12 +343,12 @@ async def initiate_password_reset_flow(
 ):
     try:
         prt_user, prt = crud.create_password_reset_token(db=db, email=email)
-    except errors.PasswordResetTokenException:
+    except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not create password reset token",
         )
-    except errors.UserNotFound as e:
+    except exceptions.UserNotFound as e:
         raise HTTPException(
             status_code=404,
             detail=e.detail,
@@ -322,7 +362,7 @@ async def initiate_password_reset_flow(
             "recipient_name": prt_user.name,
             "url": url,
         }
-        event = pyd.Event(type="password_reset_requested", payload=payload)
+        event = pyd.Event(type=events.PASSWORD_RESET_REQUESTED, payload=payload)
         await queues.event_queue.put(event)
 
         return True  # initiation of password flow successful, used for ui logic only
@@ -343,14 +383,14 @@ def password_reset(
 ):
     try:
         user = crud.read_user_by_email(db=db, email=email)
-    except errors.UserNotFound as e:
+    except exceptions.UserNotFound as e:
         raise HTTPException(404, detail=e.detail)
 
     try:
         token_valid = crud.check_password_reset_token_is_valid(
             db=db, password_reset_token=password_reset_token, user_id=user.id
         )
-    except errors.PasswordResetTokenException:
+    except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Problem with the password reset process...",
@@ -363,14 +403,14 @@ def password_reset(
 
         try:
             updated_user = crud.update_user_by_id(db=db, user_id=user.id, update=update)
-        except errors.UserNotUpdated:
+        except exceptions.UserNotUpdated:
             raise HTTPException(400, detail="Could not update your password.")
 
         try:
             token_invalidated = crud.invalidate_password_reset_token(
                 db=db, password_reset_token=password_reset_token, user_id=user.id
             )
-        except errors.PasswordResetTokenException:
+        except exceptions.PasswordResetTokenException:
             raise HTTPException(400, detail="Error in invalidating password")
 
         rollbar.report_message(

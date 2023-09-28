@@ -15,10 +15,8 @@ from sqlalchemy import inspect
 
 from .database import SessionLocal
 from .database import engine, text
-from . import errors
 from . import sqlmodels as sql
 from . import config
-from . import comms
 
 db = SessionLocal()
 

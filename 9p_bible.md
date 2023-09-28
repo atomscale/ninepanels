@@ -70,7 +70,7 @@ At the main.py api level, all customer errors propgated up must be then wrapped 
 ```
 try:
     resp = update_foo()
-except errors.FooNotUpdated as e:
+except exceptions.FooNotUpdated as e:
     raise HTTPException(status=400, detail=e.detail)
 ```
 

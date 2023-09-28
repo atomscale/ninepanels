@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from . import errors
+from . import exceptions
 from . import timing
 
 
@@ -79,7 +79,7 @@ commit = get_git_commit()
 def compare_env_and_branch():
     if CURRENT_ENV == "FEATURE":
         if branch == "main" or branch == "staging":
-            raise errors.ConfigurationException(
+            raise exceptions.ConfigurationException(
                 detail=f"you are on the wrong branch (main or staging) to run a local feature branch"
             )
 

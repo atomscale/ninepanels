@@ -1,6 +1,6 @@
 from . import sqlmodels as sql
 
-from . import errors
+from . import exceptions
 from . import utils
 from . import config
 
@@ -37,10 +37,19 @@ def create_user(db: Session, new_user: dict) -> sql.User:
         user = sql.User(**new_user)
         db.add(user)
         db.commit()
-    except (SQLAlchemyError, TypeError, IntegrityError) as e:
+    except IntegrityError as e:
         db.rollback()
-        raise errors.UserNotCreated(
+        raise exceptions.UserNotCreated(
             detail=f"Do you have an account already?",
+            context_msg=f"user not created due to account exisitng and integrity error: {str(e)}",
+            **new_user,
+        )
+    except (SQLAlchemyError, TypeError) as e:
+        db.rollback()
+
+        
+        raise exceptions.UserNotCreated(
+            detail=f"Error creating your account",
             context_msg=f"user not created due to: {str(e)}",
             **new_user,
         )
@@ -62,12 +71,12 @@ def read_user_by_id(db: Session, user_id: int) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.id == user_id).first()
     except SQLAlchemyError as e:
-        raise errors.UserNotFound(detail=f"db error checking for {user_id=}")
+        raise exceptions.UserNotFound(detail=f"db error checking for {user_id=}")
 
     if user:
         return user
     else:
-        raise errors.UserNotFound(detail=f"user not found")
+        raise exceptions.UserNotFound(detail=f"user not found")
 
 
 def read_user_by_email(db: Session, email: str) -> sql.User:
@@ -83,12 +92,16 @@ def read_user_by_email(db: Session, email: str) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.email == email).first()
     except SQLAlchemyError as e:
-        raise errors.UserNotFound(detail=f"db error {str(e)}")
+        raise exceptions.UserNotFound(detail=f"db error {str(e)}")
 
     if user:
         return user
     else:
-        raise errors.UserNotFound(detail=f"Email not found", context_msg="lookup of user by email failed", email=email)
+        raise exceptions.UserNotFound(
+            detail=f"Email not found",
+            context_msg="lookup of user by email failed",
+            email=email,
+        )
 
 
 def read_all_users(db: Session) -> list:
@@ -115,20 +128,22 @@ def update_user_by_id(db: Session, user_id: str, update: dict) -> sql.User:
 
     try:
         user = read_user_by_id(db=db, user_id=user_id)
-    except errors.UserNotFound:
-        raise errors.UserNotUpdated(detail=f"user was not found {user_id=}")
+    except exceptions.UserNotFound:
+        raise exceptions.UserNotUpdated(detail=f"user was not found {user_id=}")
 
     for col, new_value in update.items():
         if hasattr(user, col):
             setattr(user, col, new_value)
         else:
-            raise errors.UserNotUpdated(detail=f"user instance does not have attr {col=}")
+            raise exceptions.UserNotUpdated(
+                detail=f"user instance does not have attr {col=}"
+            )
 
     try:
         db.commit()
         return user
     except SQLAlchemyError as e:
-        raise errors.UserNotUpdated(
+        raise exceptions.UserNotUpdated(
             detail=f"db error writing updated user back to db {str(e)}"
         )
 
@@ -143,7 +158,7 @@ def delete_user_by_id(db: Session, user_id: int):
         db.commit()
         return True  # TODO what is the best way to confirm the success of a delete op?
     else:
-        raise errors.UserNotDeleted(user_id=user_id)
+        raise exceptions.UserNotDeleted(user_id=user_id)
 
 
 def create_panel_by_user_id(
@@ -178,7 +193,7 @@ def create_panel_by_user_id(
         db.commit()
         return new_panel
     except SQLAlchemyError as e:
-        raise errors.PanelNotCreated(context_msg=str(e))
+        raise exceptions.PanelNotCreated(context_msg=str(e))
 
 
 def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
@@ -201,11 +216,12 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
             .all()
         )
     except SQLAlchemyError as e:
-        raise errors.PanelNotFound(detail=f"error in db call to find panels {str(e)}")
+        raise exceptions.PanelNotFound(
+            detail=f"error in db call to find panels {str(e)}"
+        )
 
     if panels:
         return panels
-
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
@@ -226,12 +242,14 @@ def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PanelNotFound(detail=f"panel not foudn due to db error: {str(e)}")
+        raise exceptions.PanelNotFound(
+            detail=f"panel not foudn due to db error: {str(e)}"
+        )
 
     if panel:
         return panel
     else:
-        raise errors.PanelNotFound(
+        raise exceptions.PanelNotFound(
             detail=f"panel with id {panel_id=} not found for user {user_id=}"
         )
 
@@ -252,8 +270,8 @@ def update_panel_by_id(
     if update:
         try:
             panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-        except errors.PanelNotFound:
-            raise errors.PanelNotUpdated(detail=f"Panel not found")
+        except exceptions.PanelNotFound:
+            raise exceptions.PanelNotUpdated(detail=f"Panel not found")
 
         if panel:
             for update_field, update_value in update.items():
@@ -270,19 +288,21 @@ def update_panel_by_id(
                         try:
                             db.commit()
                         except Exception as e:
-                            raise errors.PanelNotUpdated(
+                            raise exceptions.PanelNotUpdated(
                                 detail=f"some issue in this commit {e}"
                             )
                 else:
-                    raise errors.PanelNotUpdated(
+                    raise exceptions.PanelNotUpdated(
                         detail=f"no field '{update_field}' found on panel"
                     )
             return panel
         else:
-            raise errors.PanelNotUpdated(detail=f"panel with id {panel_id} not found")
+            raise exceptions.PanelNotUpdated(
+                detail=f"panel with id {panel_id} not found"
+            )
 
     else:
-        raise errors.PanelNotUpdated(detail=f"no update body in call to ")
+        raise exceptions.PanelNotUpdated(detail=f"no update body in call to ")
 
 
 def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
@@ -303,7 +323,7 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
         )
 
         if not panel:
-            raise errors.PanelNotDeleted(
+            raise exceptions.PanelNotDeleted(
                 detail="Panel not found",
                 context_msg="in outer scope of crud.py call",
                 user_id=user_id,
@@ -319,9 +339,9 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
 
         return True
 
-    except (SQLAlchemyError, errors.PanelNotUpdated) as e:
+    except (SQLAlchemyError, exceptions.PanelNotUpdated) as e:
         db.rollback()
-        raise errors.PanelNotDeleted(
+        raise exceptions.PanelNotDeleted(
             detail="panel was not updated",
             context_msg=f"transaction rolled back, panel was found, must be error in panel_sort_on_delete...: {str(e)}",
             user_id=user_id,
@@ -346,14 +366,13 @@ def create_entry_by_panel_id(
 
     """
 
-
     panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
 
     # check user_id on panel matches supplied user_id
     if not panel.user_id == user_id:
         msg = f"error creating new entry"
         logging.error(msg)
-        raise errors.EntryNotCreated(msg)
+        raise exceptions.EntryNotCreated(msg)
 
     try:
         entry = sql.Entry(
@@ -366,9 +385,8 @@ def create_entry_by_panel_id(
         msg = f"error creating new entry"
         logging.error(msg + str(e))
         db.rollback()
-        raise errors.EntryNotCreated(msg)
+        raise exceptions.EntryNotCreated(msg)
 
-  
     return entry
 
 
@@ -478,16 +496,16 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
                                 panel.position = panel.position - 1
                         db.commit()
                 except Exception as e:
-                    raise errors.PanelNotUpdated(f"wihtin the try block: {e}")
+                    raise exceptions.PanelNotUpdated(f"wihtin the try block: {e}")
 
                 user = db.query(sql.User).where(sql.User.id == user_id).first()
                 user.panels.append(panel_to_move)
                 db.commit()
         else:
-            raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
+            raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     else:
-        raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
+        raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
@@ -506,9 +524,9 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
             if panel.position > del_panel_pos:
                 panel.position = panel.position - 1
         db.commit()
-    except (SQLAlchemyError, AttributeError, TypeError, errors.PanelNotFound) as e:
+    except (SQLAlchemyError, AttributeError, TypeError, exceptions.PanelNotFound) as e:
         db.rollback()
-        raise errors.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
+        raise exceptions.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
 
 
 def today() -> datetime:
@@ -602,11 +620,11 @@ def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> 
             db.commit()
             return True
         except SQLAlchemyError as e:
-            raise errors.EntriesNotDeleted(
+            raise exceptions.EntriesNotDeleted(
                 f"unable to delete entries on {panel_id=} for {user_id=} during db call"
             )
     else:
-        raise errors.EntriesNotDeleted(
+        raise exceptions.EntriesNotDeleted(
             f"unable to delete entries as no panel exists with that {panel_id=} for {user_id=}"
         )
 
@@ -635,7 +653,7 @@ def blacklist_an_access_token(
         return access_token_to_blacklist
 
     except SQLAlchemyError as e:
-        raise errors.BlacklistedAccessTokenException(
+        raise exceptions.BlacklistedAccessTokenException(
             f"problem inserting token to blacklist table {str(e)}"
         )
 
@@ -657,7 +675,7 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.BlacklistedAccessTokenException(
+        raise exceptions.BlacklistedAccessTokenException(
             f"problem reading blacklist table {str(e)}"
         )
 
@@ -724,10 +742,10 @@ def create_password_reset_token(
             db.commit()
             return user, token_hash
         except SQLAlchemyError as e:
-            raise errors.PasswordResetTokenException(str(e))
+            raise exceptions.PasswordResetTokenException(str(e))
 
     else:
-        raise errors.UserNotFound("user not found")
+        raise exceptions.UserNotFound("user not found")
 
 
 def check_password_reset_token_is_valid(
@@ -758,7 +776,7 @@ def check_password_reset_token_is_valid(
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PasswordResetTokenException(str(e))
+        raise exceptions.PasswordResetTokenException(str(e))
 
     if prt:
         return True
@@ -791,7 +809,7 @@ def invalidate_password_reset_token(
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PasswordResetTokenException(str(e))
+        raise exceptions.PasswordResetTokenException(str(e))
 
     if prt:
         try:
@@ -800,30 +818,50 @@ def invalidate_password_reset_token(
             db.commit()
             return prt
         except SQLAlchemyError as e:
-            raise errors.PasswordResetTokenException(f"could not update prt {str(e)}")
+            raise exceptions.PasswordResetTokenException(
+                f"could not update prt {str(e)}"
+            )
     else:
-        raise errors.PasswordResetTokenException(f"prt does not exist {str(e)}")
+        raise exceptions.PasswordResetTokenException(f"prt does not exist {str(e)}")
 
 
-def invalidate_all_user_prts(db: Session, user_id):
-    """invalidated all prior prts for a user that:
+def invalidate_all_user_prts(db: Session, user_id: int) -> None:
+    """Invalidates all prior Password Reset Tokens (prts) for a user that:
 
     - belong to the user,
     - are currently valid
 
+    Returns:
+        None
+
+    Raises:
+        exceptions.PasswordResetTokenException if reading or updating prts fails
+
     """
 
-    prts = (
-        db.query(sql.PasswordResetToken)
-        .filter(
-            sql.PasswordResetToken.user_id == user_id,
-            sql.PasswordResetToken.is_valid == True,
+    try:
+        user_prts = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.user_id == user_id,
+                sql.PasswordResetToken.is_valid == True,
+            )
+            .all()
         )
-        .all()
-    )
+    except SQLAlchemyError as e:
+        raise exceptions.PasswordResetTokenException(
+            context_msg="issue getting the prts from the db for the user",
+            context_data={"user_id": user_id},
+        )
 
-    if prts:
-        for prt in prts:
-            prt.is_valid = False
-            prt.invalidated_at = datetime.utcnow()
-        db.commit()
+    if user_prts:
+        try:
+            for prt in user_prts:
+                prt.is_valid = False
+                prt.invalidated_at = datetime.utcnow()
+            db.commit()
+        except SQLAlchemyError as e:
+            raise exceptions.PasswordResetTokenException(
+                context_msg="issue invalidating the prts for the user",
+                context_data={"user_id": user_id},
+            )

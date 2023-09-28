@@ -1,17 +1,13 @@
 import httpx
-import rollbar
 
 from . import config
-from . import errors
+from . import exceptions
 from . import pydmodels as pyd
 
 
 async def password_reset(
     event: pyd.Event
 ) -> bool:
-    """send email using mail provider api
-    on success message respond with True, else False
-    """
 
     payload = event.payload
 
@@ -19,9 +15,9 @@ async def password_reset(
 
     json = {
         "From": "ben@ninepanels.com",
-        "To": payload['recipient_email'],
-        "Subject": f"Nine Panels: {payload['recipient_name']}, let's reset your password...",
-        "HtmlBody": f"<p>Hello {payload['recipient_name']},</p> <p>Let's get your password reset! Click the link here:</p> <p>{payload['url']}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
+        "To": payload['email'],
+        "Subject": f"Nine Panels: {payload['name']}, let's reset your password...",
+        "HtmlBody": f"<p>Hello {payload['name']},</p> <p>Let's get your password reset! Click the link here:</p> <p>{payload['url']}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
         "MessageStream": "outbound",
     }
 
@@ -31,12 +27,12 @@ async def password_reset(
                 "https://api.postmarkapp.com/email", json=json, headers=headers
             )
     except httpx.HTTPError as e:
-        raise errors.PasswordResetTokenException(f"problem sending email {str(e)}")
+        raise exceptions.PasswordResetTokenException(f"problem sending email {str(e)}")
 
     if resp.status_code == 200:
         return True
     else:
-        raise errors.PasswordResetTokenException(f"problem sending email {str(e)}")
+        raise exceptions.PasswordResetTokenException(f"problem sending email {str(e)}")
 
 
 async def welcome(event: pyd.Event) -> bool:
@@ -45,17 +41,19 @@ async def welcome(event: pyd.Event) -> bool:
     Returns:
         True on email success (200)
     Raises:
-        errors.EmailException on any failure
+        exceptions.EmailException on any failure
     """
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
+
+    print(event)
 
     payload = event.payload
 
     json = {
         "From": "ben@ninepanels.com",
-        "To": payload['recipient_email'],
-        "Subject": f"Nine Panels: {payload['recipient_name']}, a warm welcome!",
-        "HtmlBody": f"""<p>Hello {payload['recipient_name']},</p>
+        "To": payload['email'],
+        "Subject": f"Nine Panels: {payload['name']}, a warm welcome!",
+        "HtmlBody": f"""<p>Hello {payload['name']},</p>
         <p><b>Thank you so much for signing up to Nine Panels!</b></p>
         <p>Nine Panels nurtures daily balance the important areas of your life. And it shows how consistently you engage with those areas.</p>
         <p>I built it for myself - I struggle to be consistent with one thing, let alone all the things! - and I'm properly honoured to share it with you. </p>
@@ -76,12 +74,12 @@ async def welcome(event: pyd.Event) -> bool:
                 "https://api.postmarkapp.com/email", json=json, headers=headers
             )
     except httpx.HTTPError as e:
-        raise errors.PasswordResetTokenException(f"problem sending email {str(e)}")
+        raise exceptions.EmailException(f"problem sending email {str(e)}")
 
     if resp.status_code == 200:
         return True
     else:
-        raise errors.EmailException(detail=f"problem sending welcome email {str(e)}")
+        raise exceptions.EmailException(detail=f"problem sending welcome email {str(e)}")
 
 
 async def dispatch_user_update(recipient_email: str, recipient_name: str) -> bool:
@@ -90,7 +88,7 @@ async def dispatch_user_update(recipient_email: str, recipient_name: str) -> boo
     Returns:
         True on email success (200)
     Raises:
-        errors.EmailException on any failure
+        exceptions.EmailException on any failure
     """
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
 
@@ -120,13 +118,11 @@ async def dispatch_user_update(recipient_email: str, recipient_name: str) -> boo
                 "https://api.postmarkapp.com/email", json=json, headers=headers
             )
     except httpx.HTTPError as e:
-        raise errors.PasswordResetTokenException(f"problem sending email {str(e)}")
+        raise exceptions.PasswordResetTokenException(f"problem sending email {str(e)}")
 
     if resp.status_code == 200:
         return True
     else:
-        raise errors.EmailException(f"problem sending update email {str(e)}")
+        raise exceptions.EmailException(f"problem sending update email {str(e)}")
 
 
-async def rollbar_message(event: pyd.Event):
-    rollbar.report_message(message=event.type, extra_data=event.payload, level='info')
