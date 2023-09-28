@@ -32,12 +32,13 @@ class Timer:
         path: str
     ) -> None:
         self.request_id = request_id
-        self.path = path
+        self.path = replace_numbers_in_path(path)
         self.method = method
         self.start_ts: datetime = None
         self.stop_ts: datetime = None
         self.created_at = datetime.utcnow()
         self.diff_ms: float = None
+        self.method_path: str = f"{self.method}_{self.path}"
         # self.is_running: bool = False
 
         # self.factory = factory
@@ -88,18 +89,18 @@ class TimerFactory:
         self.request_ids = deque([], maxlen=self.window_size)
         self.component_timers = deque([], maxlen=self.window_size)
 
-    def create_timer(self, request_id, method, path) -> Timer:
-        path = replace_numbers_in_path(path)
-        method_path = f"{method}_{path}"
+    # def create_timer(self, request_id, method, path) -> Timer:
+    #     path = replace_numbers_in_path(path)
+    #     method_path = f"{method}_{path}"
 
-        timer = Timer(factory=self, method=method, request_id=request_id, path=path)
+    #     timer = Timer(factory=self, method=method, request_id=request_id, path=path)
 
-        if method_path not in self.timers:
-            self.timers[method_path] = deque(maxlen=self.window_size)
-            self.timers[method_path].append(timer)
-        else:
-            self.timers[method_path].append(timer)
-        return timer
+    #     if method_path not in self.timers:
+    #         self.timers[method_path] = deque(maxlen=self.window_size)
+    #         self.timers[method_path].append(timer)
+    #     else:
+    #         self.timers[method_path].append(timer)
+    #     return timer
 
     def update(self, method_path, request_id):
         path_timer_stats = {}

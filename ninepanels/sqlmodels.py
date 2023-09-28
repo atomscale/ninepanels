@@ -84,6 +84,7 @@ class Timing(Base):
     request_id = Column(String)
     path = Column(String)
     method = Column(String)
+    method_path = Column(String)
     start_ts = Column(DateTime)
     stop_ts = Column(DateTime)
     diff_ms = Column(Float)

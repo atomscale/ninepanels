@@ -98,14 +98,14 @@ def index(request: Request):
     "/admin/performance/route",
 )
 def read_route_performance(user: pyd.User = Depends(auth.get_current_user)):
-    return config.timers.route_performance
+    ...
 
 
 @api.get(
     "/admin/performance/request",
 )
 def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
-    return config.timers.request_performance
+    ...
 
 
 @api.post(
