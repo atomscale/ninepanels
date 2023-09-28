@@ -1,6 +1,6 @@
 import asyncio
 
-from . import events
+from . import event_dispatcher
 
 event_queue = asyncio.Queue()
 
@@ -11,8 +11,8 @@ async def event_worker():
         event = await event_queue.get()
         event_type = event.type
 
-        if event_type in events.dispatcher:
+        if event_type in event_dispatcher.dispatcher:
             tasks = []
-            for fn in events.dispatcher[event_type]:
+            for fn in event_dispatcher.dispatcher[event_type]:
                 tasks.append(fn(event))
             asyncio.gather(*tasks)

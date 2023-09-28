@@ -845,6 +845,20 @@ files = [
 typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
+name = "pydeps"
+version = "1.12.17"
+description = "Display module dependencies"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pydeps-1.12.17-py3-none-any.whl", hash = "sha256:4fb2e86071c78c1b85a1c63745a267d100e91daf6bab2f14331b3c77433b58b4"},
+    {file = "pydeps-1.12.17.tar.gz", hash = "sha256:c308e8355a1e77ff0af899d6f9f1665d4eb07019692dba9fb1dc1cab05df36a4"},
+]
+
+[package.dependencies]
+stdlib-list = "*"
+
+[[package]]
 name = "pytest"
 version = "7.4.2"
 description = "pytest: simple powerful testing with Python"
@@ -1078,6 +1092,24 @@ anyio = ">=3.4.0,<5"
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
 
 [[package]]
+name = "stdlib-list"
+version = "0.9.0"
+description = "A list of Python Standard Libraries (2.7 through 3.9)."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "stdlib_list-0.9.0-py3-none-any.whl", hash = "sha256:f79957d59e41930d44afcd81e465f740b9a7a9828707a40e24ab1092b12bd423"},
+    {file = "stdlib_list-0.9.0.tar.gz", hash = "sha256:98eb66135976c96b4ee3f4c0ef0552ebb5a9977ce3028433db79f4738b02af26"},
+]
+
+[package.extras]
+dev = ["build", "stdlib-list[doc,lint,test]"]
+doc = ["furo", "sphinx"]
+lint = ["black", "mypy", "ruff"]
+support = ["sphobjinv"]
+test = ["coverage[toml]", "pytest", "pytest-cov"]
+
+[[package]]
 name = "typing-extensions"
 version = "4.8.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1126,4 +1158,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "df223ebbed0038cb964e26a6700c7f9fba596f14bd0e56373774fa39d75dce0f"
+content-hash = "b47b52a3e538d82f83b03600d4e07aafd4f98ca478e06dd65727625e5db195ed"

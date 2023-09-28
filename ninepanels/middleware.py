@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import pydmodels as pyd
 from . import config
+from . import timing
 
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
@@ -106,7 +107,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
             logging.warn("no method")
 
         try:
-            route_timer = config.timers.create_timer(
+            route_timer = timing.Timer(
                 method=method,
                 request_id=request_id,
                 path=path,

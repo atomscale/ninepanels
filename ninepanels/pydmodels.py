@@ -87,6 +87,6 @@ class Event(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = Field(default_factory=lambda: str(datetime.utcnow()))
     type: str
-    payload: Any
+    payload: Any | None = None
     payload_type: Any | None = None
     payload_desc: str | None = None

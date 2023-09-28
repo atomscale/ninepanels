@@ -7,7 +7,7 @@ from datetime import datetime
 
 from . import pydmodels as pyd
 from . import queues
-from . import events
+from . import event_types
 
 
 pattern = re.compile(r"(?<=/)\d+(?=/|$)")
@@ -19,45 +19,45 @@ def replace_numbers_in_path(path: str) -> str:
 
 class Timer:
 
-    """single, ephemeral per request"""
+    """single, ephemeral per request
+
+    produces event event.TIMING_COMPLETED with self instance as payload
+    """
 
     def __init__(
-        self, factory: object, method: str, request_id: str, path: str
+        self,
+        # factory: object,
+        method: str,
+        request_id: str,
+        path: str
     ) -> None:
         self.request_id = request_id
         self.path = path
         self.method = method
         self.start_ts: datetime = None
         self.stop_ts: datetime = None
-        self.factory = factory
-
+        self.created_at = datetime.utcnow()
         self.diff_ms: float = None
-        self.is_running: bool = False
+        # self.is_running: bool = False
+
+        # self.factory = factory
 
     def start(self):
         self.start_ts = datetime.utcnow()
-        self.is_running = True
+        # self.is_running = True
 
     async def stop(self) -> float:
         self.stop_ts = datetime.utcnow()
-        self.is_running = False
+        # self.is_running = False
         diff_timedelta = self.stop_ts - self.start_ts
 
         self.diff_ms: float = diff_timedelta.total_seconds() * 1000
-        self.factory.update(
-            method_path=f"{self.method}_{self.path}", request_id=self.request_id
-        )
+        # self.factory.update(
+        #     method_path=f"{self.method}_{self.path}", request_id=self.request_id
+        # )
 
-        timing_payload = {
-            "request_id": self.request_id,
-            "method": self.method,
-            "path": self.path,
-            "start_ts": self.start_ts,
-            "stop_ts": self.stop_ts,
-            "diff_ms": self.diff_ms,
-        }
 
-        timing_event = pyd.Event(type=events.TIMING_COMPLETED, payload=timing_payload)
+        timing_event = pyd.Event(type=event_types.TIMING_COMPLETED, payload=self)
 
         await queues.event_queue.put(timing_event)
 

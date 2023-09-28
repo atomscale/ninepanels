@@ -33,8 +33,9 @@ from . import auth
 from . import config
 from . import exceptions
 from . import queues
-from . import events
+from . import event_types
 from . import utils
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -123,7 +124,7 @@ async def post_credentials_for_access_token(
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
         await queues.event_queue.put(
             pyd.Event(
-                type=events.EXC_RAISED_WARN,
+                type=event_types.EXC_RAISED_WARN,
                 payload=e.__dict__,
                 payload_type=type(e),
             )
@@ -141,7 +142,7 @@ async def post_credentials_for_access_token(
     except (TypeError, ValueError) as e:
         await queues.event_queue.put(
             pyd.Event(
-                type=events.EXC_RAISED_ERROR,
+                type=event_types.EXC_RAISED_ERROR,
                 payload=e,
                 payload_type=type(e),
             )
@@ -156,14 +157,14 @@ async def post_credentials_for_access_token(
     except exceptions.PasswordResetTokenException as e:
         await queues.event_queue.put(
             pyd.Event(
-                type=events.EXC_RAISED_WARN,
+                type=event_types.EXC_RAISED_WARN,
                 payload=e.__dict__,
                 payload_type=type(e),
             )
         )
 
     await queues.event_queue.put(
-        pyd.Event(type=events.USER_LOGGED_IN, payload={"user": user.name})
+        pyd.Event(type=event_types.USER_LOGGED_IN, payload={"user": user.name})
     )
 
     return {"access_token": access_token}
@@ -189,7 +190,7 @@ async def create_user(
 
     payload = utils.instance_to_dict(user)
     event = pyd.Event(
-        type=events.NEW_USER_CREATED, payload=payload, payload_type=pyd.User
+        type=event_types.NEW_USER_CREATED, payload=payload, payload_type=pyd.User
     )
     await queues.event_queue.put(event)
 
@@ -362,7 +363,7 @@ async def initiate_password_reset_flow(
             "recipient_name": prt_user.name,
             "url": url,
         }
-        event = pyd.Event(type=events.PASSWORD_RESET_REQUESTED, payload=payload)
+        event = pyd.Event(type=event_types.PASSWORD_RESET_REQUESTED, payload=payload)
         await queues.event_queue.put(event)
 
         return True  # initiation of password flow successful, used for ui logic only
