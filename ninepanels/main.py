@@ -35,6 +35,7 @@ from . import exceptions
 from . import queues
 from . import event_types
 from . import utils
+from . import performance
 
 
 pp = PrettyPrinter(indent=4)
@@ -97,8 +98,8 @@ def index(request: Request):
 @api.get(
     "/admin/performance/route",
 )
-def read_route_performance(user: pyd.User = Depends(auth.get_current_user)):
-    ...
+def read_route_performance(window: int | None, user: pyd.User = Depends(auth.get_current_user)):
+    return performance.calculate_stats(window_size=window)
 
 
 @api.get(

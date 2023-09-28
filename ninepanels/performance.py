@@ -57,19 +57,23 @@ def calculate_stats(window_size: int = 10):
         method_path_stats[mp].update({"last": last})
 
     # pp.pprint(method_path_stats)
+    return method_path_stats
 
-
+def alert_checker():
+    ...
 
 async def process_timing_event(event: pyd.Event):
     timer_dict = event.payload.__dict__
-    # persist to 'timings' table
 
-    # process stats and emit
+    # persist to 'timings' table
     timing = insert_timing(timer_dict)
 
+    # process stats and produce stats payload
     if timing:
-        calculate_stats()
+        timing_stats = calculate_stats()
+
+    alert_checker()
 
     await queues.event_queue.put(
-        pyd.Event(type=event_types.TIMING_PROCESSED, payload={})
+        pyd.Event(type=event_types.TIMING_PROCESSED, payload=timing_stats)
     )
