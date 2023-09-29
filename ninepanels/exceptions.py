@@ -1,12 +1,6 @@
-import logging
-from .pydmodels import LogMessage
-
-
 class NinePanelsBaseException(Exception):
 
     """Base exception for all custom exceptions.
-    Standardises logging schema and behaviours for exceptions
-    using the .pydmodels.LogMessage model.
 
     Args:
         detail: user friendly message that may make it to the
@@ -23,87 +17,82 @@ class NinePanelsBaseException(Exception):
     def __init__(
         self, detail: str = None, context_msg: str = None, **context_data: dict
     ):
-        if detail:
-            self.detail = detail
-        else:
-            self.detail = self.__class__.__name__
-
-        super().__init__(self.detail)
-
-        log_message = LogMessage(
-            detail=self.detail,
-            level="error",
-            context_msg=context_msg,
-            context_data=context_data,
-        )
-
-        logging.error(log_message.model_dump())
-        # TODO this is where push to the async db write call feature will happen
+        self.detail = detail
+        self.context_msg = (context_msg,)
+        self.context_data = context_data
 
 
 class DatabaseConnectionError(NinePanelsBaseException):
-    pass
+    ...
 
 
 class UserNotCreated(NinePanelsBaseException):
-    pass
+    ...
 
 
 class UserNotFound(NinePanelsBaseException):
-    pass
+    ...
 
 
 class UserNotUpdated(NinePanelsBaseException):
-    pass
+    ...
 
 
 class UserNotDeleted(NinePanelsBaseException):
-    pass
+    ...
+
+
+class IncorrectPassword(NinePanelsBaseException):
+    ...
+
+
+class AccessTokenError(NinePanelsBaseException):
+    ...
 
 
 class EntryNotCreated(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PanelNotCreated(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PanelNotFound(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PanelNotUpdated(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PanelNotDeleted(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PanelsNotSorted(NinePanelsBaseException):
-    pass
+    ...
 
 
 class EntriesNotDeleted(NinePanelsBaseException):
-    pass
+    ...
 
 
 class ConfigurationException(NinePanelsBaseException):
-    pass
+    ...
 
 
 class BlacklistedAccessTokenException(NinePanelsBaseException):
-    pass
+    ...
 
 
 class PasswordResetTokenException(NinePanelsBaseException):
-    pass
+    ...
 
 
-class WelcomeEmailException(NinePanelsBaseException):
-    pass
+class EmailException(NinePanelsBaseException):
+    ...
 
 
 class MonitorError(NinePanelsBaseException):
-    pass
+    ...

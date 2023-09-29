@@ -1,8 +1,8 @@
 import os
 import subprocess
 
-from . import errors
-from . import utils
+from . import exceptions
+from . import timing
 
 
 def get_git_branch():
@@ -79,7 +79,7 @@ commit = get_git_commit()
 def compare_env_and_branch():
     if CURRENT_ENV == "FEATURE":
         if branch == "main" or branch == "staging":
-            raise errors.ConfigurationException(
+            raise exceptions.ConfigurationException(
                 detail=f"you are on the wrong branch (main or staging) to run a local feature branch"
             )
 
@@ -129,7 +129,7 @@ except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
 
-timers = utils.TimerFactory()
+# timers = timing.TimerFactory()
 
 
 ### SECURITY ###

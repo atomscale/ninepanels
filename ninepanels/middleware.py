@@ -9,11 +9,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import pydmodels as pyd
 from . import config
+from . import timing
 
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
+
 
         path = request.scope.get("path")
         unwrapped_paths = [
@@ -31,8 +33,10 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         if path in unwrapped_paths:
             return response
 
+        meta = request.state.meta if hasattr(request.state, "meta") else None
+
         wrapped_response = pyd.WrappedResponse(
-            data={}, status_code=200, is_error=False, error_message=None, meta=None
+            data={}, status_code=200, is_error=False, error_message=None, meta=meta
         )
 
         # TODO when would it ever be a non-streaming response type?
@@ -106,7 +110,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
             logging.warn("no method")
 
         try:
-            route_timer = config.timers.create_timer(
+            route_timer = timing.Timer(
                 method=method,
                 request_id=request_id,
                 path=path,
@@ -119,7 +123,8 @@ class TimingMiddleware(BaseHTTPMiddleware):
 
         try:
             if route_timer:
-                route_timer.stop()
+                await route_timer.stop()
+
         except Exception as e:
             msg = pyd.LogMessage(level="warn", detail="issue with route timer at stop call")
             logging.warn(msg)

@@ -9,3 +9,4 @@
 set_env*.sh
 env_file.env
 /backups
+*.svg

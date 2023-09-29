@@ -2,6 +2,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy import String
 from sqlalchemy import DateTime
 from sqlalchemy import Index
@@ -75,3 +76,15 @@ class PasswordResetToken(Base):
     invalidated_at = Column(DateTime)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="password_reset_tokens")
+
+class Timing(Base):
+    __tablename__ = "timings"
+    id = Column(Integer, primary_key=True)
+    created_at = Column(DateTime)
+    request_id = Column(String)
+    path = Column(String)
+    method = Column(String)
+    method_path = Column(String)
+    start_ts = Column(DateTime)
+    stop_ts = Column(DateTime)
+    diff_ms = Column(Float)
