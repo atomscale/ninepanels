@@ -13,7 +13,7 @@ dispatcher = {
 
     event_types.TIMING_COMPLETED: [performance.timing_event_handler],
     event_types.TIMING_PROCESSED: [], # sio and
-    event_types.TIMING_ALERT: [logs.log_warn, monitoring.report_exc_warn],
+    event_types.TIMING_ALERT: [],
 
     event_types.EXC_RAISED_ERROR: [logs.log_error, monitoring.report_exc_error],
     event_types.EXC_RAISED_WARN: [logs.log_warn, monitoring.report_exc_warn],

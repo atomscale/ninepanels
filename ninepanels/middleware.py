@@ -16,6 +16,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
 
+
         path = request.scope.get("path")
         unwrapped_paths = [
             "/docs",
@@ -32,8 +33,10 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         if path in unwrapped_paths:
             return response
 
+        meta = request.state.meta if hasattr(request.state, "meta") else None
+
         wrapped_response = pyd.WrappedResponse(
-            data={}, status_code=200, is_error=False, error_message=None, meta=None
+            data={}, status_code=200, is_error=False, error_message=None, meta=meta
         )
 
         # TODO when would it ever be a non-streaming response type?
