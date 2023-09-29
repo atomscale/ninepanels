@@ -98,8 +98,8 @@ def index(request: Request):
 @api.get(
     "/admin/performance/route",
 )
-def read_route_performance(window: int | None, user: pyd.User = Depends(auth.get_current_user)):
-    return performance.calculate_stats(window_size=window)
+async def read_route_performance(window: int | None = None): # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+    return await performance.calculate_stats(window_size=window)
 
 
 @api.get(

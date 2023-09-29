@@ -11,8 +11,9 @@ dispatcher = {
     event_types.USER_LOGGED_IN: [logs.log_info, monitoring.report_info],
     event_types.PASSWORD_RESET_REQUESTED: [comms.password_reset, monitoring.report_info],
 
-    event_types.TIMING_COMPLETED: [performance.process_timing_event],
-    event_types.TIMING_PROCESSED: [], # sio and alert checker alert seprate so that calls to cal
+    event_types.TIMING_COMPLETED: [performance.timing_event_handler],
+    event_types.TIMING_PROCESSED: [], # sio and
+    event_types.TIMING_ALERT: [logs.log_warn, monitoring.report_exc_warn],
 
     event_types.EXC_RAISED_ERROR: [logs.log_error, monitoring.report_exc_error],
     event_types.EXC_RAISED_WARN: [logs.log_warn, monitoring.report_exc_warn],
