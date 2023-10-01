@@ -94,7 +94,7 @@ def init_async_workers():
 def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
-
+# TODO examin braking this into am admin api module that doesn thaveperformance timing on it
 @api.get(
     "/admin/performance/route",
 )
@@ -113,6 +113,8 @@ async def read_route_performance(request: Request, window: int | None = None): #
 )
 def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
     ...
+
+# TODO examin braking this into am user api module that doesn thaveperformance timing on it
 
 
 @api.post(

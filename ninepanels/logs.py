@@ -4,6 +4,7 @@ from . import pydmodels as pyd
 
 
 async def log_error(event: pyd.Event):
+    # TODO utilise the pyd.LogMessage model
     logging.error(event.model_dump())
 
 

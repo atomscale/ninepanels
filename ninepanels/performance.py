@@ -24,8 +24,10 @@ def insert_timing(timer_dict: dict):
 
 last_alert_id = {}
 
+
+
 async def calculate_stats(window_size: int | None = None) -> dict:
-    """ "
+    """
 
     Returns:
         dict of form {
@@ -100,11 +102,12 @@ async def calculate_stats(window_size: int | None = None) -> dict:
         }
         alert_threshold = 100
 
+        # TODO move this to another handler for a timing_stats_persisted event or soemthing.
         alert_threshold = alert_thresholds.get(mp, alert_threshold)
 
         method_path_stats.update({"alert_threshold": alert_threshold})
-        method_path_stats.update({"in_alert": False})
-        method_path_stats.update({"alert_id": None})
+        method_path_stats.update({"in_alert": False}) # move up
+        method_path_stats.update({"alert_id": None}) # move u to ncilude in default timing analysis row in db
 
         if method_path_stats["avg"] > alert_threshold:
 
@@ -129,10 +132,12 @@ async def calculate_stats(window_size: int | None = None) -> dict:
 
         output.append(method_path_stats)
 
+    # persist this and query the db from sync crud in path op func - do not call directly.
     return {"data": output, "meta": {"window": window}}
 
 
 async def timing_event_handler(event: pyd.Event):
+    # TODO split this into hadnler for persitence, stats calc, alert calc
     timer_dict = event.payload.__dict__
 
     # persist to 'timings' table

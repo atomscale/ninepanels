@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import text
+from sqlalchemy import text # keep, imported eslewhere
 from sqlalchemy.orm import sessionmaker
 
 from . import config

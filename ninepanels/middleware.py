@@ -89,6 +89,8 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
 
 class TimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+
+        # TODO copy wrapped response mechanism to exlude certain routes like admin
         route_timer = None
         request_id = str(uuid.uuid4())
         path = "no_path"
