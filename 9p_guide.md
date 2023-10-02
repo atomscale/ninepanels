@@ -81,6 +81,12 @@ A single async queue object `.queues.event_queue` and an associated async worker
 
 The `payload` definition and practice is still WIP. The general notion at the moment is to produce the instance of the object which accompanies the event. Eg: if a `.event_types.NEW_USER_CREATED` event occurs, the common sense payload would be the `.sqlmodels.User` instance related to that new user. Stronger contracts around this will be developed.
 
+### naming and patterns:
+
+An `event_type` must be a verb in the past tense. ie NEW_USER_CREATED
+
+An event handler will be a coroutine and should be called `handle_{event_type}`
+
 ## API Design:
 
 ### Wrapped Responses
@@ -150,3 +156,39 @@ Initial questions to ask:
 ### API Docs
 
 Published doc style will be redoc.
+
+
+_______
+
+## Code Notes and patterns
+
+```
+executor = ThreadPoolExecutor(thread_name_prefix="timing_")
+
+
+def long_runner(event: pyd.Event):
+    """FOR THE EVENT ROUTE ONLY"""
+    import time
+
+    for n in range(5):
+        time.sleep(1)
+        print(f"long running job 1 in {threading.current_thread().name}")
+
+
+def another_long_runner(event: pyd.Event):
+    """FOR THE EVENT ROUTE ONLY"""
+    import time
+
+    for n in range(5):
+        time.sleep(1)
+        print(f"long running job ANTOEHR in {threading.current_thread().name}")
+
+
+async def handle_timing_persisted(event: pyd.Event):
+    print(f"runing long runner in {threading.current_thread().name}")
+
+    asyncio.gather(
+        asyncio.to_thread(long_runner, event),
+        asyncio.to_thread(another_long_runner, event),
+    )
+```

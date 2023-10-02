@@ -1,19 +1,20 @@
-from . import sqlmodels as sql
-
-from . import exceptions
-from . import utils
-from . import config
-
+import pytz
 import logging
 
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime, timedelta
-import pytz
 
 from pprint import PrettyPrinter
+
+from . import sqlmodels as sql
+from . import exceptions
+from . import utils
+from . import config
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -47,7 +48,6 @@ def create_user(db: Session, new_user: dict) -> sql.User:
     except (SQLAlchemyError, TypeError) as e:
         db.rollback()
 
-        
         raise exceptions.UserNotCreated(
             detail=f"Error creating your account",
             context_msg=f"user not created due to: {str(e)}",
@@ -865,3 +865,37 @@ def invalidate_all_user_prts(db: Session, user_id: int) -> None:
                 context_msg="issue invalidating the prts for the user",
                 context_data={"user_id": user_id},
             )
+
+
+def read_all_routes(db: Session):
+    method_paths = db.query(sql.TimingStats.method_path).distinct()
+
+    output = []
+    for method_path in method_paths:
+        mp = method_path.method_path
+        stats = (
+            db.query(sql.TimingStats)
+            .filter(sql.TimingStats.method_path == mp)
+            .order_by(desc(sql.TimingStats.id))
+            .first()
+        )
+        output.append(stats)
+
+    return output
+
+
+def read_route_timings(db: Session, method_path: str, window_size: int):
+    timings = (
+        db.query(sql.Timing)
+        .filter(sql.Timing.method_path == method_path)
+        .order_by(desc(sql.Timing.created_at))
+        .limit(window_size)
+        .all()
+    )
+
+    output = {
+        'readings': [t.diff_ms for t in timings],
+        'timestamps': [t.created_at for t in timings]
+    }
+
+    return output

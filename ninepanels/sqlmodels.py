@@ -88,3 +88,17 @@ class Timing(Base):
     start_ts = Column(DateTime)
     stop_ts = Column(DateTime)
     diff_ms = Column(Float)
+
+class TimingStats(Base):
+    __tablename__ = "timing_stats"
+    id = Column(Integer, primary_key=True)
+    avg = Column(Float)
+    min = Column(Float)
+    max = Column(Float)
+    last = Column(Float)
+    method = Column(String)
+    path = Column(String)
+    method_path = Column(String)
+    alert_threshold_ms = Column(Integer)
+    in_alert = Column(Boolean)
+    alert_id = Column(String)

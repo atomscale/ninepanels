@@ -94,5 +94,5 @@ class EmailException(NinePanelsBaseException):
     ...
 
 
-class MonitorError(NinePanelsBaseException):
+class TimingError(NinePanelsBaseException):
     ...

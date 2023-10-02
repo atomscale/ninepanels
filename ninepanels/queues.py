@@ -1,6 +1,9 @@
+import threading
 import asyncio
 
 from . import event_dispatcher
+from . import event_types
+from . import pydmodels as pyd
 
 event_queue = asyncio.Queue()
 
@@ -8,6 +11,15 @@ async def event_worker():
     while True:
         # note that all events in the system are pydantic pyd.Event instances
         # all event handlers are expected to accept the full Event instance as their single param
+
+        qsize = event_queue.qsize()
+        if qsize > 100:
+            await event_queue.put(
+            pyd.Event(
+                type=event_types.EXC_RAISED_WARN,
+                payload={"qsize": qsize},
+            )
+        )
         event = await event_queue.get()
         event_type = event.type
 
@@ -15,4 +27,5 @@ async def event_worker():
             tasks = []
             for fn in event_dispatcher.dispatcher[event_type]:
                 tasks.append(fn(event))
-            asyncio.gather(*tasks)
+            await asyncio.gather(*tasks)
+

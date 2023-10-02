@@ -94,25 +94,37 @@ def init_async_workers():
 def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
+
 # TODO examin braking this into am admin api module that doesn thaveperformance timing on it
 @api.get(
-    "/admin/performance/route",
+    "/admin/routes",
 )
-async def read_route_performance(request: Request, window: int | None = None): # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+async def read_route_performance(
+    request: Request, db: Session = Depends(get_db)
+):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+    resp = crud.read_all_routes(db=db)
 
-
-    resp = await performance.calculate_stats(window_size=window)
-
-    request.state.meta = resp['meta']
-    return resp['data']
-
+    return resp
 
 
 @api.get(
-    "/admin/performance/request",
+    "/admin/routes/timings",
+)
+async def read_route_timings(
+    method_path: str, window_size: int | None = 10, db: Session = Depends(get_db)
+):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+    resp = crud.read_route_timings(
+        db=db, method_path=method_path, window_size=window_size
+    )
+    return resp
+
+
+@api.get(
+    "/admin/requests",
 )
 def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
     ...
+
 
 # TODO examin braking this into am user api module that doesn thaveperformance timing on it
 

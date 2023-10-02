@@ -11,8 +11,9 @@ dispatcher = {
     event_types.USER_LOGGED_IN: [logs.log_info, monitoring.report_info],
     event_types.PASSWORD_RESET_REQUESTED: [comms.password_reset, monitoring.report_info],
 
-    event_types.TIMING_COMPLETED: [performance.timing_event_handler],
-    event_types.TIMING_PROCESSED: [], # sio and
+    event_types.TIMING_CREATED: [performance.handle_timing_created],
+    event_types.TIMING_PERSISTED: [performance.handle_timing_persisted],
+    event_types.TIMING_STATS_PERSISTED: [],
     event_types.TIMING_ALERT: [],
 
     event_types.EXC_RAISED_ERROR: [logs.log_error, monitoring.report_exc_error],
