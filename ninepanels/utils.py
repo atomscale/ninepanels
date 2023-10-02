@@ -1,6 +1,8 @@
 import hashlib
 import os
 
+from . import exceptions
+
 def instance_to_dict(instance):
     _dict = {}
     for key in instance.__mapper__.c.keys():
@@ -22,3 +24,12 @@ def generate_random_hash() -> str:
 
     return hash
 
+def parse_sort_by(model, sort_by: str) -> (str, str):
+    """ split validate that the sort key is present on the target model"""
+
+    sort_key, sort_direction = sort_by.split('.')
+
+    if getattr(model, sort_key):
+        return sort_key, sort_direction
+    else:
+        raise exceptions.ParseSortBy(detail="invalid sort_by value", context_data={"sort_by": {sort_by}})

@@ -29,13 +29,13 @@ from .database import get_db
 from . import middleware
 from . import crud
 from . import pydmodels as pyd
+from . import sqlmodels as sql
 from . import auth
 from . import config
 from . import exceptions
 from . import queues
 from . import event_types
 from . import utils
-from . import performance
 
 
 pp = PrettyPrinter(indent=4)
@@ -328,6 +328,38 @@ def post_entry_by_panel_id(
         raise HTTPException(status_code=400, detail=e.detail)
 
     return entry
+
+
+@api.get("/panels/{panel_id}/entries")
+async def get_entries_by_panel_id(
+    panel_id: int,
+    offset: int = 0,
+    limit: int = 100,
+    sort_by: str = "timestamp.desc",
+    db: Session = Depends(get_db),
+):
+    sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
+    entries = crud.read_entries_by_panel_id(
+        db=db,
+        panel_id=panel_id,
+        offset=offset,
+        limit=limit,
+        sort_key=sort_key,
+        sort_direction=sort_direction
+    )
+
+    return entries
+
+    # limit here in this case is -limit days
+    # entries may only be say 34 long, or 0
+    # the panel_creation date must set the start... if total len < limit, else...?
+        # there may be +n days of empty from panel creation, which shoudl be padded to false
+
+    # grab panel created_at date
+
+
+
+
 
 
 @api.delete("/panels/{panel_id}/entries")

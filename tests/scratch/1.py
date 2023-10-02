@@ -1,8 +1,9 @@
-a = {'a': 1}
-b = [1,2,3]
+from dataclasses import dataclass
 
-if not isinstance(a, dict) or not isinstance(b, list):
-    print("one or btoh false")
+@dataclass
+class Test:
+    a: int
+    b: int
 
-else:
-    print("both true")
+test = Test(1,2)
+

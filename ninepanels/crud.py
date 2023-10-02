@@ -104,7 +104,7 @@ def read_user_by_email(db: Session, email: str) -> sql.User:
         )
 
 
-def read_all_users(db: Session) -> list:
+def read_all_users(db: Session) -> list[sql.User]:
     """read all users in the db"""
 
     users = db.query(sql.User).all()
@@ -412,14 +412,8 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
     if panels:
         for panel in panels:
-            # convert the user_panel to a regular dict:
             panel_d = utils.instance_to_dict(panel)
-            # pp.pprint("user_panel_d in loop:", user_panel_d )
 
-            # clear the list of entries on the object: TODO this is a hack
-            panel_d["entries"] = []
-
-            # get the current entry for the panel
             current_entry = (
                 db.query(sql.Entry)
                 .where(sql.Entry.panel_id == panel_d["id"])
@@ -430,7 +424,6 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
             if current_entry:
                 current_entry_d = utils.instance_to_dict(current_entry)
-                panel_d["entries"].append(current_entry_d)
                 panel_d["is_complete"] = current_entry_d["is_complete"]
             else:
                 panel_d["is_complete"] = False
@@ -440,19 +433,26 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     return panels_with_latest_entry_only
 
 
-def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
-    """This is to fix null positions on panels
+def read_entries_by_panel_id(
+    db: Session,
+    panel_id: int,
+    offset: int,
+    limit: int,
+    sort_key: str,
+    sort_direction: str,
+):
 
+    print(f"{panel_id=} {offset=} {limit=} {sort_key=} {sort_direction=} ")
+    entries = (
+        db.query(sql.Entry)
+        .filter(sql.Entry.panel_id == panel_id)
+        .order_by(getattr(getattr(sql.Entry, sort_key), sort_direction)())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
-    Look up all panels for a user, unsorted - assume no position
-    TODO add sort flag to get_panels_by_user_id
-    check each panel for a position, loop enum get index
-    if a position, including 0s, check by being an int, skip
-    if position is null and null only
-
-
-    """
-    pass
+    return entries
 
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
@@ -894,8 +894,8 @@ def read_route_timings(db: Session, method_path: str, window_size: int):
     )
 
     output = {
-        'readings': [t.diff_ms for t in timings],
-        'timestamps': [t.created_at for t in timings]
+        "readings": [t.diff_ms for t in timings],
+        "timestamps": [t.created_at for t in timings],
     }
 
     return output
