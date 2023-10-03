@@ -68,25 +68,25 @@ def calculate_stats_for_route(event: pyd.Event):
 
     # TODO need to work out the mechanics to get this to a db, and be cient updatable?
     method_path_params = {
-        "GET_/": {"window_size": 10, "alert_threshold_ms": 60},
-        "GET_/users": {"window_size": 10, "alert_threshold_ms": 60},
-        "GET_/panels": {"window_size": 10, "alert_threshold_ms": 60},
-        "GET_/admin/performance/route": {"window_size": 10, "alert_threshold_ms": 60},
+        "GET_/": {"window_size": 100, "alert_threshold_ms": 60},
+        "GET_/users": {"window_size": 100, "alert_threshold_ms": 60},
+        "GET_/panels": {"window_size": 100, "alert_threshold_ms": 60},
+        "GET_/admin/performance/route": {"window_size": 100, "alert_threshold_ms": 60},
         "GET_/metrics/panels/consistency": {
-            "window_size": 10,
+            "window_size": 100,
             "alert_threshold_ms": 60,
         },
-        "POST_/panels/x": {"window_size": 10, "alert_threshold_ms": 60},
-        "POST_/panels/x/entries": {"window_size": 10, "alert_threshold_ms": 60},
-        "PATCH_/panels/x": {"window_size": 10, "alert_threshold_ms": 60},
-        "DELETE_/panels/x": {"window_size": 10, "alert_threshold_ms": 60},
-        "DELETE_/panels/x/entries": {"window_size": 10, "alert_threshold_ms": 60},
-        "POST_/token": {"window_size": 10, "alert_threshold_ms": 500},
-        "GET_/docs": {"window_size": 10, "alert_threshold_ms": 60},
-        "GET_/openapi.json": {"window_size": 10, "alert_threshold_ms": 60},
+        "POST_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+        "POST_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
+        "PATCH_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+        "DELETE_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+        "DELETE_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
+        "POST_/token": {"window_size": 100, "alert_threshold_ms": 500},
+        "GET_/docs": {"window_size": 100, "alert_threshold_ms": 60},
+        "GET_/openapi.json": {"window_size": 100, "alert_threshold_ms": 60},
     }
 
-    default_params = {"window_size": 10, "alert_threshold_ms": 60}
+    default_params = {"window_size": 100, "alert_threshold_ms": 60}
     params = method_path_params.get(method_path, default_params)
     window_size = params["window_size"]
     alert_threshold_ms = params["alert_threshold_ms"]

@@ -111,7 +111,7 @@ async def read_route_performance(
     "/admin/routes/timings",
 )
 async def read_route_timings(
-    method_path: str, window_size: int | None = 10, db: Session = Depends(get_db)
+    method_path: str, window_size: int | None = 100, db: Session = Depends(get_db)
 ):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
     resp = crud.read_route_timings(
         db=db, method_path=method_path, window_size=window_size
@@ -336,93 +336,25 @@ async def get_entries_by_panel_id(
     offset: int = 0,
     limit: int = 100,
     sort_by: str = "timestamp.desc",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    # TODO all exc handling all the way down
     sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
+
     unpadded_entries = crud.read_entries_by_panel_id(
         db=db,
         panel_id=panel_id,
         offset=offset,
         limit=limit,
         sort_key=sort_key,
-        sort_direction=sort_direction
+        sort_direction=sort_direction,
     )
 
-    def read_panel_created_date(db: Session, panel_id: int) -> datetime:
+    padded_entries = crud.pad_entries(
+        db=db, unpadded_entries=unpadded_entries, limit=limit, panel_id=panel_id
+    )
 
-        panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
-
-        panel_created = panel.created_at
-
-        return panel_created.date()
-
-    def pad_entries(unpadded_entries: list[sql.Entry], limit: int, panel_id: int) -> list[dict]:
-        from datetime import timedelta
-        import uuid
-        from pprint import PrettyPrinter
-        pp = PrettyPrinter()
-
-        today = datetime.utcnow().date()
-
-        padded_entries = []
-        # extablish a date range of date at day level
-        # either limit or panel_created date
-
-        panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
-        panel_age_td: timedelta = (today - panel_created_at)
-        lookback_days: int = panel_age_td.days +1
-
-        if lookback_days > limit:
-            lookback_days = limit
-
-        print(f"{lookback_days=}")
-
-        # created date rnage array to iterate through and use to check for entries on that date
-        date_range = []
-        for n in range(lookback_days):
-            d = today + timedelta(days=-n)
-            date_range.append(d)
-
-        # pp.pprint(date_range)
-
-
-        # iterate through tat date rnage
-        # if no entry for that date, create defaul tobject
-
-
-        for date in date_range:
-            existing_entry = None
-            for entry in unpadded_entries:
-                entry_date = entry.timestamp.date()
-                if entry_date == date:
-                    existing_entry = entry
-                    break
-            if existing_entry:
-                padded_entries.append(utils.instance_to_dict(existing_entry))
-            else:
-                padded_entries.append({
-                    'id': f"{str(uuid.uuid4())}_padded",
-                    "is_complete": False,
-                    "timestamp": date,
-                    "panel_id": panel_id
-                })
-
-        return padded_entries
-
-
-    padded_entries = pad_entries(unpadded_entries=unpadded_entries, limit=limit, panel_id=panel_id)
     return padded_entries
-
-    # limit here in this case is -limit days
-    # entries may only be say 34 long, or 0
-    # the panel_creation date must set the start... if total len < limit, else...?
-        # there may be +n days of empty from panel creation, which shoudl be padded to false
-
-    # grab panel created_at date
-
-
-
-
 
 
 @api.delete("/panels/{panel_id}/entries")

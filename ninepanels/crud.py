@@ -1,5 +1,6 @@
 import pytz
 import logging
+import uuid
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -898,3 +899,51 @@ def read_route_timings(db: Session, method_path: str, window_size: int):
     }
 
     return output
+
+def read_panel_created_date(db: Session, panel_id: int) -> datetime:
+
+    panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
+
+    panel_created = panel.created_at
+
+    return panel_created.date()
+
+def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, panel_id: int) -> list[dict]:
+
+
+    today = datetime.utcnow().date()
+
+    padded_entries = []
+
+    panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
+    panel_age_td: timedelta = (today - panel_created_at)
+    lookback_days: int = panel_age_td.days +1
+
+    if lookback_days > limit:
+        lookback_days = limit
+
+
+    date_range = []
+    for n in range(lookback_days):
+        d = today + timedelta(days=-n)
+        date_range.append(d)
+
+
+    for date in date_range:
+        existing_entry = None
+        for entry in unpadded_entries:
+            entry_date = entry.timestamp.date()
+            if entry_date == date:
+                existing_entry = entry
+                break
+        if existing_entry:
+            padded_entries.append(utils.instance_to_dict(existing_entry))
+        else:
+            padded_entries.append({
+                'id': f"{str(uuid.uuid4())}_padded",
+                "is_complete": False,
+                "timestamp": date,
+                "panel_id": panel_id
+            })
+
+    return padded_entries
