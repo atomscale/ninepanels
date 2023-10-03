@@ -80,6 +80,7 @@ class PasswordResetToken(Base):
 class Timing(Base):
     __tablename__ = "timings"
     id = Column(Integer, primary_key=True)
+    event_id = Column(String)
     created_at = Column(DateTime)
     request_id = Column(String)
     path = Column(String)

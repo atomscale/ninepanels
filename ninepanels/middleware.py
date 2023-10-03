@@ -8,8 +8,7 @@ from starlette.requests import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import pydmodels as pyd
-from . import config
-from . import timing
+from . import performance
 
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):
@@ -87,7 +86,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         )
 
 
-class TimingMiddleware(BaseHTTPMiddleware):
+class RouteTimingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
 
         # TODO copy wrapped response mechanism to exlude certain routes like admin
@@ -112,7 +111,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
             logging.warn("no method")
 
         try:
-            route_timer = timing.Timer(
+            route_timer = performance.RouteTimer(
                 method=method,
                 request_id=request_id,
                 path=path,

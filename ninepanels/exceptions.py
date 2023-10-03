@@ -94,7 +94,7 @@ class EmailException(NinePanelsBaseException):
     ...
 
 
-class TimingError(NinePanelsBaseException):
+class RouteTimerError(NinePanelsBaseException):
     ...
 
 class ParseSortBy(NinePanelsBaseException):

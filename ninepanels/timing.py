@@ -1,14 +1,9 @@
 import re
-import asyncio
 
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 
-
-from . import pydmodels as pyd
-from . import sqlmodels as sql
 from . import queues
-from . import event_types
+from . import event_models
 
 
 pattern = re.compile(r"(?<=/)\d+(?=/|$)")
@@ -18,11 +13,11 @@ def replace_numbers_in_path(path: str) -> str:
     return pattern.sub("x", path)
 
 
-class Timer:
+class RouteTimer:
 
     """single, ephemeral per request
 
-    produces event event.TIMING_COMPLETED with self instance as payload
+    produces event_models.TimingCreated
     """
 
     def __init__(
@@ -51,7 +46,16 @@ class Timer:
 
         self.diff_ms: float = diff_timedelta.total_seconds() * 1000
 
-        timing_event = pyd.Event(type=event_types.TIMING_CREATED, payload=self)
+        # timing_event = pyd.Event(type=event_types.TIMING_CREATED, payload=self)
+        timing_event = event_models.RouteTimingCreated(
+            request_id=self.request_id,
+            method_path=self.method_path,
+            method=self.method,
+            path=self.path,
+            start_ts=self.start_ts,
+            stop_ts=self.stop_ts,
+            diff_ms=self.diff_ms
+        )
 
         await queues.event_queue.put(timing_event)
 

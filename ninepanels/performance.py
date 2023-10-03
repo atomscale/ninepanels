@@ -1,10 +1,11 @@
 import uuid
 import asyncio
-import threading
+import re
 
-from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import desc
 from sqlalchemy.exc import SQLAlchemyError
+from pprint import PrettyPrinter
+from datetime import datetime
 
 from . import pydmodels as pyd
 from . import sqlmodels as sql
@@ -12,43 +13,130 @@ from . import queues
 from . import event_types
 from . import exceptions
 from . import utils
+from . import event_models
 
-from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
 
+pattern = re.compile(r"(?<=/)\d+(?=/|$)")
 
-def insert_timing(timer_dict: dict):
-    from . import database
+def replace_numbers_in_path(path: str) -> str:
+    return pattern.sub("x", path)
 
 
-    try:
+class RouteTimer:
+
+    """single, ephemeral per request
+
+    produces event_models.TimingCreated
+    """
+
+    def __init__(
+        self,
+        # factory: object,
+        method: str,
+        request_id: str,
+        path: str,
+    ) -> None:
+        self.request_id = request_id
+        self.path = replace_numbers_in_path(path)
+        self.method = method
+        self.start_ts: datetime = None
+        self.stop_ts: datetime = None
+        self.created_at = datetime.utcnow()
+        self.diff_ms: float = None
+        self.method_path: str = f"{self.method}_{self.path}"
+
+    def start(self):
+        self.start_ts = datetime.utcnow()
+
+    async def stop(self) -> float:
+        self.stop_ts = datetime.utcnow()
+
+        diff_timedelta = self.stop_ts - self.start_ts
+
+        self.diff_ms: float = diff_timedelta.total_seconds() * 1000
+
+        # timing_event = pyd.Event(type=event_types.TIMING_CREATED, payload=self)
+        timing_event = event_models.RouteTimingCreated(
+            request_id=self.request_id,
+            method_path=self.method_path,
+            method=self.method,
+            path=self.path,
+            start_ts=self.start_ts,
+            stop_ts=self.stop_ts,
+            diff_ms=self.diff_ms
+        )
+
+        await queues.event_queue.put(timing_event)
+
+class RouteTimingBuffer:
+
+    def __init__(self, batch_size: int = 10) -> None:
+        self.buffer: list[sql.Timing] = []
+        self.batch_size: int = batch_size
+
+    def add_timing_to_buffer(self, timing: event_models.RouteTimingCreated):
+        """ Buffers `sql.Timing` instances created from `event_models.RouteTimingCreated` events
+        and flushes db writes when `batch_size` met.
+
+        Returns:
+
+
+        """
+
+        new_timing = sql.Timing(**timing.model_dump(exclude={'type'}))
+        self.buffer.append(new_timing)
+
+        if len(self.buffer) >= self.batch_size:
+            try:
+                success = self._insert_timings()
+                if success:
+                    self.buffer = []
+                    return success
+            except exceptions.RouteTimerError:
+                raise
+
+    def _insert_timings(self) -> bool:
+        from . import database
         db = database.SessionLocal()
-        timing = sql.Timing(**timer_dict)
-        db.add(timing)
-        db.commit()
 
-    except SQLAlchemyError as e:
-        raise exceptions.TimingError(
-            detail="error in setting up db conneciton in persist timing "
-        )
+        try:
+            db.add_all(self.buffer)
+            db.commit()
+            return True
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise exceptions.RouteTimerError(
+                detail="error in setting up db conneciton in persist timing"
+            )
+        finally:
+            db.close()
 
-    return utils.instance_to_dict(timing)
+route_timer_persist = RouteTimingBuffer()
+
+async def handle_timing_created(event: event_models.RouteTimingCreated) -> None:
 
 
-async def handle_timing_created(event: pyd.Event):
-    timer_dict = event.payload.__dict__
+    success = await asyncio.to_thread(route_timer_persist.add_timing_to_buffer, event)
+
+    if success:
+        # TODO produce an event_models.RouteTimingsPersisted event
+        print(f"produce an event_models.RouteTimingsPersisted event")
+
+    # await queues.event_queue.put(
+    #     event_models.RouteTimingsPersisted(
+
+    #     )
+    # )
+    # except exceptions.TimingError as e:
+    #     await queues.event_queue.put(
+    #         pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
+    #     )
 
 
-    try:
-        timing = await asyncio.to_thread(insert_timing, timer_dict)
-        await queues.event_queue.put(
-            pyd.Event(type=event_types.TIMING_PERSISTED, payload=timing)
-        )
-    except exceptions.TimingError as e:
-        await queues.event_queue.put(
-            pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
-        )
+
+
 
 
 last_alert_id = {}
@@ -130,7 +218,7 @@ def calculate_stats_for_route(event: pyd.Event):
 
         if not existing_alert_id:
             alert_id = str(uuid.uuid4())
-            last_alert_id[method_path] = alert_id
+            last_alert_id[method_path] = {'alert_id': alert_id, 'is_dispatched': False}
             stats.update({"alert_id": alert_id})
 
     else:
@@ -146,7 +234,7 @@ def calculate_stats_for_route(event: pyd.Event):
     return utils.instance_to_dict(db_stats)
 
 
-async def handle_timing_persisted(event: pyd.Event):
+async def handle_timings_persisted(event: pyd.Event):
     stats = await asyncio.to_thread(calculate_stats_for_route, event)
 
     await queues.event_queue.put(
@@ -156,12 +244,15 @@ async def handle_timing_persisted(event: pyd.Event):
         )
     )
 
-    if stats["in_alert"]:
+    method_path = stats["method_path"]
+
+    if last_alert_id[method_path] and not last_alert_id[method_path]['is_dispatched']:
         await queues.event_queue.put(
             pyd.Event(
                 type=event_types.TIMING_ALERT,
                 payload=stats,
             )
         )
+        last_alert_id[method_path]['is_dispatched'] = True
 
 

@@ -9,14 +9,20 @@ Notes, coding, style guide, architecture notes.
 
 ### imports
 
-#### order
-import order should be roughly:
+#### dependency management
+
+Using poetry. It's awesome.
+
+pydeps can be used to visualise imports and help debug any circular imports with `pydeps ninepanels`
+
+#### import order
+import order should be:
 
 - full stdlib packages
-- site packages grouped by package
+- site_packages (those installed with poetry) grouped by package
 - ninepanels imports
 
-#### form
+#### import form
 
 imports from ninepanels itself should generally be explicit and in full:
 
@@ -41,7 +47,7 @@ not:
 from sqlalchemy.orm import Integer, Column
 ```
 
-This helps maintain visual clarity.
+This helps maintain visual clarity and makes and debugging-via-commenting-out much easier!
 
 #### naming
 
