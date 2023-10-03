@@ -11,11 +11,21 @@ class Event(BaseModel):
 class RouteTimingCreated(Event):
     """ A RouteTimer has completed a measurement in RouteTimingMiddleware
 
+    Attrs:
+        type: str = 'route_timing_created'
+        request_id: str
+        method_path: str
+        method: str
+        path: str
+        start_ts: datetime
+        stop_ts: datetime
+        diff_ms: float | int = Field(ge=0)
+
     Exclude on `model_dump()`:
         - `type`
 
     """
-    type: str = 'timing_created'
+    type: str = 'route_timing_created'
     request_id: str
     method_path: str
     method: str
@@ -31,6 +41,6 @@ class RouteTimingsPersisted(Event):
         - `type`
 
     """
-    type: str = 'timings_persisted'
+    type: str = 'route_timings_persisted'
 
     # TODO will need to rethink stats calculation again to accomodate this buffer. right architecture. implement.

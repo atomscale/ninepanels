@@ -9,8 +9,8 @@ dispatcher = {
     # asyncio.gather is run across the list
 
     # event_types.TIMING_CREATED: [performance.handle_timing_created],
-    'timing_created': [performance.handle_timing_created],
-    'timings_persisted': [performance.handle_timings_persisted],
+    'route_timing_created': [performance.handle_timing_created],
+    'route_timings_persisted': [performance.handle_timings_persisted],
 
 
 

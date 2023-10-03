@@ -25,10 +25,9 @@ def replace_numbers_in_path(path: str) -> str:
 
 
 class RouteTimer:
+    """ Ephemeral per request.
 
-    """single, ephemeral per request
-
-    produces event_models.TimingCreated
+    Produces event_models.RouteTimingCreated
     """
 
     def __init__(
@@ -47,10 +46,10 @@ class RouteTimer:
         self.diff_ms: float = None
         self.method_path: str = f"{self.method}_{self.path}"
 
-    def start(self):
+    def start(self) -> None:
         self.start_ts = datetime.utcnow()
 
-    async def stop(self) -> float:
+    async def stop(self) -> None:
         self.stop_ts = datetime.utcnow()
 
         diff_timedelta = self.stop_ts - self.start_ts
@@ -75,27 +74,31 @@ class RouteTimingBuffer:
     def __init__(self, batch_size: int = 10) -> None:
         self.buffer: list[sql.Timing] = []
         self.batch_size: int = batch_size
+        self.lock = asyncio.Lock()
 
-    def add_timing_to_buffer(self, timing: event_models.RouteTimingCreated):
+    async def add_timing_to_buffer(self, timing: event_models.RouteTimingCreated) -> bool:
         """ Buffers `sql.Timing` instances created from `event_models.RouteTimingCreated` events
         and flushes db writes when `batch_size` met.
 
         Returns:
+            True when buffer flush is successful
 
+        Raises:
+            `exceptions.RouteTimerError`
 
         """
+        async with self.lock:
+            new_timing = sql.Timing(**timing.model_dump(exclude={'type'}))
+            self.buffer.append(new_timing)
 
-        new_timing = sql.Timing(**timing.model_dump(exclude={'type'}))
-        self.buffer.append(new_timing)
-
-        if len(self.buffer) >= self.batch_size:
-            try:
-                success = self._insert_timings()
-                if success:
-                    self.buffer = []
-                    return success
-            except exceptions.RouteTimerError:
-                raise
+            if len(self.buffer) >= self.batch_size:
+                try:
+                    success = self._insert_timings()
+                    if success:
+                        self.buffer = []
+                        return success
+                except exceptions.RouteTimerError:
+                    raise
 
     def _insert_timings(self) -> bool:
         from . import database
@@ -117,8 +120,7 @@ route_timer_persist = RouteTimingBuffer()
 
 async def handle_timing_created(event: event_models.RouteTimingCreated) -> None:
 
-
-    success = await asyncio.to_thread(route_timer_persist.add_timing_to_buffer, event)
+    success = await route_timer_persist.add_timing_to_buffer(event)
 
     if success:
         # TODO produce an event_models.RouteTimingsPersisted event
