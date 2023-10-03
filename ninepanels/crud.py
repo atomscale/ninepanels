@@ -442,7 +442,6 @@ def read_entries_by_panel_id(
     sort_direction: str,
 ):
 
-    print(f"{panel_id=} {offset=} {limit=} {sort_key=} {sort_direction=} ")
     entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
