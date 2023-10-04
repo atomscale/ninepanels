@@ -1,7 +1,7 @@
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
-from .config import SECRET_KEY, JWT_ALGORITHM, CRYPT_CONTEXT_SCHEME
+from .core.config import SECRET_KEY, JWT_ALGORITHM, CRYPT_CONTEXT_SCHEME
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
@@ -10,7 +10,7 @@ from . import sqlmodels as sql
 from . import pydmodels as pyd
 from . import crud
 from . import exceptions
-from .database import get_db
+from .db.database import get_db
 
 from datetime import datetime, timedelta
 

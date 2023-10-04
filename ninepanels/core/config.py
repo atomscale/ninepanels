@@ -1,8 +1,7 @@
 import os
 import subprocess
 
-from . import exceptions
-from . import timing
+from .. import exceptions
 
 
 def get_git_branch():
@@ -128,9 +127,6 @@ try:
 except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
-
-# timers = timing.TimerFactory()
-
 
 ### SECURITY ###
 

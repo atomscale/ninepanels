@@ -1,6 +1,6 @@
 import httpx
 
-from . import config
+from .core import config
 from . import exceptions
 from . import pydmodels as pyd
 

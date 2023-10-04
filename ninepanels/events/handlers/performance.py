@@ -7,13 +7,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from pprint import PrettyPrinter
 from datetime import datetime
 
-from . import pydmodels as pyd
-from . import sqlmodels as sql
-from .events import queues
-from .events import event_types
-from . import exceptions
-from . import utils
-from .events import event_models
+from ... import sqlmodels as sql
+from ... import exceptions
+from ... import utils
+from .. import event_models
 
 
 pp = PrettyPrinter()
@@ -51,6 +48,9 @@ class RouteTimer:
         self.start_ts = datetime.utcnow()
 
     async def stop(self) -> None:
+
+        from .. import queues
+
         self.stop_ts = datetime.utcnow()
 
         diff_timedelta = self.stop_ts - self.start_ts
@@ -114,7 +114,7 @@ class RouteTimingsBuffer:
                     raise
 
     def _insert_timings(self, method_path: event_models.MethodPath) -> bool:
-        from . import database
+        from ...db import database
 
         db = database.SessionLocal()
 
@@ -174,7 +174,7 @@ class RouteStatsProcessor:
     def calculate_stats_for_route(self, event: event_models.RouteTimingsPersisted):
         """FOR THE SINGLE EVENT ROUTE ONLY!!! makes sense now: a new row per method_path on timing persisted event"""
 
-        from . import database
+        from ...db import database
 
         db = database.SessionLocal()
 
@@ -275,15 +275,17 @@ async def handle_route_timing_created(event: event_models.RouteTimingCreated) ->
         event: event_models.RouteTimingCreated - produced by `perforance.RouteTimer`
 
     """
+    from .. import queues
 
     method_path = None
 
     try:
         method_path = await route_timings_buffer.add_timing_to_buffer(event)
     except exceptions.RouteTimerError as e:
-        await queues.event_queue.put(
-            pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
-        )
+        # await queues.event_queue.put(
+        #     pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
+        # )
+        ...
 
     if method_path:
         # TODO produce an event_models.RouteTimingsPersisted event
@@ -298,6 +300,8 @@ stats_processor = RouteStatsProcessor()
 
 
 async def handle_route_timings_persisted(event: event_models.RouteTimingsPersisted):
+    from .. import queues
+
     route_stats = await asyncio.to_thread(
         stats_processor.calculate_stats_for_route, event
     )

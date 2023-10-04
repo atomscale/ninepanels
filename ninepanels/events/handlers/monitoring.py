@@ -1,6 +1,6 @@
 import rollbar
 
-from . import pydmodels as pyd
+from ... import pydmodels as pyd
 
 
 async def report_exc_error(event: pyd.Event):

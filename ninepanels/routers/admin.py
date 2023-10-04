@@ -5,7 +5,7 @@ from starlette.requests import Request
 
 from sqlalchemy.orm import Session
 
-from ..database import get_db
+from ..db.database import get_db
 from .. import crud
 from .. import auth
 from .. import pydmodels as pyd

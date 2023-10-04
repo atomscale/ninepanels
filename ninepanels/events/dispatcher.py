@@ -1,8 +1,11 @@
-from .. import comms
-from .. import performance
-from .. import monitoring
 from .. import logs
+
+
 from . import event_types
+
+from .. import comms
+from .handlers import monitoring
+from .handlers import performance
 
 dispatcher = {
     # always ensure a list of funcs, even if only one.

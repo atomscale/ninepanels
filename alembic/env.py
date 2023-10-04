@@ -21,7 +21,7 @@ config = context.config
 from ninepanels.sqlmodels import Base
 target_metadata = Base.metadata
 
-from ninepanels.config import SQLALCHEMY_DATABASE_URI
+from ninepanels.core.config import SQLALCHEMY_DATABASE_URI
 
 config.set_main_option('sqlalchemy.url', SQLALCHEMY_DATABASE_URI)
 

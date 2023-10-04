@@ -14,7 +14,7 @@ from pprint import PrettyPrinter
 from . import sqlmodels as sql
 from . import exceptions
 from . import utils
-from . import config
+from .core import config
 
 
 pp = PrettyPrinter(indent=4)

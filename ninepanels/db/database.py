@@ -4,7 +4,7 @@ from sqlalchemy import text # keep, imported eslewhere
 from sqlalchemy.orm import sessionmaker
 import rollbar
 
-from . import config
+from ..core import config
 
 
 engine = create_engine(
