@@ -2,8 +2,8 @@ import re
 
 from datetime import datetime
 
-from . import queues
-from . import event_models
+from .events import queues
+from .events import event_models
 
 
 pattern = re.compile(r"(?<=/)\d+(?=/|$)")

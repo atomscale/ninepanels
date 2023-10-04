@@ -33,15 +33,14 @@ from . import sqlmodels as sql
 from . import auth
 from . import config
 from . import exceptions
-from . import queues
-from . import event_types
+from .events import queues
+from .events import event_types
 from . import utils
 
 
 pp = PrettyPrinter(indent=4)
 
 rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
-
 
 api = FastAPI()
 

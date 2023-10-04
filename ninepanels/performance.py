@@ -9,11 +9,11 @@ from datetime import datetime
 
 from . import pydmodels as pyd
 from . import sqlmodels as sql
-from . import queues
-from . import event_types
+from .events import queues
+from .events import event_types
 from . import exceptions
 from . import utils
-from . import event_models
+from .events import event_models
 
 
 pp = PrettyPrinter()
@@ -104,8 +104,6 @@ class RouteTimingsBuffer:
 
             batch_size = self.batch_sizes.get(timing.method_path, 10)
 
-            pp.pprint(self.buffers)
-
             if len(self.buffers[timing.method_path]) >= batch_size:
                 try:
                     success = self._insert_timings(timing.method_path)
@@ -129,35 +127,6 @@ class RouteTimingsBuffer:
             raise exceptions.RouteTimerError(detail="error bd buffer flush")
         finally:
             db.close()
-
-
-route_timer_persist = RouteTimingsBuffer()
-
-
-async def handle_route_timing_created(event: event_models.RouteTimingCreated) -> None:
-    """Coro to coordinated buffering and flushing of new route timing events
-
-    Args:
-        event: event_models.RouteTimingCreated - produced by `perforance.RouteTimer`
-
-    """
-
-    method_path = None
-
-    try:
-        method_path = await route_timer_persist.add_timing_to_buffer(event)
-    except exceptions.RouteTimerError as e:
-        await queues.event_queue.put(
-            pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
-        )
-
-    if method_path:
-        # TODO produce an event_models.RouteTimingsPersisted event
-        # print(f"produce an event_models.RouteTimingsPersisted event for {method_path}")
-
-        await queues.event_queue.put(
-            event_models.RouteTimingsPersisted(method_path=method_path)
-        )
 
 
 class RouteStatsProcessor:
@@ -296,14 +265,42 @@ class RouteStatsProcessor:
             db.close()
 
 
+route_timings_buffer = RouteTimingsBuffer()
+
+
+async def handle_route_timing_created(event: event_models.RouteTimingCreated) -> None:
+    """Coro to coordinated buffering and flushing of new route timing events
+
+    Args:
+        event: event_models.RouteTimingCreated - produced by `perforance.RouteTimer`
+
+    """
+
+    method_path = None
+
+    try:
+        method_path = await route_timings_buffer.add_timing_to_buffer(event)
+    except exceptions.RouteTimerError as e:
+        await queues.event_queue.put(
+            pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
+        )
+
+    if method_path:
+        # TODO produce an event_models.RouteTimingsPersisted event
+        # print(f"produce an event_models.RouteTimingsPersisted event for {method_path}")
+
+        await queues.event_queue.put(
+            event_models.RouteTimingsPersisted(method_path=method_path)
+        )
 
 
 stats_processor = RouteStatsProcessor()
 
 
 async def handle_route_timings_persisted(event: event_models.RouteTimingsPersisted):
-
-    route_stats = await asyncio.to_thread(stats_processor.calculate_stats_for_route, event)
+    route_stats = await asyncio.to_thread(
+        stats_processor.calculate_stats_for_route, event
+    )
 
     print(f"route stats for {event.method_path} created: {route_stats}")
     # await queues.event_queue.put(

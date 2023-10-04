@@ -1,4 +1,4 @@
-
+""" will be replaced with pydantic models """
 
 NEW_USER_CREATED = "new_user_created"
 USER_LOGGED_IN = "user_logged_in"

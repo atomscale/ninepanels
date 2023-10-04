@@ -1,16 +1,13 @@
-import threading
 import asyncio
 
 from . import event_dispatcher
 from . import event_types
-from . import pydmodels as pyd
+from .. import pydmodels as pyd
 
 event_queue = asyncio.Queue()
 
 async def event_worker():
     while True:
-        # note that all events in the system are pydantic pyd.Event instances
-        # all event handlers are expected to accept the full Event instance as their single param
 
         qsize = event_queue.qsize()
         if qsize > 100:
