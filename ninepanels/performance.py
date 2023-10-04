@@ -20,12 +20,13 @@ pp = PrettyPrinter()
 
 pattern = re.compile(r"(?<=/)\d+(?=/|$)")
 
+
 def replace_numbers_in_path(path: str) -> str:
     return pattern.sub("x", path)
 
 
 class RouteTimer:
-    """ Ephemeral per request.
+    """Ephemeral per request.
 
     Produces event_models.RouteTimingCreated
     """
@@ -44,7 +45,7 @@ class RouteTimer:
         self.stop_ts: datetime = None
         self.created_at = datetime.utcnow()
         self.diff_ms: float = None
-        self.method_path: str = f"{self.method}_{self.path}"
+        self.method_path: event_models.MethodPath = f"{self.method}_{self.path}"
 
     def start(self) -> None:
         self.start_ts = datetime.utcnow()
@@ -64,197 +65,261 @@ class RouteTimer:
             path=self.path,
             start_ts=self.start_ts,
             stop_ts=self.stop_ts,
-            diff_ms=self.diff_ms
+            diff_ms=self.diff_ms,
         )
 
         await queues.event_queue.put(timing_event)
 
-class RouteTimingBuffer:
 
-    def __init__(self, batch_size: int = 10) -> None:
-        self.buffer: list[sql.Timing] = []
-        self.batch_size: int = batch_size
+class RouteTimingsBuffer:
+    def __init__(
+        self,
+    ) -> None:
+        self.buffers: dict[event_models.MethodPath : list[sql.Timing]] = {}
+        self.batch_sizes: dict[event_models.MethodPath : int] = {}
         self.lock = asyncio.Lock()
 
-    async def add_timing_to_buffer(self, timing: event_models.RouteTimingCreated) -> bool:
-        """ Buffers `sql.Timing` instances created from `event_models.RouteTimingCreated` events
-        and flushes db writes when `batch_size` met.
+    async def add_timing_to_buffer(
+        self, timing: event_models.RouteTimingCreated
+    ) -> bool:
+        """Buffers `sql.Timing` instances  per `method_path`
+        and flushes db writes when `batch_size` for `method_path` met.
 
         Returns:
-            True when buffer flush is successful
+            `method_path`: method_path of the buffer just flushed
 
         Raises:
             `exceptions.RouteTimerError`
 
         """
         async with self.lock:
-            new_timing = sql.Timing(**timing.model_dump(exclude={'type'}))
-            self.buffer.append(new_timing)
+            new_timing = sql.Timing(**timing.model_dump(exclude={"type"}))
 
-            if len(self.buffer) >= self.batch_size:
+            if timing.method_path in self.buffers:
+                self.buffers[timing.method_path].append(new_timing)
+            else:
+                self.buffers[timing.method_path] = [
+                    new_timing,
+                ]
+
+            batch_size = self.batch_sizes.get(timing.method_path, 10)
+
+            pp.pprint(self.buffers)
+
+            if len(self.buffers[timing.method_path]) >= batch_size:
                 try:
-                    success = self._insert_timings()
+                    success = self._insert_timings(timing.method_path)
                     if success:
-                        self.buffer = []
+                        self.buffers[timing.method_path] = []
                         return success
                 except exceptions.RouteTimerError:
                     raise
 
-    def _insert_timings(self) -> bool:
+    def _insert_timings(self, method_path: event_models.MethodPath) -> bool:
         from . import database
+
         db = database.SessionLocal()
 
         try:
-            db.add_all(self.buffer)
+            db.add_all(self.buffers[method_path])
             db.commit()
-            return True
+            return method_path
         except SQLAlchemyError as e:
             db.rollback()
-            raise exceptions.RouteTimerError(
-                detail="error in setting up db conneciton in persist timing"
+            raise exceptions.RouteTimerError(detail="error bd buffer flush")
+        finally:
+            db.close()
+
+
+route_timer_persist = RouteTimingsBuffer()
+
+
+async def handle_route_timing_created(event: event_models.RouteTimingCreated) -> None:
+    """Coro to coordinated buffering and flushing of new route timing events
+
+    Args:
+        event: event_models.RouteTimingCreated - produced by `perforance.RouteTimer`
+
+    """
+
+    method_path = None
+
+    try:
+        method_path = await route_timer_persist.add_timing_to_buffer(event)
+    except exceptions.RouteTimerError as e:
+        await queues.event_queue.put(
+            pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
+        )
+
+    if method_path:
+        # TODO produce an event_models.RouteTimingsPersisted event
+        # print(f"produce an event_models.RouteTimingsPersisted event for {method_path}")
+
+        await queues.event_queue.put(
+            event_models.RouteTimingsPersisted(method_path=method_path)
+        )
+
+
+class RouteStatsProcessor:
+    def __init__(self) -> None:
+        self.last_alert_id = {}
+
+    def performance_params(self, method_path: event_models.MethodPath) -> dict:
+        """Supply the window_size and alert_thresholds per method_path
+
+        Args:
+            method_path
+
+        Returns:
+            dict of params
+
+        """
+        # TODO need to work out the mechanics to get this to a db, and be cient updatable?
+        method_path_params = {
+            "GET_/": {"window_size": 100, "alert_threshold_ms": 60},
+            "GET_/users": {"window_size": 100, "alert_threshold_ms": 60},
+            "GET_/panels": {"window_size": 100, "alert_threshold_ms": 60},
+            "GET_/admin/performance/route": {
+                "window_size": 100,
+                "alert_threshold_ms": 60,
+            },
+            "GET_/metrics/panels/consistency": {
+                "window_size": 100,
+                "alert_threshold_ms": 60,
+            },
+            "POST_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+            "POST_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
+            "PATCH_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+            "DELETE_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
+            "DELETE_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
+            "POST_/token": {"window_size": 100, "alert_threshold_ms": 500},
+            "GET_/docs": {"window_size": 100, "alert_threshold_ms": 60},
+            "GET_/openapi.json": {"window_size": 100, "alert_threshold_ms": 60},
+        }
+
+        default_params = {"window_size": 100, "alert_threshold_ms": 60}
+        params = method_path_params.get(method_path, default_params)
+
+        return params
+
+    def calculate_stats_for_route(self, event: event_models.RouteTimingsPersisted):
+        """FOR THE SINGLE EVENT ROUTE ONLY!!! makes sense now: a new row per method_path on timing persisted event"""
+
+        from . import database
+
+        db = database.SessionLocal()
+
+        method_path = event.method_path
+        method, path = method_path.split("_")
+
+        params = self.performance_params(method_path=method_path)
+
+        window_size = params["window_size"]
+        alert_threshold_ms = params["alert_threshold_ms"]
+
+        try:
+            timings = (
+                db.query(sql.Timing)
+                .filter(sql.Timing.method_path == method_path)
+                .order_by(desc(sql.Timing.created_at))
+                .limit(window_size)
+                .all()
+            )
+        except SQLAlchemyError as e:
+            raise exceptions.RouteStatsProcessorError(
+                detail="error getting timings from db",
+                context_msg=str(e),
+                context_data={"method_path": method_path},
             )
         finally:
             db.close()
 
-route_timer_persist = RouteTimingBuffer()
+        if not timings:
+            raise exceptions.RouteStatsProcessorError(
+                detail="no timings to process",
+                context_data={"method_path": method_path},
+            )
 
-async def handle_timing_created(event: event_models.RouteTimingCreated) -> None:
+        stats = {}
 
-    success = await route_timer_persist.add_timing_to_buffer(event)
+        readings = [timer.diff_ms for timer in timings]
 
-    if success:
-        # TODO produce an event_models.RouteTimingsPersisted event
-        print(f"produce an event_models.RouteTimingsPersisted event")
+        avg = sum(readings) / len(readings)
+        stats.update({"avg": avg})
 
+        minimum = min(readings)
+        stats.update({"min": minimum})
+
+        maximum = max(readings)
+        stats.update({"max": maximum})
+
+        last = readings[0]
+        stats.update({"last": last})
+
+        stats.update({"method": method})
+        stats.update({"path": path})
+        stats.update({"method_path": method_path})
+
+        stats.update({"alert_threshold_ms": alert_threshold_ms})
+        stats.update({"in_alert": False})
+        stats.update({"alert_id": None})
+
+        if stats["avg"] > alert_threshold_ms:
+            stats.update({"in_alert": True})
+            existing_alert_id = self.last_alert_id.get(method_path, None)
+
+            if not existing_alert_id:
+                alert_id = str(uuid.uuid4())
+                self.last_alert_id[method_path] = {
+                    "alert_id": alert_id,
+                    "is_dispatched": False,
+                }
+                stats.update({"alert_id": alert_id})
+
+        else:
+            existing_alert_id = self.last_alert_id.get(method_path, None)
+            if existing_alert_id:
+                self.last_alert_id[method_path] = None
+
+        try:
+            db_stats = sql.TimingStats(**stats)
+            db.add(db_stats)
+            db.commit()
+            return utils.instance_to_dict(db_stats)
+        except SQLAlchemyError as e:
+            raise exceptions.RouteStatsProcessorError(
+                detail="error writing stats to db",
+                context_msg=str(e),
+                context_data={"method_path": method_path, "stats": stats},
+            )
+        finally:
+            db.close()
+
+
+
+
+stats_processor = RouteStatsProcessor()
+
+
+async def handle_route_timings_persisted(event: event_models.RouteTimingsPersisted):
+
+    route_stats = await asyncio.to_thread(stats_processor.calculate_stats_for_route, event)
+
+    print(f"route stats for {event.method_path} created: {route_stats}")
     # await queues.event_queue.put(
-    #     event_models.RouteTimingsPersisted(
-
+    #     pyd.Event(
+    #         type=event_types.TIMING_STATS_PERSISTED,
+    #         payload=stats,
     #     )
     # )
-    # except exceptions.TimingError as e:
+
+    # method_path = stats["method_path"]
+
+    # if last_alert_id[method_path] and not last_alert_id[method_path]['is_dispatched']:
     #     await queues.event_queue.put(
-    #         pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
+    #         pyd.Event(
+    #             type=event_types.TIMING_ALERT,
+    #             payload=stats,
+    #         )
     #     )
-
-
-
-
-
-
-last_alert_id = {}
-
-
-def calculate_stats_for_route(event: pyd.Event):
-    """FOR THE SINGLE EVENT ROUTE ONLY!!! makes sense now: a new row per method_path on timing persisted event"""
-
-
-    from . import database
-
-    db = database.SessionLocal()
-
-    timing_in_db = event.payload
-
-    method_path = timing_in_db["method_path"]
-
-    # TODO need to work out the mechanics to get this to a db, and be cient updatable?
-    method_path_params = {
-        "GET_/": {"window_size": 100, "alert_threshold_ms": 60},
-        "GET_/users": {"window_size": 100, "alert_threshold_ms": 60},
-        "GET_/panels": {"window_size": 100, "alert_threshold_ms": 60},
-        "GET_/admin/performance/route": {"window_size": 100, "alert_threshold_ms": 60},
-        "GET_/metrics/panels/consistency": {
-            "window_size": 100,
-            "alert_threshold_ms": 60,
-        },
-        "POST_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
-        "POST_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
-        "PATCH_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
-        "DELETE_/panels/x": {"window_size": 100, "alert_threshold_ms": 60},
-        "DELETE_/panels/x/entries": {"window_size": 100, "alert_threshold_ms": 60},
-        "POST_/token": {"window_size": 100, "alert_threshold_ms": 500},
-        "GET_/docs": {"window_size": 100, "alert_threshold_ms": 60},
-        "GET_/openapi.json": {"window_size": 100, "alert_threshold_ms": 60},
-    }
-
-    default_params = {"window_size": 100, "alert_threshold_ms": 60}
-    params = method_path_params.get(method_path, default_params)
-    window_size = params["window_size"]
-    alert_threshold_ms = params["alert_threshold_ms"]
-
-    timings = (
-        db.query(sql.Timing)
-        .filter(sql.Timing.method_path == method_path)
-        .order_by(desc(sql.Timing.created_at))
-        .limit(window_size)
-        .all()
-    )
-
-    stats = {}
-
-
-    readings = [timer.diff_ms for timer in timings]
-
-    avg = sum(readings) / len(readings)
-    stats.update({"avg": avg})
-
-    minimum = min(readings)
-    stats.update({"min": minimum})
-
-    maximum = max(readings)
-    stats.update({"max": maximum})
-
-    last = readings[0]
-    stats.update({"last": last})
-
-    stats.update({"method": timing_in_db["method"]})
-    stats.update({"path": timing_in_db["path"]})
-    stats.update({"method_path": method_path})
-
-    stats.update({"alert_threshold_ms": alert_threshold_ms})
-    stats.update({"in_alert": False})
-    stats.update({"alert_id": None})
-
-    if stats["avg"] > alert_threshold_ms:
-        stats.update({"in_alert": True})
-        existing_alert_id = last_alert_id.get(method_path, None)
-
-        if not existing_alert_id:
-            alert_id = str(uuid.uuid4())
-            last_alert_id[method_path] = {'alert_id': alert_id, 'is_dispatched': False}
-            stats.update({"alert_id": alert_id})
-
-    else:
-        existing_alert_id = last_alert_id.get(method_path, None)
-        if existing_alert_id:
-            last_alert_id[method_path] = None
-
-
-    db_stats = sql.TimingStats(**stats)
-    db.add(db_stats)
-    db.commit()
-
-    return utils.instance_to_dict(db_stats)
-
-
-async def handle_timings_persisted(event: pyd.Event):
-    stats = await asyncio.to_thread(calculate_stats_for_route, event)
-
-    await queues.event_queue.put(
-        pyd.Event(
-            type=event_types.TIMING_STATS_PERSISTED,
-            payload=stats,
-        )
-    )
-
-    method_path = stats["method_path"]
-
-    if last_alert_id[method_path] and not last_alert_id[method_path]['is_dispatched']:
-        await queues.event_queue.put(
-            pyd.Event(
-                type=event_types.TIMING_ALERT,
-                payload=stats,
-            )
-        )
-        last_alert_id[method_path]['is_dispatched'] = True
-
-
+    #     last_alert_id[method_path]['is_dispatched'] = True

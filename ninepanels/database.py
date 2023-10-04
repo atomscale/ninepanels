@@ -10,14 +10,14 @@ engine = create_engine(
     config.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True, pool_timeout=30
 )
 
-# def see_status_checkout(dbapi_con, con_record, con_proxy):
-#     print(engine.pool.status())
+def see_status_checkout(dbapi_con, con_record, con_proxy):
+    print(engine.pool.status())
 
-# def see_status_checkin(dbapi_con, con_record):
-#     print(engine.pool.status())
+def see_status_checkin(dbapi_con, con_record):
+    print(engine.pool.status())
 
-# event.listen(engine.pool, 'checkout', see_status_checkout)
-# event.listen(engine.pool, 'checkin', see_status_checkin)
+event.listen(engine.pool, 'checkout', see_status_checkout)
+event.listen(engine.pool, 'checkin', see_status_checkin)
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
