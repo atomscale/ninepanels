@@ -37,6 +37,8 @@ from .events import queues
 from .events import event_types
 from . import utils
 
+from .routers import admin
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -61,6 +63,7 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
+api.include_router(admin.admin, prefix="/admin")
 
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
@@ -92,40 +95,6 @@ def init_async_workers():
 @api.get("/")
 def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
-
-
-# TODO examin braking this into am admin api module that doesn thaveperformance timing on it
-@api.get(
-    "/admin/routes",
-)
-async def read_route_performance(
-    request: Request, db: Session = Depends(get_db)
-):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
-    resp = crud.read_all_routes(db=db)
-
-    return resp
-
-
-@api.get(
-    "/admin/routes/timings",
-)
-async def read_route_timings(
-    method_path: str, window_size: int | None = 100, db: Session = Depends(get_db)
-):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
-    resp = crud.read_route_timings(
-        db=db, method_path=method_path, window_size=window_size
-    )
-    return resp
-
-
-@api.get(
-    "/admin/requests",
-)
-def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
-    ...
-
-
-# TODO examin braking this into am user api module that doesn thaveperformance timing on it
 
 
 @api.post(
