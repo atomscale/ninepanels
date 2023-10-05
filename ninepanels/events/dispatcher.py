@@ -3,7 +3,7 @@ from .. import logs
 
 from . import event_types
 
-from .. import comms
+from .handlers import user_comms
 from .handlers import monitoring
 from .handlers import performance
 
@@ -11,15 +11,13 @@ dispatcher = {
     # always ensure a list of funcs, even if only one.
     # asyncio.gather is run across the list
 
-    # event_types.TIMING_CREATED: [performance.handle_timing_created],
     'route_timing_created': [performance.handle_route_timing_created],
     'route_timings_persisted': [performance.handle_route_timings_persisted],
 
 
-    # TODO bring core user event to event_models
-    event_types.NEW_USER_CREATED: [comms.welcome, monitoring.report_info],
-    event_types.USER_LOGGED_IN: [logs.log_info, monitoring.report_info],
-    event_types.PASSWORD_RESET_REQUESTED: [comms.password_reset, monitoring.report_info],
+    'new_user_created': [user_comms.handle_new_user_created, monitoring.report_info],
+    'user_logged_in': [logs.log_info, monitoring.report_info],
+    'password_reset_requested': [user_comms.password_reset, monitoring.report_info],
 
 
     # event_types.TIMING_STATS_PERSISTED: [],
@@ -29,3 +27,4 @@ dispatcher = {
     event_types.EXC_RAISED_WARN: [logs.log_warn, monitoring.report_exc_warn],
     event_types.EXC_RAISED_INFO: [logs.log_info],
 }
+

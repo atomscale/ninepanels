@@ -35,6 +35,7 @@ from .core import config
 from . import exceptions
 from .events import queues
 from .events import event_types
+from .events import event_models
 from . import utils
 
 from .routers import admin
@@ -65,6 +66,7 @@ api.add_middleware(
 
 api.include_router(admin.admin, prefix="/admin")
 
+
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
     taregt database.
@@ -93,7 +95,7 @@ def init_async_workers():
 
 
 @api.get("/")
-def index(request: Request):
+async def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
 
 
@@ -152,9 +154,8 @@ async def post_credentials_for_access_token(
             )
         )
 
-    await queues.event_queue.put(
-        pyd.Event(type=event_types.USER_LOGGED_IN, payload={"user": user.name})
-    )
+    event = event_models.UserLoggedIn(user_id=user.id, name=user.name)
+    await queues.event_queue.put(event)
 
     return {"access_token": access_token}
 
@@ -177,17 +178,14 @@ async def create_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
 
-    payload = utils.instance_to_dict(user)
-    event = pyd.Event(
-        type=event_types.NEW_USER_CREATED, payload=payload, payload_type=pyd.User
-    )
+    event = event_models.NewUserCreated(email=user.email, name=user.name)
     await queues.event_queue.put(event)
 
     return user
 
 
 @api.get("/users", response_model=pyd.User)
-def read_user_by_id(
+async def read_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     user = crud.read_user_by_id(db=db, user_id=user.id)
@@ -196,7 +194,7 @@ def read_user_by_id(
 
 
 @api.delete("/users")
-def delete_user_by_id(
+async def delete_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     # TODO event emission here
@@ -206,7 +204,7 @@ def delete_user_by_id(
 
 
 @api.post("/panels", response_model=pyd.Panel)
-def post_panel_by_user_id(
+async def post_panel_by_user_id(
     position: int = Form(default=None),  # TODO temp until client updates
     title: str = Form(),
     description: str | None = Form(None),
@@ -235,7 +233,7 @@ def post_panel_by_user_id(
 
 
 @api.get("/panels")  # response_model=List[pyd.PanelResponse])
-def get_panels_by_user_id(
+async def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
@@ -248,7 +246,7 @@ def get_panels_by_user_id(
     response_model=pyd.Panel,
     responses={400: {"model": pyd.HTTPError, "description": "Panel was not updated"}},
 )
-def update_panel_by_id(
+async def update_panel_by_id(
     panel_id: int,
     update: dict = Body(),
     db: Session = Depends(get_db),
@@ -267,7 +265,7 @@ def update_panel_by_id(
 
 
 @api.delete("/panels/{panel_id}")
-def delete_panel_by_id(
+async def delete_panel_by_id(
     panel_id: int,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
@@ -282,7 +280,7 @@ def delete_panel_by_id(
 
 
 @api.post("/panels/{panel_id}/entries", response_model=pyd.Entry)
-def post_entry_by_panel_id(
+async def post_entry_by_panel_id(
     panel_id: int,
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
@@ -326,7 +324,7 @@ async def get_entries_by_panel_id(
 
 
 @api.delete("/panels/{panel_id}/entries")
-def delete_all_entries_by_panel_id(
+async def delete_all_entries_by_panel_id(
     panel_id: int,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
@@ -345,7 +343,7 @@ def delete_all_entries_by_panel_id(
 
 
 @api.get("/metrics/panels/consistency")
-def get_panel_consistency_by_user_id(
+async def get_panel_consistency_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     resp = crud.calc_consistency(db=db, user_id=user.id)
@@ -374,12 +372,9 @@ async def initiate_password_reset_flow(
     if prt_user:
         url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
-        payload = {
-            "recipient_email": prt_user.email,
-            "recipient_name": prt_user.name,
-            "url": url,
-        }
-        event = pyd.Event(type=event_types.PASSWORD_RESET_REQUESTED, payload=payload)
+        event = event_models.PasswordResetRequested(
+            email=prt_user.email, name=prt_user.name, url=url
+        )
         await queues.event_queue.put(event)
 
         return True  # initiation of password flow successful, used for ui logic only
@@ -392,7 +387,7 @@ async def initiate_password_reset_flow(
 
 
 @api.post("/password_reset")
-def password_reset(
+async def password_reset(
     new_password: str = Form(),
     email: str = Form(),
     password_reset_token: str = Form(),

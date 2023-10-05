@@ -1,23 +1,23 @@
 import httpx
 
-from .core import config
-from . import exceptions
-from . import pydmodels as pyd
+from ...core import config
+from ... import exceptions
+from ... import pydmodels as pyd
+from .. import event_models
 
 
 async def password_reset(
-    event: pyd.Event
+    event: event_models.PasswordResetRequested
 ) -> bool:
 
-    payload = event.payload
 
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
 
     json = {
         "From": "ben@ninepanels.com",
-        "To": payload['email'],
-        "Subject": f"Nine Panels: {payload['name']}, let's reset your password...",
-        "HtmlBody": f"<p>Hello {payload['name']},</p> <p>Let's get your password reset! Click the link here:</p> <p>{payload['url']}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
+        "To": event.email,
+        "Subject": f"Nine Panels: {event.name}, let's reset your password...",
+        "HtmlBody": f"<p>Hello {event.name},</p> <p>Let's get your password reset! Click the link here:</p> <p>{event.url}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
         "MessageStream": "outbound",
     }
 
@@ -35,7 +35,7 @@ async def password_reset(
         raise exceptions.PasswordResetTokenException(f"problem sending email {str(e)}")
 
 
-async def welcome(event: pyd.Event) -> bool:
+async def welcome(event: event_models.NewUserCreated) -> bool:
     """send email using mail provider api
 
     Returns:
@@ -45,15 +45,11 @@ async def welcome(event: pyd.Event) -> bool:
     """
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
 
-    print(event)
-
-    payload = event.payload
-
     json = {
         "From": "ben@ninepanels.com",
-        "To": payload['email'],
-        "Subject": f"Nine Panels: {payload['name']}, a warm welcome!",
-        "HtmlBody": f"""<p>Hello {payload['name']},</p>
+        "To": event.email,
+        "Subject": f"Nine Panels: {event.name}, a warm welcome!",
+        "HtmlBody": f"""<p>Hello {event.name},</p>
         <p><b>Thank you so much for signing up to Nine Panels!</b></p>
         <p>Nine Panels nurtures daily balance the important areas of your life. And it shows how consistently you engage with those areas.</p>
         <p>I built it for myself - I struggle to be consistent with one thing, let alone all the things! - and I'm properly honoured to share it with you. </p>
@@ -125,4 +121,5 @@ async def dispatch_user_update(recipient_email: str, recipient_name: str) -> boo
     else:
         raise exceptions.EmailException(f"problem sending update email {str(e)}")
 
-
+async def handle_new_user_created(event: event_models.NewUserCreated):
+    await welcome(event)

@@ -1,3 +1,7 @@
+""" Classes and coroutine event handlers for application performance monitoring
+
+"""
+
 import uuid
 import asyncio
 import re
