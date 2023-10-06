@@ -10,73 +10,76 @@ from sqlite3 import Connection as SQLiteConnection
 
 from ninepanels import sqlmodels as sql
 from ninepanels.main import api, get_db
+from ninepanels.core import config
+from ninepanels.db import data_mgmt
 
 
 
 @pytest.fixture(scope="session")
 def test_db():
 
-    # set up env vars required for test runs
-    # dont worry, these credentials are local only, staging and prod have different ones :)
-    # set up a sqlite test engine connection NOT IN MEMORY!
-    test_engine = create_engine(
-        "sqlite:///./test.db", connect_args={"check_same_thread": False}
-    )
+    # test_engine = create_engine(
+    #     "sqlite:///./test.db", connect_args={"check_same_thread": False}
+    # )
 
-    # ensure pragma for FK constraint is set if it is an Sqlite db
-    @event.listens_for(test_engine, "connect")
-    def _set_fk_pragma(conn, conn_record):
-        if isinstance(conn, SQLiteConnection):
-            cur = conn.cursor()
-            cur.execute("pragma foreign_keys=1;")
-            cur.close()
+    # # ensure pragma for FK constraint is set if it is an Sqlite db
+    # @event.listens_for(test_engine, "connect")
+    # def _set_fk_pragma(conn, conn_record):
+    #     if isinstance(conn, SQLiteConnection):
+    #         cur = conn.cursor()
+    #         cur.execute("pragma foreign_keys=1;")
+    #         cur.close()
+
+    test_engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
 
 
     sql.Base.metadata.create_all(bind=test_engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-    db = SessionLocal()
+    test_db = SessionLocal()
 
     # \/\/\/\/\/\/\/\/ set up any req data here
 
-    test_users = [
-        sql.User(name='Bennyboy', email="ben@ben.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"), # "password"
-        sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
-        sql.User(name='Prof. Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
-    ]
+    # test_users = [
+    #     sql.User(name='Bennyboy', email="ben@ben.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"), # "password"
+    #     sql.User(name='Christoph', email="chris@chris.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
+    #     sql.User(name='Prof. Hobo', email="hobo@hobo.com", hashed_password="$2b$12$XWhJLQ9EdIzRX3imhGqQkuTApZ2LUTyPfrGj/yNkRCoWTggymtBja"),
+    # ]
 
-    db.add_all(test_users)
-    db.commit()
+    # db.add_all(test_users)
+    # db.commit()
 
-    test_panels = [
-        sql.Panel(title="one", description="some funky desoon you know", position=0, user_id=1),
-        # nulls get returned first, ie if position not speficied, panel "two" will be first:
-        sql.Panel(title="two", description="some funky descrtioonou know", position=1, user_id=1),
-        sql.Panel(title="three", description="somy descrtioon  know", position=2, user_id=1),
-        sql.Panel(title="A", position=0, user_id=2),
-        sql.Panel(title="B", position=1, user_id=2),
-    ]
+    # test_panels = [
+    #     sql.Panel(title="one", description="some funky desoon you know", position=0, user_id=1),
+    #     # nulls get returned first, ie if position not speficied, panel "two" will be first:
+    #     sql.Panel(title="two", description="some funky descrtioonou know", position=1, user_id=1),
+    #     sql.Panel(title="three", description="somy descrtioon  know", position=2, user_id=1),
+    #     sql.Panel(title="A", position=0, user_id=2),
+    #     sql.Panel(title="B", position=1, user_id=2),
+    # ]
 
-    db.add_all(test_panels)
-    db.commit()
+    # db.add_all(test_panels)
+    # db.commit()
 
-    ts = datetime.utcnow()
-    diff = timedelta(days=2)
+    # ts = datetime.utcnow()
+    # diff = timedelta(days=2)
 
-    test_entries = [
-        sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
-        sql.Entry(is_complete=False, panel_id=2, timestamp=ts),
-        sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
+    # test_entries = [
+    #     sql.Entry(is_complete=True, panel_id=1, timestamp=ts),
+    #     sql.Entry(is_complete=False, panel_id=2, timestamp=ts),
+    #     sql.Entry(is_complete=True, panel_id=3, timestamp=ts),
 
-    ]
-    db.add_all(test_entries)
-    db.commit()
+    # ]
+    # db.add_all(test_entries)
+    # db.commit()
 
 
     # /\/\/\/\/\/\ more logic can go above here to set up more data
 
+    data_mgmt.create_data(engine=test_engine, db=test_db)
+
     try:
-        yield db
+        yield test_db
     finally:
         sql.Base.metadata.drop_all(bind=test_engine)
 

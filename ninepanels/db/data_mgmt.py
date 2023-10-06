@@ -1,4 +1,4 @@
-""" this func is called by main to ensure the databses are int he correct state for testing.
+""" this func is called by main to ensure the databases are int he correct state for testing.
 
 not in vcs as this file kind of acts like api calls
 can change across branches and not have to merge or affect core branch code
@@ -12,16 +12,16 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import desc
 from sqlalchemy import inspect
+from sqlalchemy.orm import Session
 
-from .database import SessionLocal
-from .database import engine, text
+
 from .. import sqlmodels as sql
 from ..core import config
 
-db = SessionLocal()
 
 
-def read_schema():
+
+def read_schema(engine):
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     print(f"db tables:")
@@ -35,7 +35,7 @@ def read_schema():
             print(f"   {column['name']}")
 
 
-def read_data() -> None:
+def read_data(db) -> None:
     print("USERS:")
     print()
     users = db.query(sql.User).all()
@@ -52,11 +52,11 @@ def read_data() -> None:
 
 
 
-def create_schema():
+def create_schema(engine):
     sql.Base.metadata.create_all(bind=engine)
 
 
-def create_data():
+def create_data(engine, db: Session):
     sql.Base.metadata.create_all(bind=engine)
 
     entries_a = [
@@ -711,7 +711,7 @@ def update_data():
 
     ...
 
-def delete_schema():
+def delete_schema(engine, db, text):
     sql.Base.metadata.drop_all(bind=engine)
     db.execute(text("DROP TABLE IF EXISTS alembic_version"))
     db.commit()
@@ -719,6 +719,12 @@ def delete_schema():
 
 
 def main():
+
+    from .database import SessionLocal
+    from .database import engine, text
+
+    db = SessionLocal()
+
     print(
         f"data_mgmt.py operating on branch {config.branch} in env {config.CURRENT_ENV}"
     )
@@ -733,15 +739,15 @@ def main():
 
     if args.create:
         if args.create == "schema":
-            create_schema()
+            create_schema(engine)
         if args.create == "data":
-            create_data()
+            create_data(engine=engine, db=db)
 
     if args.read:
         if args.read == "schema":
-            read_schema()
+            read_schema(engine)
         elif args.read == "data":
-            read_data()
+            read_data(db)
         else:
             pass
 
@@ -751,7 +757,7 @@ def main():
 
     if args.delete:
         if args.delete == "schema":
-            delete_schema()
+            delete_schema(engine, db, text=text)
 
 
 if __name__ == "__main__":

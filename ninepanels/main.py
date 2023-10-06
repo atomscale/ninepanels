@@ -43,7 +43,7 @@ from .routers import admin
 
 pp = PrettyPrinter(indent=4)
 
-rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
+# rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
 
 api = FastAPI()
 
@@ -80,8 +80,8 @@ def run_migrations():
     command.upgrade(alembic_cfg, "head")
     return None
 
-
-run_migrations()
+if not config.CURRENT_ENV == 'TEST':
+    run_migrations()
 
 
 version_ts = datetime.utcnow()

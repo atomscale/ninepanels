@@ -12,7 +12,7 @@ echo
 continue_script=true
 
 echo "Select environment:"
-select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
+select env in "MAIN" "STAGING" "FEATURE" "TEST" "Exit"; do
     case $env in
         "MAIN")
             current_branch=$(git symbolic-ref --short HEAD)
@@ -57,6 +57,19 @@ select env in "MAIN" "STAGING" "FEATURE" "Exit"; do
                 echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
                 echo
             fi
+
+            break
+            ;;
+        "TEST")
+            current_branch=$(git symbolic-ref --short HEAD)
+
+
+            echo "You are on branch: \e[1;34m$current_branch\e[0m"
+            source set_env_test.sh
+            echo "You selected \033[1;32m$NINEPANELS_ENV\033[0m environment, so that's okay."
+            echo "Set env vars for \033[1;32m$NINEPANELS_ENV\033[0m and connection to local postgres db"
+            echo
+
 
             break
             ;;

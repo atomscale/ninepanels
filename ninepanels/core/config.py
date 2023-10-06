@@ -1,5 +1,6 @@
 import os
 import subprocess
+import rollbar
 
 from .. import exceptions
 
@@ -113,11 +114,17 @@ set_up_logger()
 
 ### MONITORING ###
 
+
+
 try:
     ROLLBAR_KEY = get_env_var("ROLLBAR_KEY")
 except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
+
+if not CURRENT_ENV == 'TEST':
+    rollbar.init(access_token=ROLLBAR_KEY, environment=CURRENT_ENV)
+
 
 ### PERFORMANCE ###
 
