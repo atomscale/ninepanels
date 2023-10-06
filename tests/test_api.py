@@ -16,8 +16,8 @@ def test_create_user(test_server):
     resp = test_server.post(
         "/users",
         data={
-            "email": "new@new.com",
-            "name": "Testing New Person",
+            "email": "ben@ninepanels.com",
+            "name": "Testing Ben",
             "password": "password",
         },
     )
@@ -32,14 +32,14 @@ def test_create_user(test_server):
 @pytest.fixture
 def test_access_token(test_server):
     resp = test_server.post(
-        "/token", data={"username": "chris@chris.com", "password": "password"}
+        "/token", data={"username": "bwdyer@gmail.com", "password": "newpassword"}
     )
 
     assert resp.status_code == 200
 
     payload = resp.json()
 
-    return payload["access_token"]
+    return payload['data']["access_token"]
 
 
 def test_read_user_by_id(test_server, test_access_token):
@@ -51,18 +51,18 @@ def test_read_user_by_id(test_server, test_access_token):
 
     payload = resp.json()
 
-    assert payload['data']['email'] == "chris@chris.com"
+    assert payload['data']['email'] == "bwdyer@gmail.com"
 
 
 def test_delete_user_by_id(test_server):
     user_to_delete_token = test_server.post(
-        "/token", data={"username": "hobo@hobo.com", "password": "password"}
+        "/token", data={"username": "ben@atomscale.co", "password": "newpassword"}
     )
 
     resp = test_server.delete(
         "/users",
         headers={
-            "Authorization": "Bearer " + user_to_delete_token.json()["access_token"]
+            "Authorization": "Bearer " + user_to_delete_token.json()['data']["access_token"]
         },
     )
 
@@ -221,7 +221,7 @@ def test_post_entry_on_panel(test_server, test_access_token):
 def test_initial_password_reset_flow(test_server):
     """route must handle unauth users"""
 
-    resp = test_server.post("/request_password_reset", data={"email": "ben@ben.com"})
+    resp = test_server.post("/request_password_reset", data={"email": "bwdyer@gmail.com"})
 
     assert resp.status_code == 200
 

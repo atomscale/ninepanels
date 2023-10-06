@@ -56,7 +56,7 @@ except EnvironmentError as e:
     exit(1)
 
 SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
-
+print(SQLALCHEMY_DATABASE_URI)
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI

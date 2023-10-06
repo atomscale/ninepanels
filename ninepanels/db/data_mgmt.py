@@ -19,8 +19,6 @@ from .. import sqlmodels as sql
 from ..core import config
 
 
-
-
 def read_schema(engine):
     inspector = inspect(engine)
     tables = inspector.get_table_names()
@@ -50,8 +48,6 @@ def read_data(db) -> None:
             print()
 
 
-
-
 def create_schema(engine):
     sql.Base.metadata.create_all(bind=engine)
 
@@ -60,10 +56,10 @@ def create_data(engine, db: Session):
     sql.Base.metadata.create_all(bind=engine)
 
     entries_a = [
-        {
-            "is_complete": True,
-            "timestamp": datetime(2023, 8, 1, 18, 3),
-        },
+        # {
+        #     "is_complete": True,
+        #     "timestamp": datetime(2023, 8, 1, 18, 3),
+        # },
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 2, 14),
@@ -72,7 +68,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 4, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 11, 13),
@@ -120,6 +115,70 @@ def create_data(engine, db: Session):
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 31, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 6, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 11, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 13, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 14, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 19, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 20, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 26, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 27, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 28, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 30, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 1, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 4, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 5, 13),
         },
         {
             "is_complete": True,
@@ -211,8 +270,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 9, 22),
         },
-
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 29, 13),
@@ -268,7 +325,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 15, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 17, 13),
@@ -281,7 +337,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 20, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 27, 13),
@@ -341,7 +396,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 13, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 31, 13),
@@ -393,7 +447,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 15, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 17, 13),
@@ -406,7 +459,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 20, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 27, 13),
@@ -450,8 +502,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 6, 22),
         },
-
-
         {
             "is_complete": True,
             "timestamp": datetime.utcnow(),
@@ -491,7 +541,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 15, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 17, 13),
@@ -504,7 +553,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 20, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 27, 13),
@@ -568,7 +616,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 15, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 17, 13),
@@ -581,7 +628,6 @@ def create_data(engine, db: Session):
             "is_complete": True,
             "timestamp": datetime(2023, 8, 20, 22),
         },
-
         {
             "is_complete": True,
             "timestamp": datetime(2023, 8, 27, 13),
@@ -608,6 +654,30 @@ def create_data(engine, db: Session):
         },
         {
             "is_complete": True,
+            "timestamp": datetime(2023, 9, 28, 22),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 29, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 9, 30, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 1, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 2, 13),
+        },
+        {
+            "is_complete": True,
+            "timestamp": datetime(2023, 10, 4, 13),
+        },
+        {
+            "is_complete": True,
             "timestamp": datetime.utcnow(),
         },
     ]
@@ -625,8 +695,8 @@ def create_data(engine, db: Session):
     new_panels = [
         sql.Panel(
             position=0,
-            title="Morning yoga - 15 mins",
-            description="Remember how good you feel once you've done your yoga! 💪😎",
+            title="The test panel",
+            description="This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description. This is the recent and testing panel! 💪😎 With a very loong description",
             entries=sql_entries_a,
             created_at=datetime(2023, 8, 1, 13),
         ),
@@ -708,8 +778,8 @@ def create_data(engine, db: Session):
 
 
 def update_data():
-
     ...
+
 
 def delete_schema(engine, db, text):
     sql.Base.metadata.drop_all(bind=engine)
@@ -719,7 +789,6 @@ def delete_schema(engine, db, text):
 
 
 def main():
-
     from .database import SessionLocal
     from .database import engine, text
 

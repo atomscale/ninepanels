@@ -9,8 +9,19 @@ arg1=$1
 if [[ $1 == "crud" ]]; then
     echo "crud..."
     pytest -v tests/test_crud.py
-    return 1
+    return 0
+
+elif [[ $1 == "api" ]]; then
+    echo "crud..."
+    pytest -v tests/test_api.py
+    return 0
+
+elif [[ $1 == "all" ]]; then
+    echo "crud..."
+    pytest -v
+    return 0
+
 else
     echo "define scope of tests: crud, api, all"
-
+    return 0
 fi

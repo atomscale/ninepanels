@@ -367,8 +367,13 @@ def create_entry_by_panel_id(
 
     """
 
-    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+    try:
+        panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+    except SQLAlchemyError as e:
+        raise exceptions.PanelNotCreated(str(e))
 
+    if not panel:
+        raise exceptions.PanelNotCreated("panel does not exist")
     # check user_id on panel matches supplied user_id
     if not panel.user_id == user_id:
         msg = f"error creating new entry"
@@ -908,14 +913,17 @@ def read_panel_created_date(db: Session, panel_id: int) -> datetime:
 
     return panel_created.date()
 
-def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, panel_id: int) -> list[dict]:
+def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, panel_id: int, test_created_at: datetime = None) -> list[dict]:
 
 
     today = datetime.utcnow().date()
+    print(today)
 
     padded_entries = []
 
-    panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
+    panel_created_at = test_created_at
+    if not panel_created_at:
+        panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
     panel_age_td: timedelta = (today - panel_created_at)
     lookback_days: int = panel_age_td.days +1
 
@@ -937,7 +945,10 @@ def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, pane
                 existing_entry = entry
                 break
         if existing_entry:
-            padded_entries.append(utils.instance_to_dict(existing_entry))
+            this_entry = utils.instance_to_dict(existing_entry)
+            # this_entry = existing_entry.model_dump()
+            this_entry['timestamp'] = this_entry['timestamp'].date()
+            padded_entries.append(this_entry)
         else:
             padded_entries.append({
                 'id': f"{str(uuid.uuid4())}_padded",

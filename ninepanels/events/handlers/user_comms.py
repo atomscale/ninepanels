@@ -10,6 +10,8 @@ async def password_reset(
     event: event_models.PasswordResetRequested
 ) -> bool:
 
+    if config.CURRENT_ENV == "TEST":
+        return True
 
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
 
@@ -43,6 +45,12 @@ async def welcome(event: event_models.NewUserCreated) -> bool:
     Raises:
         exceptions.EmailException on any failure
     """
+
+    if config.CURRENT_ENV == "TEST":
+        print("not sending welcome email")
+        return True
+
+
     headers = {"X-Postmark-Server-Token": config.POSTMARK_API_KEY}
 
     json = {
