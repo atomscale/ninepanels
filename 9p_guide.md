@@ -142,6 +142,7 @@ Initial questions to ask:
 - does this involve deploying front and backends in tandem?
 
 **CHECKLIST:**
+- does the release involve an announcement, should the bar be active?
 - update backup table selection across backup.sh if db schema changes
 - search for prints and console.logs - verify 0
 - check any helpers like temp component log in state for example are reset
