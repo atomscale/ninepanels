@@ -17,6 +17,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True)
     name = Column(String)
+    is_admin = Column(Boolean, default=False)
     hashed_password = Column(String)
     panels = relationship("Panel", back_populates="user")
     password_reset_tokens = relationship("PasswordResetToken", back_populates="user")
