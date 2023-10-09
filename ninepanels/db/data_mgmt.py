@@ -40,13 +40,13 @@ def read_data(db) -> None:
     users = db.query(sql.User).all()
     if users:
         for user in users:
-            print(f"{user.id=} {user.name=}:")
+            print(f"{user.id=} {user.name=}: {user.is_admin}")
             print()
-            if user.panels:
-                for i, panel in enumerate(user.panels):
-                    print(f"{panel.id=}, {panel.created_at}, {panel.position=}")
-                print()
-            print()
+            # if user.panels:
+            #     for i, panel in enumerate(user.panels):
+            #         print(f"{panel.id=}, {panel.created_at}, {panel.position=}")
+            #     print()
+            # print()
 
 
 def create_schema(engine):
@@ -781,7 +781,6 @@ def create_data(engine, db: Session):
 
 
 def update_data(db: Session):
-
     users = db.query(sql.User).all()
 
     print("PRE UPDATE")
@@ -802,7 +801,18 @@ def update_data(db: Session):
 
     # me = db.query(sql.User).filter(sql.User.email == "bwdyer@gmail.com").first()
 
-    # print(me.name, me.is_admin)
+    # if me:
+    #     try:
+    #         me.is_admin = True
+    #         db.commit()
+    #     except SQLAlchemyError as e:
+    #         print(f"error in update {str(e)}")
+    #         db.rollback()
+
+    #     print("udpated me to admin")
+    #     print()
+    # else:
+    #     print("didnt find me ")
 
 
 def delete_schema(engine, db, text):
