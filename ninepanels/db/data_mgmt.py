@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import desc
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 
 from .. import sqlmodels as sql
@@ -760,6 +761,7 @@ def create_data(engine, db: Session):
     bwdyer = sql.User(
         name="bwdyer",
         email="bwdyer@gmail.com",
+        is_admin=True,
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
         panels=new_panels,
     )
@@ -770,6 +772,7 @@ def create_data(engine, db: Session):
     ben = sql.User(
         name="Ben",
         email="ben@atomscale.co",
+        is_admin=False,
         hashed_password="$2b$12$.leB8lTAJCrzGVMS/OLnYezTgwefS643AKI7Y2iZ9maxqkMPnx762",
     )
 
@@ -777,8 +780,29 @@ def create_data(engine, db: Session):
     db.commit()
 
 
-def update_data():
-    ...
+def update_data(db: Session):
+
+    users = db.query(sql.User).all()
+
+    print("PRE UPDATE")
+    for user in users:
+        print(f"{user.email=}: {user.is_admin=}")
+
+    try:
+        for user in users:
+            user.is_admin = False
+        db.commit()
+    except SQLAlchemyError as e:
+        print(f"error in update {str(e)}")
+        db.rollback()
+
+    print("POST UPDATE")
+    for user in users:
+        print(f"{user.email=}: {user.is_admin=}")
+
+    # me = db.query(sql.User).filter(sql.User.email == "bwdyer@gmail.com").first()
+
+    # print(me.name, me.is_admin)
 
 
 def delete_schema(engine, db, text):
@@ -822,7 +846,7 @@ def main():
 
     if args.apply:
         if args.apply == "update":
-            update_data()
+            update_data(db=db)
 
     if args.delete:
         if args.delete == "schema":
