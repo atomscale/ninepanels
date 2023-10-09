@@ -80,7 +80,8 @@ def run_migrations():
     command.upgrade(alembic_cfg, "head")
     return None
 
-if not config.CURRENT_ENV == 'TEST':
+
+if not config.CURRENT_ENV == "TEST":
     run_migrations()
 
 

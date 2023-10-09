@@ -447,7 +447,6 @@ def read_entries_by_panel_id(
     sort_key: str,
     sort_direction: str,
 ):
-
     entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
@@ -604,6 +603,9 @@ def calc_consistency(db: Session, user_id: int):
                     "consistency": panel_consistency,
                     "panel_age": panel_age,
                     "days_complete": days_complete,
+                    "panel_id": panel.id,
+                    "user_id": user_id,
+                    "title": panel.title
                 }
             )
 
@@ -905,17 +907,22 @@ def read_route_timings(db: Session, method_path: str, window_size: int):
 
     return output
 
-def read_panel_created_date(db: Session, panel_id: int) -> datetime:
 
+def read_panel_created_date(db: Session, panel_id: int) -> datetime:
     panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
 
     panel_created = panel.created_at
 
     return panel_created.date()
 
-def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, panel_id: int, test_created_at: datetime = None) -> list[dict]:
 
-
+def pad_entries(
+    db: Session,
+    unpadded_entries: list[sql.Entry],
+    limit: int,
+    panel_id: int,
+    test_created_at: datetime = None,
+) -> list[dict]:
     today = datetime.utcnow().date()
     print(today)
 
@@ -924,18 +931,16 @@ def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, pane
     panel_created_at = test_created_at
     if not panel_created_at:
         panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
-    panel_age_td: timedelta = (today - panel_created_at)
-    lookback_days: int = panel_age_td.days +1
+    panel_age_td: timedelta = today - panel_created_at
+    lookback_days: int = panel_age_td.days + 1
 
     if lookback_days > limit:
         lookback_days = limit
-
 
     date_range = []
     for n in range(lookback_days):
         d = today + timedelta(days=-n)
         date_range.append(d)
-
 
     for date in date_range:
         existing_entry = None
@@ -947,14 +952,16 @@ def pad_entries(db: Session, unpadded_entries: list[sql.Entry], limit: int, pane
         if existing_entry:
             this_entry = utils.instance_to_dict(existing_entry)
             # this_entry = existing_entry.model_dump()
-            this_entry['timestamp'] = this_entry['timestamp'].date()
+            this_entry["timestamp"] = this_entry["timestamp"].date()
             padded_entries.append(this_entry)
         else:
-            padded_entries.append({
-                'id': f"{str(uuid.uuid4())}_padded",
-                "is_complete": False,
-                "timestamp": date,
-                "panel_id": panel_id
-            })
+            padded_entries.append(
+                {
+                    "id": f"{str(uuid.uuid4())}_padded",
+                    "is_complete": False,
+                    "timestamp": date,
+                    "panel_id": panel_id,
+                }
+            )
 
     return padded_entries

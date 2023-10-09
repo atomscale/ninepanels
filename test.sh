@@ -7,17 +7,17 @@ echo
 arg1=$1
 
 if [[ $1 == "crud" ]]; then
-    echo "crud..."
+    echo "crud tests..."
     pytest -v tests/test_crud.py
     return 0
 
 elif [[ $1 == "api" ]]; then
-    echo "crud..."
-    pytest -v tests/test_api.py
+    echo "api tests..."
+    pytest -v tests/test_api.py -s
     return 0
 
 elif [[ $1 == "all" ]]; then
-    echo "crud..."
+    echo "all test..."
     pytest -v
     return 0
 
