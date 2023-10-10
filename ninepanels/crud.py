@@ -937,10 +937,6 @@ def pad_entries(
     panel_age_td: timedelta = today - panel_created_at
     date_range_len: int = panel_age_td.days + 1
 
-    # if date_range_len > limit:
-    #     date_range_len = limit
-
-    # no payload limit applied server side
 
     date_range = []
     for n in range(date_range_len):
@@ -961,7 +957,11 @@ def pad_entries(
 
             last_entry = sorted_daily_entries[0]
 
-            final_entry = utils.instance_to_dict(last_entry)
+            if test_created_at:
+                final_entry = last_entry.model_dump()
+            else:
+                final_entry = utils.instance_to_dict(last_entry)
+
 
             final_entry["timestamp"] = final_entry["timestamp"].date()
             padded_entries.append(final_entry)

@@ -142,15 +142,15 @@ Initial questions to ask:
 - does this involve deploying front and backends in tandem?
 
 **CHECKLIST:**
-- does the release involve an announcement, should the bar be active?
-- update backup table selection across backup.sh if db schema changes
-- search for prints and console.logs - verify 0
-- check any helpers like temp component log in state for example are reset
-- check any new envars are in staging and prod
-- review each change before commit
-- manual testing of area in feature env
-- push to staging and manually test
-- local tests pass on feature branch
+- does the release involve an announcement, should the bar be active? - DONE
+- update backup table selection across backup.sh if db schema changes - DONE
+- search for prints and console.logs - verify 0 - DONE
+- check any helpers like temp component log in state for example are reset - DONE
+- check any new envars are in staging and prod - DONE
+- review each change before commit - TOO MANY - in future make smaller deploys
+- manual testing of area in feature env  - DONE
+- push to staging and manually test - DONE
+- local tests pass on feature branch - DONE, passing
 - PR staging to main and review code changes again in GH
 - backup main db full and data only
 - merge PR
