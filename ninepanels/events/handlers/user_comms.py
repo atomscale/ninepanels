@@ -47,7 +47,7 @@ async def welcome(event: event_models.NewUserCreated) -> bool:
     """
 
     if config.CURRENT_ENV == "TEST":
-        print("not sending welcome email")
+        # print("not sending welcome email")
         return True
 
 

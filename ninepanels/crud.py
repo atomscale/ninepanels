@@ -927,7 +927,7 @@ def pad_entries(
     test_created_at: datetime = None,
 ) -> list[dict]:
     today = datetime.utcnow().date()
-    print(today)
+    # print(today)
 
     padded_entries = []
 

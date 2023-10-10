@@ -310,7 +310,7 @@ async def handle_route_timings_persisted(event: event_models.RouteTimingsPersist
         stats_processor.calculate_stats_for_route, event
     )
 
-    print(f"route stats for {event.method_path} created: {route_stats}")
+    # print(f"route stats for {event.method_path} created: {route_stats}")
     # await queues.event_queue.put(
     #     pyd.Event(
     #         type=event_types.TIMING_STATS_PERSISTED,
