@@ -29,7 +29,7 @@ def parse_sort_by(model, sort_by: str) -> (str, str):
 
     sort_key, sort_direction = sort_by.split('.')
 
-    if getattr(model, sort_key):
+    if hasattr(model, sort_key) and sort_direction in ['asc', 'desc']:
         return sort_key, sort_direction
     else:
         raise exceptions.ParseSortBy(detail="invalid sort_by value", context_data={"sort_by": {sort_by}})

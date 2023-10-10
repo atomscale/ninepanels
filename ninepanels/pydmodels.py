@@ -63,6 +63,7 @@ class User(UserBase):
     model_config = {"from_attributes": True}
 
     id: int
+    is_admin: bool | None = None
 
 
 class UserInDB(User):

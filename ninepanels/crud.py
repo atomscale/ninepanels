@@ -3,6 +3,7 @@ import logging
 import uuid
 
 from sqlalchemy import desc
+from sqlalchemy import asc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
@@ -446,17 +447,19 @@ def read_entries_by_panel_id(
     limit: int,
     sort_key: str,
     sort_direction: str,
-):
-    entries = (
+) -> list[sql.Entry]:
+
+
+    unpadded_entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
-        .order_by(getattr(getattr(sql.Entry, sort_key), sort_direction)())
+        .order_by(desc(getattr(sql.Entry, sort_key)) if sort_direction == 'desc' else asc(getattr(sql.Entry, sort_key)))
         .offset(offset)
         .limit(limit)
         .all()
     )
 
-    return entries
+    return unpadded_entries
 
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
@@ -943,18 +946,30 @@ def pad_entries(
         date_range.append(d)
 
     for date in date_range:
-        existing_entry = None
-        for entry in unpadded_entries:
-            entry_date = entry.timestamp.date()
-            if entry_date == date:
-                existing_entry = entry
-                break
-        if existing_entry:
-            this_entry = utils.instance_to_dict(existing_entry)
-            # this_entry = existing_entry.model_dump()
-            this_entry["timestamp"] = this_entry["timestamp"].date()
-            padded_entries.append(this_entry)
+        # existing_entry = None
+        # for entry in unpadded_entries:
+        #     entry_date = entry.timestamp.date()
+        #     if entry_date == date:
+        #         existing_entry = entry
+        #         break
+        daily_entries = []
+        for unpadded_entry in unpadded_entries:
+            if unpadded_entry.timestamp.date() == date:
+                daily_entries.append(unpadded_entry)
+
+
+        if daily_entries:
+            # sort all dailies here and return last one
+            sorted_daily_entries = sorted(daily_entries, key=lambda x: x.timestamp, reverse=True)
+
+            last_entry = sorted_daily_entries[0]
+
+            final_entry = utils.instance_to_dict(last_entry)
+
+            final_entry["timestamp"] = final_entry["timestamp"].date()
+            padded_entries.append(final_entry)
         else:
+            # there are no entires for this date, create one
             padded_entries.append(
                 {
                     "id": f"{str(uuid.uuid4())}_padded",
@@ -964,5 +979,5 @@ def pad_entries(
                 }
             )
 
-    pp.pprint(padded_entries)
+    # pp.pprint(padded_entries)
     return padded_entries
