@@ -979,5 +979,5 @@ def pad_entries(
                 }
             )
 
-    # pp.pprint(padded_entries)
+    pp.pprint(padded_entries)
     return padded_entries
