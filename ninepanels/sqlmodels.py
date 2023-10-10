@@ -2,6 +2,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
+from sqlalchemy import Float
 from sqlalchemy import String
 from sqlalchemy import DateTime
 from sqlalchemy import Index
@@ -16,6 +17,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True)
     name = Column(String)
+    is_admin = Column(Boolean, default=False)
     hashed_password = Column(String)
     panels = relationship("Panel", back_populates="user")
     password_reset_tokens = relationship("PasswordResetToken", back_populates="user")
@@ -75,3 +77,30 @@ class PasswordResetToken(Base):
     invalidated_at = Column(DateTime)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="password_reset_tokens")
+
+class Timing(Base):
+    __tablename__ = "timings"
+    id = Column(Integer, primary_key=True)
+    event_id = Column(String)
+    created_at = Column(DateTime)
+    request_id = Column(String)
+    path = Column(String)
+    method = Column(String)
+    method_path = Column(String)
+    start_ts = Column(DateTime)
+    stop_ts = Column(DateTime)
+    diff_ms = Column(Float)
+
+class TimingStats(Base):
+    __tablename__ = "timing_stats"
+    id = Column(Integer, primary_key=True)
+    avg = Column(Float)
+    min = Column(Float)
+    max = Column(Float)
+    last = Column(Float)
+    method = Column(String)
+    path = Column(String)
+    method_path = Column(String)
+    alert_threshold_ms = Column(Integer)
+    in_alert = Column(Boolean)
+    alert_id = Column(String)

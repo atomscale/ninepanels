@@ -1,19 +1,22 @@
-from . import sqlmodels as sql
-
-from . import errors
-from . import utils
-from . import config
-
+import pytz
 import logging
+import uuid
 
+from sqlalchemy import desc
+from sqlalchemy import asc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 
 from datetime import datetime, timedelta
-import pytz
 
 from pprint import PrettyPrinter
+
+from . import sqlmodels as sql
+from . import exceptions
+from . import utils
+from .core import config
+
 
 pp = PrettyPrinter(indent=4)
 
@@ -37,10 +40,18 @@ def create_user(db: Session, new_user: dict) -> sql.User:
         user = sql.User(**new_user)
         db.add(user)
         db.commit()
-    except (SQLAlchemyError, TypeError, IntegrityError) as e:
+    except IntegrityError as e:
         db.rollback()
-        raise errors.UserNotCreated(
+        raise exceptions.UserNotCreated(
             detail=f"Do you have an account already?",
+            context_msg=f"user not created due to account exisitng and integrity error: {str(e)}",
+            **new_user,
+        )
+    except (SQLAlchemyError, TypeError) as e:
+        db.rollback()
+
+        raise exceptions.UserNotCreated(
+            detail=f"Error creating your account",
             context_msg=f"user not created due to: {str(e)}",
             **new_user,
         )
@@ -62,12 +73,12 @@ def read_user_by_id(db: Session, user_id: int) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.id == user_id).first()
     except SQLAlchemyError as e:
-        raise errors.UserNotFound(detail=f"db error checking for {user_id=}")
+        raise exceptions.UserNotFound(detail=f"db error checking for {user_id=}")
 
     if user:
         return user
     else:
-        raise errors.UserNotFound(detail=f"user not found")
+        raise exceptions.UserNotFound(detail=f"user not found")
 
 
 def read_user_by_email(db: Session, email: str) -> sql.User:
@@ -83,15 +94,19 @@ def read_user_by_email(db: Session, email: str) -> sql.User:
     try:
         user = db.query(sql.User).filter(sql.User.email == email).first()
     except SQLAlchemyError as e:
-        raise errors.UserNotFound(detail=f"db error {str(e)}")
+        raise exceptions.UserNotFound(detail=f"db error {str(e)}")
 
     if user:
         return user
     else:
-        raise errors.UserNotFound(detail=f"Email not found", context_msg="lookup of user by email failed", email=email)
+        raise exceptions.UserNotFound(
+            detail=f"Email not found",
+            context_msg="lookup of user by email failed",
+            email=email,
+        )
 
 
-def read_all_users(db: Session) -> list:
+def read_all_users(db: Session) -> list[sql.User]:
     """read all users in the db"""
 
     users = db.query(sql.User).all()
@@ -115,20 +130,22 @@ def update_user_by_id(db: Session, user_id: str, update: dict) -> sql.User:
 
     try:
         user = read_user_by_id(db=db, user_id=user_id)
-    except errors.UserNotFound:
-        raise errors.UserNotUpdated(detail=f"user was not found {user_id=}")
+    except exceptions.UserNotFound:
+        raise exceptions.UserNotUpdated(detail=f"user was not found {user_id=}")
 
     for col, new_value in update.items():
         if hasattr(user, col):
             setattr(user, col, new_value)
         else:
-            raise errors.UserNotUpdated(detail=f"user instance does not have attr {col=}")
+            raise exceptions.UserNotUpdated(
+                detail=f"user instance does not have attr {col=}"
+            )
 
     try:
         db.commit()
         return user
     except SQLAlchemyError as e:
-        raise errors.UserNotUpdated(
+        raise exceptions.UserNotUpdated(
             detail=f"db error writing updated user back to db {str(e)}"
         )
 
@@ -143,7 +160,7 @@ def delete_user_by_id(db: Session, user_id: int):
         db.commit()
         return True  # TODO what is the best way to confirm the success of a delete op?
     else:
-        raise errors.UserNotDeleted(user_id=user_id)
+        raise exceptions.UserNotDeleted(user_id=user_id)
 
 
 def create_panel_by_user_id(
@@ -178,7 +195,7 @@ def create_panel_by_user_id(
         db.commit()
         return new_panel
     except SQLAlchemyError as e:
-        raise errors.PanelNotCreated(context_msg=str(e))
+        raise exceptions.PanelNotCreated(context_msg=str(e))
 
 
 def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
@@ -201,11 +218,12 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
             .all()
         )
     except SQLAlchemyError as e:
-        raise errors.PanelNotFound(detail=f"error in db call to find panels {str(e)}")
+        raise exceptions.PanelNotFound(
+            detail=f"error in db call to find panels {str(e)}"
+        )
 
     if panels:
         return panels
-
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
@@ -226,12 +244,14 @@ def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PanelNotFound(detail=f"panel not foudn due to db error: {str(e)}")
+        raise exceptions.PanelNotFound(
+            detail=f"panel not foudn due to db error: {str(e)}"
+        )
 
     if panel:
         return panel
     else:
-        raise errors.PanelNotFound(
+        raise exceptions.PanelNotFound(
             detail=f"panel with id {panel_id=} not found for user {user_id=}"
         )
 
@@ -252,8 +272,8 @@ def update_panel_by_id(
     if update:
         try:
             panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-        except errors.PanelNotFound:
-            raise errors.PanelNotUpdated(detail=f"Panel not found")
+        except exceptions.PanelNotFound:
+            raise exceptions.PanelNotUpdated(detail=f"Panel not found")
 
         if panel:
             for update_field, update_value in update.items():
@@ -270,19 +290,21 @@ def update_panel_by_id(
                         try:
                             db.commit()
                         except Exception as e:
-                            raise errors.PanelNotUpdated(
+                            raise exceptions.PanelNotUpdated(
                                 detail=f"some issue in this commit {e}"
                             )
                 else:
-                    raise errors.PanelNotUpdated(
+                    raise exceptions.PanelNotUpdated(
                         detail=f"no field '{update_field}' found on panel"
                     )
             return panel
         else:
-            raise errors.PanelNotUpdated(detail=f"panel with id {panel_id} not found")
+            raise exceptions.PanelNotUpdated(
+                detail=f"panel with id {panel_id} not found"
+            )
 
     else:
-        raise errors.PanelNotUpdated(detail=f"no update body in call to ")
+        raise exceptions.PanelNotUpdated(detail=f"no update body in call to ")
 
 
 def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
@@ -303,7 +325,7 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
         )
 
         if not panel:
-            raise errors.PanelNotDeleted(
+            raise exceptions.PanelNotDeleted(
                 detail="Panel not found",
                 context_msg="in outer scope of crud.py call",
                 user_id=user_id,
@@ -319,9 +341,9 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
 
         return True
 
-    except (SQLAlchemyError, errors.PanelNotUpdated) as e:
+    except (SQLAlchemyError, exceptions.PanelNotUpdated) as e:
         db.rollback()
-        raise errors.PanelNotDeleted(
+        raise exceptions.PanelNotDeleted(
             detail="panel was not updated",
             context_msg=f"transaction rolled back, panel was found, must be error in panel_sort_on_delete...: {str(e)}",
             user_id=user_id,
@@ -346,16 +368,18 @@ def create_entry_by_panel_id(
 
     """
 
-    panel_entry_crud = config.monitors.create_monitor("panel_entry_crud", 10, 10)
+    try:
+        panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
+    except SQLAlchemyError as e:
+        raise exceptions.PanelNotCreated(str(e))
 
-    panel_entry_crud.start()
-    panel = db.query(sql.Panel).where(sql.Panel.id == panel_id).first()
-
+    if not panel:
+        raise exceptions.PanelNotCreated("panel does not exist")
     # check user_id on panel matches supplied user_id
     if not panel.user_id == user_id:
         msg = f"error creating new entry"
         logging.error(msg)
-        raise errors.EntryNotCreated(msg)
+        raise exceptions.EntryNotCreated(msg)
 
     try:
         entry = sql.Entry(
@@ -368,9 +392,8 @@ def create_entry_by_panel_id(
         msg = f"error creating new entry"
         logging.error(msg + str(e))
         db.rollback()
-        raise errors.EntryNotCreated(msg)
+        raise exceptions.EntryNotCreated(msg)
 
-    panel_entry_crud.stop()
     return entry
 
 
@@ -396,14 +419,8 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
     if panels:
         for panel in panels:
-            # convert the user_panel to a regular dict:
             panel_d = utils.instance_to_dict(panel)
-            # pp.pprint("user_panel_d in loop:", user_panel_d )
 
-            # clear the list of entries on the object: TODO this is a hack
-            panel_d["entries"] = []
-
-            # get the current entry for the panel
             current_entry = (
                 db.query(sql.Entry)
                 .where(sql.Entry.panel_id == panel_d["id"])
@@ -414,7 +431,6 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 
             if current_entry:
                 current_entry_d = utils.instance_to_dict(current_entry)
-                panel_d["entries"].append(current_entry_d)
                 panel_d["is_complete"] = current_entry_d["is_complete"]
             else:
                 panel_d["is_complete"] = False
@@ -424,19 +440,26 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     return panels_with_latest_entry_only
 
 
-def set_null_panel_position_to_index(db: Session, user_id: int) -> bool:
-    """This is to fix null positions on panels
+def read_entries_by_panel_id(
+    db: Session,
+    panel_id: int,
+    sort_key: str,
+    sort_direction: str,
+    offset: int | None = None,
+    limit: int | None = None,
+) -> list[sql.Entry]:
 
+    """ Return a list of all entries. NOTE: there can be many entries per day."""
+    unpadded_entries = (
+        db.query(sql.Entry)
+        .filter(sql.Entry.panel_id == panel_id)
+        .order_by(desc(getattr(sql.Entry, sort_key)) if sort_direction == 'desc' else asc(getattr(sql.Entry, sort_key)))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
-    Look up all panels for a user, unsorted - assume no position
-    TODO add sort flag to get_panels_by_user_id
-    check each panel for a position, loop enum get index
-    if a position, including 0s, check by being an int, skip
-    if position is null and null only
-
-
-    """
-    pass
+    return unpadded_entries
 
 
 def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int):
@@ -480,16 +503,16 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
                                 panel.position = panel.position - 1
                         db.commit()
                 except Exception as e:
-                    raise errors.PanelNotUpdated(f"wihtin the try block: {e}")
+                    raise exceptions.PanelNotUpdated(f"wihtin the try block: {e}")
 
                 user = db.query(sql.User).where(sql.User.id == user_id).first()
                 user.panels.append(panel_to_move)
                 db.commit()
         else:
-            raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
+            raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     else:
-        raise errors.PanelNotUpdated(f"That's where the panel already is 🙂")
+        raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
@@ -508,9 +531,9 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
             if panel.position > del_panel_pos:
                 panel.position = panel.position - 1
         db.commit()
-    except (SQLAlchemyError, AttributeError, TypeError, errors.PanelNotFound) as e:
+    except (SQLAlchemyError, AttributeError, TypeError, exceptions.PanelNotFound) as e:
         db.rollback()
-        raise errors.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
+        raise exceptions.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
 
 
 def today() -> datetime:
@@ -583,6 +606,9 @@ def calc_consistency(db: Session, user_id: int):
                     "consistency": panel_consistency,
                     "panel_age": panel_age,
                     "days_complete": days_complete,
+                    "panel_id": panel.id,
+                    "user_id": user_id,
+                    "title": panel.title
                 }
             )
 
@@ -604,11 +630,11 @@ def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> 
             db.commit()
             return True
         except SQLAlchemyError as e:
-            raise errors.EntriesNotDeleted(
+            raise exceptions.EntriesNotDeleted(
                 f"unable to delete entries on {panel_id=} for {user_id=} during db call"
             )
     else:
-        raise errors.EntriesNotDeleted(
+        raise exceptions.EntriesNotDeleted(
             f"unable to delete entries as no panel exists with that {panel_id=} for {user_id=}"
         )
 
@@ -637,7 +663,7 @@ def blacklist_an_access_token(
         return access_token_to_blacklist
 
     except SQLAlchemyError as e:
-        raise errors.BlacklistedAccessTokenException(
+        raise exceptions.BlacklistedAccessTokenException(
             f"problem inserting token to blacklist table {str(e)}"
         )
 
@@ -659,7 +685,7 @@ def access_token_is_blacklisted(db: Session, access_token: str) -> bool:
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.BlacklistedAccessTokenException(
+        raise exceptions.BlacklistedAccessTokenException(
             f"problem reading blacklist table {str(e)}"
         )
 
@@ -726,10 +752,10 @@ def create_password_reset_token(
             db.commit()
             return user, token_hash
         except SQLAlchemyError as e:
-            raise errors.PasswordResetTokenException(str(e))
+            raise exceptions.PasswordResetTokenException(str(e))
 
     else:
-        raise errors.UserNotFound("user not found")
+        raise exceptions.UserNotFound("user not found")
 
 
 def check_password_reset_token_is_valid(
@@ -760,7 +786,7 @@ def check_password_reset_token_is_valid(
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PasswordResetTokenException(str(e))
+        raise exceptions.PasswordResetTokenException(str(e))
 
     if prt:
         return True
@@ -793,7 +819,7 @@ def invalidate_password_reset_token(
             .first()
         )
     except SQLAlchemyError as e:
-        raise errors.PasswordResetTokenException(str(e))
+        raise exceptions.PasswordResetTokenException(str(e))
 
     if prt:
         try:
@@ -802,30 +828,155 @@ def invalidate_password_reset_token(
             db.commit()
             return prt
         except SQLAlchemyError as e:
-            raise errors.PasswordResetTokenException(f"could not update prt {str(e)}")
+            raise exceptions.PasswordResetTokenException(
+                f"could not update prt {str(e)}"
+            )
     else:
-        raise errors.PasswordResetTokenException(f"prt does not exist {str(e)}")
+        raise exceptions.PasswordResetTokenException(f"prt does not exist {str(e)}")
 
 
-def invalidate_all_user_prts(db: Session, user_id):
-    """invalidated all prior prts for a user that:
+def invalidate_all_user_prts(db: Session, user_id: int) -> None:
+    """Invalidates all prior Password Reset Tokens (prts) for a user that:
 
     - belong to the user,
     - are currently valid
 
+    Returns:
+        None
+
+    Raises:
+        exceptions.PasswordResetTokenException if reading or updating prts fails
+
     """
 
-    prts = (
-        db.query(sql.PasswordResetToken)
-        .filter(
-            sql.PasswordResetToken.user_id == user_id,
-            sql.PasswordResetToken.is_valid == True,
+    try:
+        user_prts = (
+            db.query(sql.PasswordResetToken)
+            .filter(
+                sql.PasswordResetToken.user_id == user_id,
+                sql.PasswordResetToken.is_valid == True,
+            )
+            .all()
         )
+    except SQLAlchemyError as e:
+        raise exceptions.PasswordResetTokenException(
+            context_msg="issue getting the prts from the db for the user",
+            context_data={"user_id": user_id},
+        )
+
+    if user_prts:
+        try:
+            for prt in user_prts:
+                prt.is_valid = False
+                prt.invalidated_at = datetime.utcnow()
+            db.commit()
+        except SQLAlchemyError as e:
+            raise exceptions.PasswordResetTokenException(
+                context_msg="issue invalidating the prts for the user",
+                context_data={"user_id": user_id},
+            )
+
+
+def read_all_routes(db: Session):
+    method_paths = db.query(sql.TimingStats.method_path).distinct()
+
+    output = []
+    for method_path in method_paths:
+        mp = method_path.method_path
+        stats = (
+            db.query(sql.TimingStats)
+            .filter(sql.TimingStats.method_path == mp)
+            .order_by(desc(sql.TimingStats.id))
+            .first()
+        )
+        output.append(stats)
+
+    return output
+
+
+def read_route_timings(db: Session, method_path: str, window_size: int):
+    timings = (
+        db.query(sql.Timing)
+        .filter(sql.Timing.method_path == method_path)
+        .order_by(desc(sql.Timing.created_at))
+        .limit(window_size)
         .all()
     )
 
-    if prts:
-        for prt in prts:
-            prt.is_valid = False
-            prt.invalidated_at = datetime.utcnow()
-        db.commit()
+    output = {
+        "readings": [t.diff_ms for t in timings],
+        "timestamps": [t.created_at for t in timings],
+    }
+
+    return output
+
+
+def read_panel_created_date(db: Session, panel_id: int) -> datetime:
+    panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
+
+    panel_created = panel.created_at
+
+    return panel_created.date()
+
+
+def pad_entries(
+    db: Session,
+    unpadded_entries: list[sql.Entry],
+    limit: int,
+    panel_id: int,
+    test_created_at: datetime = None,
+) -> list[dict]:
+    today = datetime.utcnow().date()
+    # print(today)
+
+    padded_entries = []
+
+    panel_created_at = test_created_at
+    if not panel_created_at:
+        panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
+    panel_age_td: timedelta = today - panel_created_at
+    date_range_len: int = panel_age_td.days + 1
+
+
+    date_range = []
+    for n in range(date_range_len):
+        d = today + timedelta(days=-n)
+        date_range.append(d)
+
+    for date in date_range:
+
+        daily_entries = []
+        for unpadded_entry in unpadded_entries:
+            if unpadded_entry.timestamp.date() == date:
+                daily_entries.append(unpadded_entry)
+
+
+        if daily_entries:
+            # sort all dailies here and return last one
+            sorted_daily_entries = sorted(daily_entries, key=lambda x: x.timestamp, reverse=True)
+
+            last_entry = sorted_daily_entries[0]
+
+            if test_created_at:
+                final_entry = last_entry.model_dump()
+            else:
+                final_entry = utils.instance_to_dict(last_entry)
+
+
+            final_entry["timestamp"] = final_entry["timestamp"].date()
+            padded_entries.append(final_entry)
+
+        else:
+            # there are no entires for this date, create one
+            padded_entries.append(
+                {
+                    "id": f"{str(uuid.uuid4())}_padded",
+                    "is_complete": False,
+                    "timestamp": date,
+                    "panel_id": panel_id,
+                }
+            )
+        daily_entries = []
+
+    # pp.pprint(padded_entries)
+    return padded_entries

@@ -1,8 +1,8 @@
 import os
 import subprocess
+import rollbar
 
-from . import errors
-from . import utils
+from .. import exceptions
 
 
 def get_git_branch():
@@ -57,7 +57,6 @@ except EnvironmentError as e:
 
 SQLALCHEMY_DATABASE_URI = f"postgresql://postgres:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
 
-
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
 
@@ -79,7 +78,7 @@ commit = get_git_commit()
 def compare_env_and_branch():
     if CURRENT_ENV == "FEATURE":
         if branch == "main" or branch == "staging":
-            raise errors.ConfigurationException(
+            raise exceptions.ConfigurationException(
                 detail=f"you are on the wrong branch (main or staging) to run a local feature branch"
             )
 
@@ -114,11 +113,17 @@ set_up_logger()
 
 ### MONITORING ###
 
+
+
 try:
     ROLLBAR_KEY = get_env_var("ROLLBAR_KEY")
 except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
+
+if not CURRENT_ENV == 'TEST':
+    rollbar.init(access_token=ROLLBAR_KEY, environment=CURRENT_ENV)
+
 
 ### PERFORMANCE ###
 
@@ -128,9 +133,6 @@ try:
 except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
-
-monitors = utils.MonitorFactory()
-
 
 ### SECURITY ###
 

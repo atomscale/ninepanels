@@ -1,4 +1,4 @@
-from ...ninepanels.database import engine
+from ...ninepanels.db.database import engine
 from ...ninepanels import sqlmodels as sql
 
 from datetime import datetime

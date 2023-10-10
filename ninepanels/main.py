@@ -1,12 +1,7 @@
+import asyncio
 
-from .database import get_db
-from .middleware import ResponseWrapperMiddleware
-from . import crud
-from . import pydmodels as pyd
-from . import auth
-from . import config
-from . import errors
-from . import utils
+import rollbar
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from fastapi import FastAPI
 from fastapi import Depends
@@ -14,16 +9,12 @@ from fastapi import HTTPException
 from fastapi import status
 from fastapi import Form
 from fastapi import Body
-from fastapi.exceptions import ValidationException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 from pydantic import EmailStr
-import rollbar
-from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from sqlalchemy.orm import Session
 
@@ -34,22 +25,36 @@ from pprint import PrettyPrinter
 
 from datetime import datetime
 
+from .db.database import get_db
+from . import middleware
+from . import crud
+from . import pydmodels as pyd
+from . import sqlmodels as sql
+from . import auth
+from .core import config
+from . import exceptions
+from .events import queues
+from .events import event_types
+from .events import event_models
+from . import utils
+
+from .routers import admin
 
 
 pp = PrettyPrinter(indent=4)
 
-rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
-
+# rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
 
 api = FastAPI()
 
 api_origins = [
     "http://localhost:5173",
     "https://preview.ninepanels.com",
-    "https://ninepanels.com"
+    "https://ninepanels.com",
 ]
 
-api.add_middleware(ResponseWrapperMiddleware)
+api.add_middleware(middleware.ResponseWrapperMiddleware)
+api.add_middleware(middleware.RouteTimingMiddleware)
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,
@@ -58,6 +63,9 @@ api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api.include_router(admin.admin, prefix="/admin")
+
 
 def run_migrations():
     """this function ensures that the entire vcs comitted alembic migraiton hisotry is applied to the
@@ -73,9 +81,8 @@ def run_migrations():
     return None
 
 
-run_migrations()
-
-
+if not config.CURRENT_ENV == "TEST":
+    run_migrations()
 
 
 version_ts = datetime.utcnow()
@@ -83,16 +90,14 @@ version_ts = datetime.utcnow()
 version_date = f"{version_ts.strftime('%d')} {version_ts.strftime('%B')}"
 
 
+@api.on_event("startup")
+def init_async_workers():
+    asyncio.create_task(queues.event_worker())
+
+
 @api.get("/")
-def index(request: Request):
+async def index(request: Request):
     return {"branch": f"{config.RENDER_GIT_BRANCH}", "release_date": f"{version_date}"}
-
-
-@api.get("/monitors",)
-def monitors(
-    user: pyd.User = Depends(auth.get_current_user)
-):
-    return config.monitors.report_all()
 
 
 @api.post(
@@ -100,25 +105,64 @@ def monitors(
     response_model=pyd.AccessToken,
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
-def post_credentials_for_access_token(
+async def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     email = credentials.username
     plain_password = credentials.password
 
-    user = auth.authenticate_user(db=db, email=email, password=plain_password)
+    try:
+        user = auth.authenticate_user(db=db, email=email, password=plain_password)
+    except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=event_types.EXC_RAISED_WARN,
+                payload=e.__dict__,
+                payload_type=type(e),
+            )
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    access_token = auth.create_access_token({"sub": email})
+    try:
+        access_token = auth.create_access_token(
+            data={"sub": email}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
+        )
+    except (TypeError, ValueError) as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=event_types.EXC_RAISED_ERROR,
+                payload=e,
+                payload_type=type(e),
+            )
+        )
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail="Issue creating the access token",
+        )
 
-    if user:
+    try:
         crud.invalidate_all_user_prts(db=db, user_id=user.id)
-        rollbar.report_message(message=f"{user.name} logged in", level="info")
+    except exceptions.PasswordResetTokenException as e:
+        await queues.event_queue.put(
+            pyd.Event(
+                type=event_types.EXC_RAISED_WARN,
+                payload=e.__dict__,
+                payload_type=type(e),
+            )
+        )
+
+    event = event_models.UserLoggedIn(user_id=user.id, name=user.name)
+    await queues.event_queue.put(event)
 
     return {"access_token": access_token}
 
 
 @api.post("/users", response_model=pyd.User)
-def create_user(
+async def create_user(
     email: EmailStr = Form(),
     name: str = Form(),
     password: str = Form(),
@@ -130,33 +174,19 @@ def create_user(
         user = crud.create_user(
             db, {"name": name, "email": email, "hashed_password": hashed_password}
         )
-    except errors.UserNotCreated as e:
+    except exceptions.UserNotCreated as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
 
-
-    rollbar.report_message(
-        message=f"new user {user.name} just signed up!", level="info"
-    )
-
-    try:
-        sent = utils.dispatch_welcome_email(user.email, user.name)
-    except errors.WelcomeEmailException:
-        rollbar.report_message(
-            message=f"new user welcome email to {user.name} failed", level="error"
-        )
-
-    if sent:
-        rollbar.report_message(
-            message=f"new user welcome email to {user.name} sent", level="info"
-        )
+    event = event_models.NewUserCreated(email=user.email, name=user.name)
+    await queues.event_queue.put(event)
 
     return user
 
 
 @api.get("/users", response_model=pyd.User)
-def read_user_by_id(
+async def read_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     user = crud.read_user_by_id(db=db, user_id=user.id)
@@ -165,16 +195,17 @@ def read_user_by_id(
 
 
 @api.delete("/users")
-def delete_user_by_id(
+async def delete_user_by_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
+    # TODO event emission here
     is_deleted = crud.delete_user_by_id(db=db, user_id=user.id)
 
     return {"success": is_deleted}
 
 
 @api.post("/panels", response_model=pyd.Panel)
-def post_panel_by_user_id(
+async def post_panel_by_user_id(
     position: int = Form(default=None),  # TODO temp until client updates
     title: str = Form(),
     description: str | None = Form(None),
@@ -196,14 +227,14 @@ def post_panel_by_user_id(
             )
         rollbar.report_message(message=f"{user.name} created a panel", level="info")
         return new_panel
-    except errors.PanelNotCreated:
+    except exceptions.PanelNotCreated:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel"
         )
 
 
 @api.get("/panels")  # response_model=List[pyd.PanelResponse])
-def get_panels_by_user_id(
+async def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
@@ -216,32 +247,26 @@ def get_panels_by_user_id(
     response_model=pyd.Panel,
     responses={400: {"model": pyd.HTTPError, "description": "Panel was not updated"}},
 )
-def update_panel_by_id(
+async def update_panel_by_id(
     panel_id: int,
     update: dict = Body(),
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
 ):
-    update_monitor = config.monitors.create_monitor("update_panel", 5, 20)
-
-    update_monitor.start()
-
     if update:
         try:
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
-            update_monitor.stop()
+
             return updated_panel
-        except errors.PanelNotUpdated as e:
-            update_monitor.stop()
+        except exceptions.PanelNotUpdated as e:
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
-        update_monitor.stop()
         raise HTTPException(status_code=400, detail="No update object")
 
 
 @api.delete("/panels/{panel_id}")
-def delete_panel_by_id(
+async def delete_panel_by_id(
     panel_id: int,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
@@ -249,36 +274,59 @@ def delete_panel_by_id(
     try:
         is_deleted = crud.delete_panel_by_panel_id(db, user.id, panel_id)
         return {"success": is_deleted}
-    except errors.PanelNotDeleted as e:
+    except exceptions.PanelNotDeleted as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e.detail)}"
         )
 
 
 @api.post("/panels/{panel_id}/entries", response_model=pyd.Entry)
-def post_entry_by_panel_id(
+async def post_entry_by_panel_id(
     panel_id: int,
     new_entry: pyd.EntryCreate,
     user: pyd.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ):
-    entry_monitor = config.monitors.create_monitor("entry_monitor", 10, 20)
-    entry_monitor.start()
-
     try:
         entry = crud.create_entry_by_panel_id(
             db, panel_id=panel_id, **new_entry.model_dump(), user_id=user.id
         )
-    except errors.EntryNotCreated as e:
+    except exceptions.EntryNotCreated as e:
         raise HTTPException(status_code=400, detail=e.detail)
-
-    entry_monitor.stop()
 
     return entry
 
 
+@api.get("/panels/{panel_id}/entries")
+async def get_entries_by_panel_id(
+    panel_id: int,
+    offset: int = 0,
+    limit: int = 100,
+    sort_by: str = "timestamp.desc",
+    db: Session = Depends(get_db),
+):
+    # TODO all exc handling all the way down
+    sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
+
+    # this needs to be all entries, as the limit is days, not entries (many entires per day)
+    unpadded_entries = crud.read_entries_by_panel_id(
+        db=db,
+        panel_id=panel_id,
+        offset=offset,
+        sort_key=sort_key,
+        sort_direction=sort_direction,
+    )
+
+    limit_days = limit
+    padded_entries = crud.pad_entries(
+        db=db, unpadded_entries=unpadded_entries, limit=limit_days, panel_id=panel_id
+    )
+
+    return padded_entries
+
+
 @api.delete("/panels/{panel_id}/entries")
-def delete_all_entries_by_panel_id(
+async def delete_all_entries_by_panel_id(
     panel_id: int,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_user),
@@ -287,7 +335,7 @@ def delete_all_entries_by_panel_id(
         conf = crud.delete_all_entries_by_panel_id(
             db=db, user_id=user.id, panel_id=panel_id
         )
-    except errors.EntriesNotDeleted as e:
+    except exceptions.EntriesNotDeleted as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Entries not deleted: {str(e)}",
@@ -297,7 +345,7 @@ def delete_all_entries_by_panel_id(
 
 
 @api.get("/metrics/panels/consistency")
-def get_panel_consistency_by_user_id(
+async def get_panel_consistency_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
     resp = crud.calc_consistency(db=db, user_id=user.id)
@@ -306,46 +354,32 @@ def get_panel_consistency_by_user_id(
 
 
 @api.post("/request_password_reset")
-def initiate_password_reset_flow(
+async def initiate_password_reset_flow(
     email: str = Form(),
     db: Session = Depends(get_db),
 ):
     try:
         prt_user, prt = crud.create_password_reset_token(db=db, email=email)
-    except errors.PasswordResetTokenException:
+    except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not create password reset token",
         )
-    except errors.UserNotFound as e:
+    except exceptions.UserNotFound as e:
         raise HTTPException(
             status_code=404,
             detail=e.detail,
         )
 
     if prt_user:
-        # create url
         url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
-        # dispatch email
-        try:
-            if utils.dispatch_password_reset_email(
-                recipient_email=prt_user.email, recipient_name=prt_user.name, url=url
-            ):
-                rollbar.report_message(
-                    message=f"{prt_user.name} requested to reset their password",
-                    level="info",
-                )
-                return True  # initiation of password flow successful
-            else:
-                raise HTTPException(
-                    400,
-                    detail="Having trouble sending your password reset email. Sorry.",
-                )
-        except errors.PasswordResetTokenException:
-            raise HTTPException(
-                400, detail="Having trouble sending your password reset email. Sorry."
-            )
+        event = event_models.PasswordResetRequested(
+            email=prt_user.email, name=prt_user.name, url=url
+        )
+        await queues.event_queue.put(event)
+
+        return True  # initiation of password flow successful, used for ui logic only
 
     else:
         raise HTTPException(
@@ -355,7 +389,7 @@ def initiate_password_reset_flow(
 
 
 @api.post("/password_reset")
-def password_reset(
+async def password_reset(
     new_password: str = Form(),
     email: str = Form(),
     password_reset_token: str = Form(),
@@ -363,14 +397,14 @@ def password_reset(
 ):
     try:
         user = crud.read_user_by_email(db=db, email=email)
-    except errors.UserNotFound as e:
+    except exceptions.UserNotFound as e:
         raise HTTPException(404, detail=e.detail)
 
     try:
         token_valid = crud.check_password_reset_token_is_valid(
             db=db, password_reset_token=password_reset_token, user_id=user.id
         )
-    except errors.PasswordResetTokenException:
+    except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Problem with the password reset process...",
@@ -383,14 +417,14 @@ def password_reset(
 
         try:
             updated_user = crud.update_user_by_id(db=db, user_id=user.id, update=update)
-        except errors.UserNotUpdated:
+        except exceptions.UserNotUpdated:
             raise HTTPException(400, detail="Could not update your password.")
 
         try:
             token_invalidated = crud.invalidate_password_reset_token(
                 db=db, password_reset_token=password_reset_token, user_id=user.id
             )
-        except errors.PasswordResetTokenException:
+        except exceptions.PasswordResetTokenException:
             raise HTTPException(400, detail="Error in invalidating password")
 
         rollbar.report_message(

@@ -1,8 +1,11 @@
 import pytest
 from ninepanels import crud
-from ninepanels import errors
+from ninepanels import exceptions
 from ninepanels import utils
 from datetime import datetime, timedelta
+from pprint import PrettyPrinter
+
+pp = PrettyPrinter()
 
 
 def test_read_all_users(test_db):
@@ -18,6 +21,19 @@ def test_create_user(test_db):
 
     new_user = crud.create_user(test_db, new)
     assert isinstance(new_user.id, int)
+    assert isinstance(new_user.name, str)
+    assert new_user.name == "Harris"
+
+    # tested expected errors:
+
+    bad_params = {
+        "nam": "Harris",
+        "email": "harris@harris.com",
+        "hashed_password": "hashed",
+    }
+
+    with pytest.raises(exceptions.UserNotCreated):
+        new_user = crud.create_user(test_db, bad_params)
 
 
 def test_read_user_by_id(test_db):
@@ -26,33 +42,35 @@ def test_read_user_by_id(test_db):
     user = crud.read_user_by_id(test_db, user_id)
 
     assert user.id == 1
-    assert user.email == "ben@ben.com"
+    assert user.email == "bwdyer@gmail.com"
 
-    # check cexected errors:
+    # check errors:
 
-    with pytest.raises(errors.UserNotFound):
+    with pytest.raises(exceptions.UserNotFound):
         user_id = 42
         user = crud.read_user_by_id(test_db, user_id)
 
 
 def test_read_user_by_email(test_db):
-    email = "ben@ben.com"
+    email = "bwdyer@gmail.com"
 
-    ben = crud.read_user_by_email(test_db, email)
+    user = crud.read_user_by_email(test_db, email)
 
-    assert ben.email == email
-    assert ben.id == 1
+    assert user.email == email
+    assert user.id == 1
+
+    # check errors:
+
+    with pytest.raises(exceptions.UserNotFound):
+        user = crud.read_user_by_email(test_db, "nouser@testing.com")
 
 
 def test_update_user_by_id(test_db):
-    # get user obejct and check name reads 'bennyboy'
     user = crud.read_user_by_id(db=test_db, user_id=1)
 
-    assert user.name == "Bennyboy"
+    # udpate  a non-existant column and check for failure
 
-    # udpate  a non-existant column and check for fialure
-
-    with pytest.raises(errors.UserNotUpdated):
+    with pytest.raises(exceptions.UserNotUpdated):
         crud.update_user_by_id(
             db=test_db, user_id=user.id, update={"col_not_exist": "newname"}
         )
@@ -67,20 +85,19 @@ def test_update_user_by_id(test_db):
 
 
 def test_delete_user_by_id(test_db):
-    user_id = 2  # delete christy
+    user_id = 2  # delete ben@atomscale.co
 
     conf = crud.delete_user_by_id(test_db, user_id)
 
     assert conf == True
 
     # check user no longer in db
-    with pytest.raises(errors.UserNotFound):
+    with pytest.raises(exceptions.UserNotFound):
         crud.read_user_by_id(test_db, user_id)
 
     # check correct error raised when try to delete again
-    with pytest.raises(errors.UserNotDeleted):
+    with pytest.raises(exceptions.UserNotDeleted):
         conf = crud.delete_user_by_id(test_db, user_id)
-
 
 
 def test_create_entry_by_panel_id(test_db):
@@ -89,22 +106,22 @@ def test_create_entry_by_panel_id(test_db):
     )
     assert isinstance(new_entry.id, int)
 
+    # test fails on user_id not existing
+    with pytest.raises(exceptions.PanelNotCreated):
+        bad_entry = crud.create_entry_by_panel_id(
+            test_db, is_complete=False, panel_id=3333, user_id=1
+        )
+
 
 def test_read_panels_with_current_entry_by_user_id(test_db):
     test_user_id = 1
     panels = crud.read_panels_with_current_entry_by_user_id(test_db, test_user_id)
 
-    # test there is is either one (complete) or 0 (incomplete) entries:
-    for panel in panels:
-        assert (
-            len(panel["entries"]) <= 1
-        )  # check max one or none for every panel['entries'] list
-        if panel["id"] == 1:
-            assert len(panel["entries"]) == 1
-
-    # test that the panels are coming out in asc order of position:
     for i, panel in enumerate(panels):
+        # test that the panels are coming out in asc order of position:
         assert panel["position"] == i
+        # check is bool
+        assert isinstance(panel["is_complete"], bool)
 
 
 def test_create_panel_by_user_id(test_db):
@@ -138,7 +155,7 @@ def test_update_panel_by_panel_id(test_db):
     # test failure cases:
 
     # test non-existent panel_id
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         crud.update_panel_by_id(
             db=test_db,
             user_id=test_user_id,
@@ -147,13 +164,13 @@ def test_update_panel_by_panel_id(test_db):
         )
 
     # test empty update obj
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=9999, update={}
         )
 
     # test update obj with keys that dont exist on object
-    with pytest.raises(errors.PanelNotUpdated) as e:
+    with pytest.raises(exceptions.PanelNotUpdated) as e:
         crud.update_panel_by_id(
             db=test_db,
             user_id=test_user_id,
@@ -208,10 +225,10 @@ def test_update_panel_by_panel_id(test_db):
     assert updated_panel.position == new_pos
 
     # check failure using out of rnage index pf panels
-    new_pos = 6
+    new_pos = 69
     update_d = {"position": new_pos}
 
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         updated_panel = crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
         )
@@ -220,7 +237,7 @@ def test_update_panel_by_panel_id(test_db):
     new_pos = 3
     update_d = {"position": new_pos}
 
-    with pytest.raises(errors.PanelNotUpdated):
+    with pytest.raises(exceptions.PanelNotUpdated):
         updated_panel = crud.update_panel_by_id(
             db=test_db, user_id=test_user_id, panel_id=new_panel.id, update=update_d
         )
@@ -235,7 +252,7 @@ def test_delete_panel_by_panel_id(test_db):
     assert is_deleted
 
     # try again, shoudl be idempotent
-    with pytest.raises(errors.PanelNotDeleted):
+    with pytest.raises(exceptions.PanelNotDeleted):
         is_deleted = crud.delete_panel_by_panel_id(
             db=test_db, user_id=test_user_id, panel_id=2
         )
@@ -274,7 +291,7 @@ def test_access_token_blacklist(test_db):
 def test_create_password_reset_token(test_db):
     # check a sql object is returned successfully
     user_id = 1
-    user_email = "ben@ben.com"
+    user_email = "bwdyer@gmail.com"
 
     test_prt, token_hash = crud.create_password_reset_token(
         db=test_db, email=user_email
@@ -320,3 +337,51 @@ def test_create_password_reset_token(test_db):
     )
 
     assert not test_prt_is_valid
+
+
+def test_entry_padding(test_db):
+    from pydantic import BaseModel
+
+    class MockEntry(BaseModel):
+        id: int
+        timestamp: datetime
+        is_complete: bool
+        panel_id: int
+
+
+    test_unpadded_entries = [
+        MockEntry(
+            id=1, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-6), is_complete=True
+        ),
+        MockEntry(
+            id=2, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-5), is_complete=True
+        ),
+        MockEntry(
+            id=3, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-3) + timedelta(hours=1), is_complete=True
+        ),
+        MockEntry(
+            id=4, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-3) +timedelta(hours=2), is_complete=False
+        ),
+        MockEntry(
+            id=5, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-1), is_complete=True
+        ),
+
+    ]
+
+    for unp in test_unpadded_entries:
+        print(unp.id)
+
+    test_created_at = datetime.utcnow() + timedelta(days=-10)
+
+    limit = None
+
+    padded = crud.pad_entries(
+        db=test_db,
+        unpadded_entries=test_unpadded_entries,
+        limit=limit,
+        panel_id=1,
+        test_created_at=test_created_at.date()
+    )
+
+    pp.pprint(padded)
+    assert isinstance(padded, list)

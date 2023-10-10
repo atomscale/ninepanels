@@ -12,44 +12,44 @@ while $keep_looping; do
         case $func in
         "Create schema")
 
-            if [ "$NINEPANELS_ENV" = "MAIN" ]; then
+            if [[ "$NINEPANELS_ENV" == "MAIN" ]]; then
                 echo "no chance mate, you're on main!"
                 break
             fi
             alembic stamp head
-            python -m ninepanels.data_mgmt --create schema
+            python -m ninepanels.db.data_mgmt --create schema
             echo
 
             break
             ;;
         "Create data")
 
-            if [ "$NINEPANELS_ENV" = "MAIN" ]; then
+            if [[ "$NINEPANELS_ENV" == "MAIN" ]]; then
                 echo "no chance mate, you're on main!"
                 break
             fi
-            python -m ninepanels.data_mgmt --create data
+            python -m ninepanels.db.data_mgmt --create data
             echo
 
             break
             ;;
         "Read schema")
 
-            python -m ninepanels.data_mgmt --read schema
+            python -m ninepanels.db.data_mgmt --read schema
             echo
 
             break
             ;;
         "Read data")
 
-            python -m ninepanels.data_mgmt --read data
+            python -m ninepanels.db.data_mgmt --read data
             echo
 
             break
             ;;
         "Update data")
 
-            if [ "$NINEPANELS_ENV" = "MAIN" ]; then
+            if [[ "$NINEPANELS_ENV" == "MAIN" ]]; then
                 echo "no chance this is main... you gotta edit this out.. ;)"
                 break
             fi
@@ -57,7 +57,7 @@ while $keep_looping; do
             select delete_action in "Yes, let's go" "Nope, bail!"; do
                 case $delete_action in
                     "Yes, let's go")
-                        python -m ninepanels.data_mgmt --apply update
+                        python -m ninepanels.db.data_mgmt --apply update
                         break
                         ;;
                     "Nope, bail!")
@@ -77,7 +77,7 @@ while $keep_looping; do
             select delete_action in "Yes, let's go" "Nope, bail!"; do
                 case $delete_action in
                     "Yes, let's go")
-                        python -m ninepanels.data_mgmt --delete schema
+                        python -m ninepanels.db.data_mgmt --delete schema
                         break
                         ;;
                     "Nope, bail!")

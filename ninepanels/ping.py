@@ -1,7 +1,7 @@
 from requests import get
 from requests.exceptions import ConnectionError
 
-from . import config
+from .core import config
 
 try:
     resp = get(config.SERVER_ROOT)

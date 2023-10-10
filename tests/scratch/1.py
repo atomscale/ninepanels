@@ -1,32 +1,42 @@
+import uuid
+
+from datetime import datetime
 from pydantic import BaseModel
+from pydantic import Field
+from typing import NewType
 
+MethodPath = NewType('MethodPath', str)
 
-class Response(BaseModel):
-    data: dict | list | None = None
-    status: int
-    ui_message: list[str] | None = []
+class Event(BaseModel):
+    event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-test_dict = {"test":"hi"}
-test_list = [1,2,34]
+class RouteTimingCreated(Event):
+    """ A `RouteTimer` has completed a measurement in `RouteTimingMiddleware`
 
-resp = Response(data=test_list, status=200, ui_message=['hello'])
+    # TODO once all event are using event_models, change `type` to `event_name`
+    `type`: str = "route_timing_created"
 
+    Attrs:
+        `request_id`: str
+        `method_path`: str
+        `method`: str
+        `path`: str
+        `start_ts`: datetime
+        `stop_ts`: datetime
+        `diff_ms`: float | int = Field(ge=0)
 
-print(resp.model_dump())
+    Exclude on `model_dump()`:
+        - `type`
 
+    """
+    type: str = 'route_timing_created'
+    request_id: str
+    method_path: MethodPath
+    method: str
+    path: str
+    start_ts: datetime
+    stop_ts: datetime
+    diff_ms: float | int = Field(ge=0)
 
-
-
-
-# from collections import deque
-
-# example = deque([], maxlen=3)
-
-# # example.pop(0)
-# example.append(1)
-# example.append(2)
-# example.append(3)
-# example.append(4)
-
-# if example:
-#     print(sum(example) / len(example))
+print(RouteTimingCreated.__class__.type)

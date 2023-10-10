@@ -18,12 +18,12 @@ select restore_opt in "Yes" "No"; do
                         clone_ts=$(date +"%Y%m%d%H%M%S")
 
                         echo "Taking pre-restore backup..."
-                        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
+                        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens -t timings -t timing_stats -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
 
                         echo "Pre-restore full dump backup of restore target complete... moving to data only..."
                         echo
 
-                        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens  -t password_reset_tokens > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
+                        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens  -t password_reset_tokens -t timings -t timing_stats > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
                         echo "Pre-restore data-only dump backup of restore target complete."
                         echo
 
@@ -61,12 +61,12 @@ select restore_opt in "Yes" "No"; do
                         clone_ts=$(date +"%Y%m%d%H%M%S")
 
                         echo "Taking pre-restore backup..."
-                        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
+                        pg_dump --no-owner --no-acl -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens -t timings -t timing_stats -F c >"/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}.dump"
 
                         echo "Pre-restore full dump backup of restore target complete... moving to data only..."
                         echo
 
-                        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
+                        pg_dump --no-owner --no-acl --data-only -U postgres -h $DB_HOSTNAME -p $DB_PORT -d postgres -t alembic_version -t users -t panels -t entries -t blacklisted_access_tokens -t password_reset_tokens -t timings -t timing_stats > "/Users/bd/Library/CloudStorage/GoogleDrive-ben@atomscale.co/My Drive/databases/ninepanels/${clone_ts}_${NINEPANELS_ENV}_data_only.sql"
                         echo "Pre-restore data-only dump backup of restore target complete."
                         echo
 
