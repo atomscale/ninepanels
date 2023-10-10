@@ -308,17 +308,18 @@ async def get_entries_by_panel_id(
     # TODO all exc handling all the way down
     sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
 
+    # this needs to be all entries, as the limit is days, not entries (many entires per day)
     unpadded_entries = crud.read_entries_by_panel_id(
         db=db,
         panel_id=panel_id,
         offset=offset,
-        limit=limit,
         sort_key=sort_key,
         sort_direction=sort_direction,
     )
 
+    limit_days = limit
     padded_entries = crud.pad_entries(
-        db=db, unpadded_entries=unpadded_entries, limit=limit, panel_id=panel_id
+        db=db, unpadded_entries=unpadded_entries, limit=limit_days, panel_id=panel_id
     )
 
     return padded_entries

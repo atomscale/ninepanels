@@ -443,13 +443,13 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
 def read_entries_by_panel_id(
     db: Session,
     panel_id: int,
-    offset: int,
-    limit: int,
     sort_key: str,
     sort_direction: str,
+    offset: int | None = None,
+    limit: int | None = None,
 ) -> list[sql.Entry]:
 
-
+    """ Return a list of all entries. NOTE: there can be many entries per day."""
     unpadded_entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
@@ -935,23 +935,20 @@ def pad_entries(
     if not panel_created_at:
         panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
     panel_age_td: timedelta = today - panel_created_at
-    lookback_days: int = panel_age_td.days + 1
+    date_range_len: int = panel_age_td.days + 1
 
-    if lookback_days > limit:
-        lookback_days = limit
+    # if date_range_len > limit:
+    #     date_range_len = limit
+
+    # no payload limit applied server side
 
     date_range = []
-    for n in range(lookback_days):
+    for n in range(date_range_len):
         d = today + timedelta(days=-n)
         date_range.append(d)
 
     for date in date_range:
-        # existing_entry = None
-        # for entry in unpadded_entries:
-        #     entry_date = entry.timestamp.date()
-        #     if entry_date == date:
-        #         existing_entry = entry
-        #         break
+
         daily_entries = []
         for unpadded_entry in unpadded_entries:
             if unpadded_entry.timestamp.date() == date:
@@ -968,6 +965,7 @@ def pad_entries(
 
             final_entry["timestamp"] = final_entry["timestamp"].date()
             padded_entries.append(final_entry)
+
         else:
             # there are no entires for this date, create one
             padded_entries.append(
@@ -978,6 +976,7 @@ def pad_entries(
                     "panel_id": panel_id,
                 }
             )
+        daily_entries = []
 
-    pp.pprint(padded_entries)
+    # pp.pprint(padded_entries)
     return padded_entries
