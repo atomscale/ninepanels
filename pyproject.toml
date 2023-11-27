@@ -26,6 +26,7 @@ requests = "^2.31.0"
 rollbar = "^0.16.3"
 pytz = "^2023.3.post1"
 pydeps = "^1.12.17"
+scipy = "^1.11.4"
 
 
 [build-system]
