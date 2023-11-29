@@ -98,17 +98,17 @@ class RouteTimingMiddleware(BaseHTTPMiddleware):
         try:
             request_id = headers["X-Request-ID"]
         except KeyError as e:
-            logging.warn("no request id (probably /docs calling)")
+            logging.warning("no request id (probably /docs calling)")
 
         try:
             path = request.url.path
         except Exception as e:
-            logging.warn("no path")
+            logging.warning("no path")
 
         try:
             method = request.method
         except Exception as e:
-            logging.warn("no method")
+            logging.warning("no method")
 
         try:
             route_timer = performance.RouteTimer(
@@ -119,7 +119,7 @@ class RouteTimingMiddleware(BaseHTTPMiddleware):
             route_timer.start()
         except Exception as e:
             msg = pyd.LogMessage(level="warn", detail="issue with route timer at start call")
-            logging.warn(msg)
+            logging.warning(msg)
         response = await call_next(request)
 
         try:
@@ -128,6 +128,6 @@ class RouteTimingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             msg = pyd.LogMessage(level="warn", detail="issue with route timer at stop call")
-            logging.warn(msg)
+            logging.warning(msg)
 
         return response
