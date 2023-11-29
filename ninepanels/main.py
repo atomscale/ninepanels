@@ -81,7 +81,7 @@ def run_migrations():
     return None
 
 
-if not config.CURRENT_ENV == "TEST":
+if config.CURRENT_ENV not in ["TEST", "CI"]:
     run_migrations()
 
 

@@ -7,13 +7,6 @@ from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
 
-
-def test_read_all_users(test_db):
-    test_users = crud.read_all_users(test_db)
-
-    assert isinstance(test_users, list)
-
-
 def test_create_user(test_db):
     # note that db has no email validation, this lives in pydantic models,
     # which check the api route request body
@@ -35,6 +28,16 @@ def test_create_user(test_db):
     with pytest.raises(exceptions.UserNotCreated):
         new_user = crud.create_user(test_db, bad_params)
 
+    test_users = crud.read_all_users(test_db)
+
+    assert len(test_users) == 3
+    assert test_users[-1].id == 3
+
+def test_read_all_users(test_db):
+    test_users = crud.read_all_users(test_db)
+
+    assert isinstance(test_users, list)
+    assert len(test_users) == 2
 
 def test_read_user_by_id(test_db):
     user_id = 1
@@ -348,24 +351,37 @@ def test_entry_padding(test_db):
         is_complete: bool
         panel_id: int
 
-
     test_unpadded_entries = [
         MockEntry(
-            id=1, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-6), is_complete=True
+            id=1,
+            panel_id=1,
+            timestamp=datetime.utcnow() + timedelta(days=-6),
+            is_complete=True,
         ),
         MockEntry(
-            id=2, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-5), is_complete=True
+            id=2,
+            panel_id=1,
+            timestamp=datetime.utcnow() + timedelta(days=-5),
+            is_complete=True,
         ),
         MockEntry(
-            id=3, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-3) + timedelta(hours=1), is_complete=True
+            id=3,
+            panel_id=1,
+            timestamp=datetime.utcnow() + timedelta(days=-3) + timedelta(hours=1),
+            is_complete=True,
         ),
         MockEntry(
-            id=4, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-3) +timedelta(hours=2), is_complete=False
+            id=4,
+            panel_id=1,
+            timestamp=datetime.utcnow() + timedelta(days=-3) + timedelta(hours=2),
+            is_complete=False,
         ),
         MockEntry(
-            id=5, panel_id=1, timestamp=datetime.utcnow() + timedelta(days=-1), is_complete=True
+            id=5,
+            panel_id=1,
+            timestamp=datetime.utcnow() + timedelta(days=-1),
+            is_complete=True,
         ),
-
     ]
 
     for unp in test_unpadded_entries:
@@ -380,7 +396,7 @@ def test_entry_padding(test_db):
         unpadded_entries=test_unpadded_entries,
         limit=limit,
         panel_id=1,
-        test_created_at=test_created_at.date()
+        test_created_at=test_created_at.date(),
     )
 
     pp.pprint(padded)

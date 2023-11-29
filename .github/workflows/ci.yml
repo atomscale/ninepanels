@@ -1,0 +1,56 @@
+name: Python application
+
+on:
+  push:
+    branches: [ "main", "staging" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install poetry
+      run: pipx install poetry
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'poetry'
+    - run: poetry install
+    - name: Test with pytest
+      env:
+        NINEPANELS_ENV: "CI"
+        DB_HOSTNAME: "localhost"
+        DB_PASSWORD: "postgres"
+        PGPASSWORD: "postgres"
+        DB_PORT: 5432
+        NINEPANELS_SERVER_ROOT: "http://127.0.0.1:8000/"
+        JWT_SECRET: "not secret"
+        ROLLBAR_KEY: 'no key'
+        PASSWORD_ACCESS_TOKEN_MINUTES: 10
+        POSTMARK_API_KEY: "nope"
+        NINEPANELS_URL_ROOT: "localhost:5173"
+        JWT_ALGORITHM: "HS256"
+        ACCESS_TOKEN_EXPIRE_DAYS: 100
+        CRYPT_CONTEXT_SCHEME: "bcrypt"
+      run: poetry run pytest

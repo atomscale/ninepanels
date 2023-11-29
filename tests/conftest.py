@@ -10,7 +10,7 @@ from ninepanels.core import config
 from ninepanels.db import data_mgmt
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def test_db():
 
     test_engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
@@ -35,7 +35,7 @@ def test_db():
         test_db.close()
         # print("closed and dropped....?")
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def test_server(test_db):
 
     def override_get_db():

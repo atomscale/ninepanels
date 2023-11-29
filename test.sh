@@ -16,6 +16,11 @@ elif [[ $1 == "api" ]]; then
     pytest -v tests/test_api.py -s
     return 0
 
+elif [[ $1 == "ci" ]]; then
+    echo "ci test..."
+    pytest -v tests/test_ci.py -s
+    return 0
+
 elif [[ $1 == "all" ]]; then
     echo "all test..."
     pytest -v

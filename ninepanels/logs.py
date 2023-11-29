@@ -9,7 +9,7 @@ async def log_error(event: event_models.BaseEvent):
 
 
 async def log_warn(event: event_models.BaseEvent):
-    logging.warn(event.model_dump())
+    logging.warning(event.model_dump())
 
 
 async def log_info(event: event_models.BaseEvent):
