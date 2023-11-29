@@ -1,4 +1,4 @@
-# source set_env_test.sh
+source set_env_test.sh
 
 clear
 echo "\e[1;34mRUNNING TESTS\e[0m"
