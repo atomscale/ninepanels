@@ -2,7 +2,7 @@ name: Python application
 
 on:
   push:
-    branches: [ "main", "staging", "xma-corr-poc" ]
+    branches: [ "main", "staging" ]
   pull_request:
     branches: [ "main" ]
 
