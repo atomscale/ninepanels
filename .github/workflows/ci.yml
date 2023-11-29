@@ -22,7 +22,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
-          - 5432:5434
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -53,7 +53,7 @@ jobs:
         DB_HOSTNAME: "localhost"
         DB_PASSWORD: "postgres"
         PGPASSWORD: "postgres"
-        DB_PORT: 5454
+        DB_PORT: 5432
         NINEPANELS_SERVER_ROOT: "http://127.0.0.1:8000/"
         JWT_SECRET: "not secret"
         ROLLBAR_KEY: 'no key'
