@@ -106,10 +106,14 @@ async def index(request: Request):
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
 async def post_credentials_for_access_token(
-    credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    # credentials: OAuth2PasswordRequestForm = Depends(),
+    email: str = Body(),
+    password: str = Body(),
+    db: Session = Depends(get_db)
 ):
-    email = credentials.username
-    plain_password = credentials.password
+    # email = credentials.username
+    # plain_password = credentials.password
+    plain_password = password
 
     try:
         user = auth.authenticate_user(db=db, email=email, password=plain_password)
