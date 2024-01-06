@@ -167,9 +167,9 @@ async def post_credentials_for_access_token(
 
 @api.post("/users", response_model=pyd.User)
 async def create_user(
-    email: EmailStr = Form(),
-    name: str = Form(),
-    password: str = Form(),
+    email: EmailStr = Body(),
+    name: str = Body(),
+    password: str = Body(),
     db: Session = Depends(get_db),
 ):
     hashed_password = auth.get_password_hash(password)
