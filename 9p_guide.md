@@ -156,7 +156,11 @@ Initial questions to ask:
 - merge PR
 - manually test in prod
 
+## Security
 
+To generate jwt secret keys etc:
+
+```openssl rand -hex 32```
 
 ## Documentation:
 
