@@ -106,17 +106,14 @@ async def index(request: Request):
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
 async def post_credentials_for_access_token(
-    # credentials: OAuth2PasswordRequestForm = Depends(),
-    email: str = Body(),
-    password: str = Body(),
+    credentials: OAuth2PasswordRequestForm = Depends(),
+
     db: Session = Depends(get_db)
 ):
-    # email = credentials.username
-    # plain_password = credentials.password
-    plain_password = password
+
 
     try:
-        user = auth.authenticate_user(db=db, email=email, password=plain_password)
+        user = auth.authenticate_user(db=db, email=credentials.username, password=credentials.password)
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
         await queues.event_queue.put(
             pyd.Event(
@@ -133,7 +130,7 @@ async def post_credentials_for_access_token(
 
     try:
         access_token = auth.create_access_token(
-            data={"sub": email}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
+            data={"sub": credentials.username}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
         )
     except (TypeError, ValueError) as e:
         await queues.event_queue.put(
@@ -167,9 +164,9 @@ async def post_credentials_for_access_token(
 
 @api.post("/users", response_model=pyd.User)
 async def create_user(
-    email: EmailStr = Body(),
-    name: str = Body(),
-    password: str = Body(),
+    email: EmailStr = Form(),
+    name: str = Form(),
+    password: str = Form(),
     db: Session = Depends(get_db),
 ):
     hashed_password = auth.get_password_hash(password)
