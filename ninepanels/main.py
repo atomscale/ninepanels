@@ -240,8 +240,8 @@ async def get_panels_by_user_id(
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
-    await asyncio.sleep(4)
-    
+    # await asyncio.sleep(4)
+
     return panels
 
 
@@ -326,7 +326,7 @@ async def get_entries_by_panel_id(
     )
 
 
-    await asyncio.sleep(4)
+    # await asyncio.sleep(4)
 
     return padded_entries
 
