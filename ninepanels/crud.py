@@ -527,10 +527,11 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
 
     try:
         panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-        for panel in panels:
-            if panel.position > del_panel_pos:
-                panel.position = panel.position - 1
-        db.commit()
+        if panels:
+            for panel in panels:
+                if panel.position > del_panel_pos:
+                    panel.position = panel.position - 1
+            db.commit()
     except (SQLAlchemyError, AttributeError, TypeError, exceptions.PanelNotFound) as e:
         db.rollback()
         raise exceptions.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
@@ -914,9 +915,12 @@ def read_route_timings(db: Session, method_path: str, window_size: int):
 def read_panel_created_date(db: Session, panel_id: int) -> datetime:
     panel = db.query(sql.Panel).filter(sql.Panel.id == panel_id).first()
 
-    panel_created = panel.created_at
+    if panel:
+        panel_created = panel.created_at
 
-    return panel_created.date()
+        return panel_created.date()
+    else:
+        return None
 
 
 def pad_entries(
@@ -934,49 +938,53 @@ def pad_entries(
     panel_created_at = test_created_at
     if not panel_created_at:
         panel_created_at = read_panel_created_date(db=db, panel_id=panel_id)
-    panel_age_td: timedelta = today - panel_created_at
-    date_range_len: int = panel_age_td.days + 1
+
+    if panel_created_at:
+        panel_age_td: timedelta = today - panel_created_at
+        date_range_len: int = panel_age_td.days + 1
 
 
-    date_range = []
-    for n in range(date_range_len):
-        d = today + timedelta(days=-n)
-        date_range.append(d)
+        date_range = []
+        for n in range(date_range_len):
+            d = today + timedelta(days=-n)
+            date_range.append(d)
 
-    for date in date_range:
+        for date in date_range:
 
-        daily_entries = []
-        for unpadded_entry in unpadded_entries:
-            if unpadded_entry.timestamp.date() == date:
-                daily_entries.append(unpadded_entry)
+            daily_entries = []
+            for unpadded_entry in unpadded_entries:
+                if unpadded_entry.timestamp.date() == date:
+                    daily_entries.append(unpadded_entry)
 
 
-        if daily_entries:
-            # sort all dailies here and return last one
-            sorted_daily_entries = sorted(daily_entries, key=lambda x: x.timestamp, reverse=True)
+            if daily_entries:
+                # sort all dailies here and return last one
+                sorted_daily_entries = sorted(daily_entries, key=lambda x: x.timestamp, reverse=True)
 
-            last_entry = sorted_daily_entries[0]
+                last_entry = sorted_daily_entries[0]
 
-            if test_created_at:
-                final_entry = last_entry.model_dump()
+                if test_created_at:
+                    final_entry = last_entry.model_dump()
+                else:
+                    final_entry = utils.instance_to_dict(last_entry)
+
+
+                final_entry["timestamp"] = final_entry["timestamp"].date()
+                padded_entries.append(final_entry)
+
             else:
-                final_entry = utils.instance_to_dict(last_entry)
-
-
-            final_entry["timestamp"] = final_entry["timestamp"].date()
-            padded_entries.append(final_entry)
-
-        else:
-            # there are no entires for this date, create one
-            padded_entries.append(
-                {
-                    "id": f"{str(uuid.uuid4())}_padded",
-                    "is_complete": False,
-                    "timestamp": date,
-                    "panel_id": panel_id,
-                }
-            )
-        daily_entries = []
+                # there are no entires for this date, create one
+                padded_entries.append(
+                    {
+                        "id": f"{str(uuid.uuid4())}_padded",
+                        "is_complete": False,
+                        "timestamp": date,
+                        "panel_id": panel_id,
+                    }
+                )
+            daily_entries = []
 
     # pp.pprint(padded_entries)
-    return padded_entries
+        return padded_entries
+    else:
+        return None
