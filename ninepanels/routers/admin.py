@@ -15,12 +15,14 @@ from .. import pydmodels as pyd
 
 admin = APIRouter()
 
-# TODO examin braking this into am admin api module that doesn thaveperformance timing on it
+
 @admin.get(
     "/routes",
 )
 async def read_route_performance(
-    request: Request, db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_admin_user),
 ):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
     resp = crud.read_all_routes(db=db)
 
@@ -31,7 +33,10 @@ async def read_route_performance(
     "/routes/timings",
 )
 async def read_route_timings(
-    method_path: str, window_size: int | None = 100, db: Session = Depends(get_db)
+    method_path: str,
+    window_size: int | None = 100,
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_admin_user),
 ):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
     resp = crud.read_route_timings(
         db=db, method_path=method_path, window_size=window_size
@@ -39,18 +44,10 @@ async def read_route_timings(
     return resp
 
 
-@admin.get(
-    "/requests",
-)
-def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
-    ...
-
 @admin.get("/users", response_model=List[pyd.User])
 async def read_all_users(
-    db: Session = Depends(get_db),
-    user: pyd.User = Depends(auth.get_current_admin_user)
+    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_admin_user)
 ):
-
     users = crud.read_all_users(db=db)
 
     return users
