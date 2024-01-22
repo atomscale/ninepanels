@@ -20,6 +20,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     hashed_password = Column(String)
     last_login = Column(DateTime)
+    last_activity = Column(DateTime)
     panels = relationship("Panel", back_populates="user")
     password_reset_tokens = relationship("PasswordResetToken", back_populates="user")
 

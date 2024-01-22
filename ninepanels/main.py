@@ -230,13 +230,16 @@ async def post_panel_by_user_id(
             new_panel = crud.create_panel_by_user_id(
                 db=db, position=position, user_id=user.id, title=title
             )
-        rollbar.report_message(message=f"{user.name} created a panel", level="info")
-        return new_panel
+        # rollbar.report_message(message=f"{user.name} created a panel", level="info")
     except exceptions.PanelNotCreated:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create panel"
         )
 
+    event = event_models.UserActivity(user_id=user.id)
+    await queues.event_queue.put(event)
+
+    return new_panel
 
 @api.get("/panels")  # response_model=List[pyd.PanelResponse])
 async def get_panels_by_user_id(
@@ -264,13 +267,16 @@ async def update_panel_by_id(
         try:
             updated_panel = crud.update_panel_by_id(db, user.id, panel_id, update)
 
-            return updated_panel
         except exceptions.PanelNotUpdated as e:
             raise HTTPException(status_code=400, detail=f"Panel was not updated")
 
     else:
         raise HTTPException(status_code=400, detail="No update object")
 
+    event = event_models.UserActivity(user_id=user.id)
+    await queues.event_queue.put(event)
+
+    return updated_panel
 
 @api.delete("/panels/{panel_id}")
 async def delete_panel_by_id(
@@ -280,12 +286,15 @@ async def delete_panel_by_id(
 ):
     try:
         is_deleted = crud.delete_panel_by_panel_id(db, user.id, panel_id)
-        return {"success": is_deleted}
     except exceptions.PanelNotDeleted as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{str(e.detail)}"
         )
 
+    event = event_models.UserActivity(user_id=user.id)
+    await queues.event_queue.put(event)
+
+    return {"success": is_deleted}
 
 @api.post("/panels/{panel_id}/entries", response_model=pyd.Entry)
 async def post_entry_by_panel_id(
@@ -300,6 +309,9 @@ async def post_entry_by_panel_id(
         )
     except exceptions.EntryNotCreated as e:
         raise HTTPException(status_code=400, detail=e.detail)
+
+    event = event_models.UserActivity(user_id=user.id)
+    await queues.event_queue.put(event)
 
     return entry
 

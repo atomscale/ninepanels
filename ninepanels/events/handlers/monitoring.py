@@ -39,3 +39,13 @@ async def update_user_login(event: event_models.BaseEvent):
     except exceptions.UserNotUpdated:
         raise
 
+async def update_user_activity(event: event_models.BaseEvent):
+    try:
+        from ...db import database
+
+        db = database.SessionLocal()
+
+        crud.update_user_by_id(db=db, user_id=event.user_id, update={"last_activity": event.created_at})
+    except exceptions.UserNotUpdated:
+        raise
+
