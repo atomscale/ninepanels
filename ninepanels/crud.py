@@ -279,13 +279,10 @@ def update_panel_by_id(
             for update_field, update_value in update.items():
                 if hasattr(panel, update_field):
                     if update_field == "position":
-                        # print()
-                        # print(f"RUNNING udpate fpr {update_field}")
 
-                        # print(f"running sort on {panel.title=}")
                         panel_sort_on_update(db, user_id, panel_id, update_value)
                     else:
-                        # print(f"RUNNING udpate fpr {update_field}")
+
                         setattr(panel, update_field, update_value)
                         try:
                             db.commit()
@@ -413,7 +410,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     # could lookup user sepcified timezone once set in db, create it here
     uk_tz = pytz.timezone("Europe/London")
     now = datetime.now(uk_tz)
-    # print(now)
+  
 
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 
@@ -554,10 +551,8 @@ def calc_consistency(db: Session, user_id: int):
     panel_consistencies = []
     if panels:
         for panel in panels:
-            # print(f"Panel '{panel.title}':")
 
             panel_age = calc_panel_age(created_at=panel.created_at)
-            # print(f"{panel_age=}")
 
             date_range = []
             start_date = panel.created_at
@@ -575,7 +570,6 @@ def calc_consistency(db: Session, user_id: int):
                 new_date = start_date + timedelta(days=day_counter)
                 date_range.append(new_date)
 
-            # # pp.pprint(date_range)
 
             days_complete = 0
             for date in date_range:
@@ -598,8 +592,6 @@ def calc_consistency(db: Session, user_id: int):
                 panel_consistency = days_complete / panel_age
             else:
                 panel_consistency = 0
-            # print(f"{days_complete=}")
-            # print(f"consistency for panel '{panel.title}': {panel_consistency}")
 
             panel_consistencies.append(
                 {
@@ -931,7 +923,7 @@ def pad_entries(
     test_created_at: datetime = None,
 ) -> list[dict]:
     today = datetime.utcnow().date()
-    # print(today)
+
 
     padded_entries = []
 
