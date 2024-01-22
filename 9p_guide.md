@@ -144,15 +144,15 @@ Follow the deployment checklist for pushes from staging to prod.
 
 **CHECKLIST:**
 
-LOCAL FEATURE
+LOCAL FEATURE - DONE
 - update backup table selection across backup.sh if db schema changes - no changes
 - search for prints and console.logs - DONE
-- check any helpers like temp component log in state for example are reset - NA
+- check any helpers like temp component log in state, hardcoded testing credentials for example are reset - NA
 - check any new envars are in staging and prod - NA
-- local tests pass on feature branch - using ```source test.sh all``` -
-- manual testing of area in feature env
+- local tests pass on feature branch - using ```source test.sh all``` - DONE
+- manual testing of area in feature env - DONE
 
-STAGING
+STAGING - IF ANY CHANGES SYNC BACK TO FEATURE TO MAKE THEM
 - push to staging and manually test
 - review each change before commit
 - PR staging to main and review code changes again in GH
