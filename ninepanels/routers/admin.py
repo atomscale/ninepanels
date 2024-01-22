@@ -23,7 +23,7 @@ async def read_route_performance(
     request: Request,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_admin_user),
-):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+):
     resp = crud.read_all_routes(db=db)
 
     return resp
@@ -37,7 +37,7 @@ async def read_route_timings(
     window_size: int | None = 100,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_admin_user),
-):  # user: pyd.User = Depends(auth.get_current_user)): # TODO reenable auth
+): 
     resp = crud.read_route_timings(
         db=db, method_path=method_path, window_size=window_size
     )
