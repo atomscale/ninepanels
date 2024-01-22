@@ -81,6 +81,13 @@ def test_update_user_by_id(test_db):
             db=test_db, user_id=user.id, update={"col_not_exist": "newname"}
         )
 
+    # update a DateTime column with wrong type
+    with pytest.raises(exceptions.UserNotUpdated):
+        crud.update_user_by_id(
+            db=test_db, user_id=user.id, update={"last_login": "not a date"}
+        )
+
+
     # update user name and check has changed
 
     updated_user = crud.update_user_by_id(
@@ -88,6 +95,15 @@ def test_update_user_by_id(test_db):
     )
 
     assert updated_user.name == "newname"
+
+    # update last_login and check has changed
+
+    ts = datetime.utcnow()
+    updated_user = crud.update_user_by_id(
+        db=test_db, user_id=user.id, update={"last_login": ts}
+    )
+
+    assert updated_user.last_login == ts
 
 
 def test_delete_user_by_id(test_db):

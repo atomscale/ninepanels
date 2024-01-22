@@ -145,6 +145,7 @@ def update_user_by_id(db: Session, user_id: str, update: dict) -> sql.User:
         db.commit()
         return user
     except SQLAlchemyError as e:
+        db.rollback()
         raise exceptions.UserNotUpdated(
             detail=f"db error writing updated user back to db {str(e)}"
         )
@@ -287,6 +288,7 @@ def update_panel_by_id(
                         try:
                             db.commit()
                         except Exception as e:
+                            db.rollback()
                             raise exceptions.PanelNotUpdated(
                                 detail=f"some issue in this commit {e}"
                             )
@@ -410,7 +412,7 @@ def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list
     # could lookup user sepcified timezone once set in db, create it here
     uk_tz = pytz.timezone("Europe/London")
     now = datetime.now(uk_tz)
-  
+
 
     trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
 

@@ -16,7 +16,9 @@ dispatcher = {
 
 
     'new_user_created': [user_comms.handle_new_user_created, monitoring.report_info],
-    'user_logged_in': [logs.log_info, monitoring.report_info],
+    'user_logged_in': [logs.log_info, monitoring.report_info, monitoring.update_user_login],
+    'user_activity': [],
+
     'password_reset_requested': [user_comms.password_reset, monitoring.report_info],
 
 
