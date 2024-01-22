@@ -170,27 +170,11 @@ def get_current_user(
     return user
 
 
-def get_current_verified_user(
-    current_user: pyd.User = Depends(get_current_user),
-):
-    """
-    NOT IMPLEMENTED YET
 
-    Checks user is verified. Can be injected into user facing routes
-
-    If so, returns User pydantic instance"""
-
-    # this is the func used across the "logged in" routes to verify JWT was valid, the user exists and that the user has not been set to "disabled" in the db
-    if not current_user.is_verified:
-        # TODO http exception in wrong layer
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unverified user"
-        )
-    return current_user
 
 
 def get_current_admin_user(
-    current_user: pyd.User = Depends(get_current_verified_user),
+    current_user: pyd.User = Depends(get_current_user),
 ):
     """
     NOT IMPLEMENTED YET - USE auth.get_current_user in dep injection
@@ -199,7 +183,7 @@ def get_current_admin_user(
 
     If so, returns UserInDb pydantic instance"""
 
-    if current_user.role == pyd.Role.admin:
+    if current_user.is_admin:
         return current_user
     else:
         # TODO http exception in wrong layer

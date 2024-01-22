@@ -59,6 +59,40 @@ def test_read_user_by_id(test_server, test_access_token):
     assert payload["data"]["email"] == "bwdyer@gmail.com"
 
 
+def test_read_all_users(test_server, test_access_token):
+    """Given an admin user, request for all users should not fail"""
+    resp = test_server.get(
+        "/admin/users", headers={"Authorization": "Bearer " + test_access_token}
+    )
+
+    assert resp.status_code == 200
+
+    users = resp.json()["data"]
+
+    assert isinstance(users, list)
+    assert len(users) == 2
+
+
+def test_read_all_users_auth_fail(test_server):
+    """once given a token for an non-admin user that exists in db,
+    when a call to an admin only route is made,
+    the reposnse code should be 401"""
+
+    resp = test_server.post(
+        "/token", data={"username": "ben@atomscale.co", "password": "newpassword"}
+    )
+
+    assert resp.status_code == 200
+
+    non_admin_token = resp.json()["data"]["access_token"]
+
+    non_auth_call = test_server.get(
+        "/admin/users", headers={"Authorization": "Bearer " + non_admin_token}
+    )
+
+    assert non_auth_call.status_code == 401
+
+
 def test_delete_user_by_id(test_server):
     user_to_delete_token = test_server.post(
         "/token", data={"username": "ben@atomscale.co", "password": "newpassword"}
@@ -280,3 +314,8 @@ def test_initial_password_reset_flow(test_server):
 
     resp = resp.json()
     assert resp
+
+
+# WIP test auth on get all users for the admin and non admin users
+
+# test users api route

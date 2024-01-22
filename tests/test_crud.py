@@ -7,6 +7,7 @@ from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
 
+
 def test_create_user(test_db):
     # note that db has no email validation, this lives in pydantic models,
     # which check the api route request body
@@ -33,11 +34,13 @@ def test_create_user(test_db):
     assert len(test_users) == 3
     assert test_users[-1].id == 3
 
+
 def test_read_all_users(test_db):
     test_users = crud.read_all_users(test_db)
 
     assert isinstance(test_users, list)
     assert len(test_users) == 2
+
 
 def test_read_user_by_id(test_db):
     user_id = 1
