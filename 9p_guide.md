@@ -140,21 +140,29 @@ Follow the deployment checklist for pushes from staging to prod.
 
 - does this involve a db schema migration? - NO
 - does this involve deploying front and backends in tandem? - NO
+- does the release involve an announcement, should the bar be active? - NO , server only
 
 **CHECKLIST:**
-- does the release involve an announcement, should the bar be active? - NO , server only
+
+LOCAL FEATURE
 - update backup table selection across backup.sh if db schema changes - no changes
 - search for prints and console.logs - DONE
 - check any helpers like temp component log in state for example are reset - NA
 - check any new envars are in staging and prod - NA
-- review each change before commit
+- local tests pass on feature branch - using ```source test.sh all``` -
 - manual testing of area in feature env
+
+STAGING
 - push to staging and manually test
-- local tests pass on feature branch - DONE,
+- review each change before commit
 - PR staging to main and review code changes again in GH
+
+MAIN
 - backup main db full and data only
 - merge PR
 - manually test in prod
+
+FIX FORWARD
 
 ## Security
 
