@@ -307,6 +307,7 @@ async def get_entries_by_panel_id(
     limit: int = 100,
     sort_by: str = "timestamp.desc",
     db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user),
 ):
     # TODO all exc handling all the way down
     sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
