@@ -139,7 +139,7 @@ Follow the deployment checklist for pushes from staging to prod.
 **Initial questions to ask:**
 
 - does this involve a db schema migration? - NO
-- does this involve deploying front and backends in tandem? - NO
+- does this involve deploying front and backends in tandem? - NO, this is backend bug fix, no change in api surface for clients
 - does the release involve an announcement, should the bar be active? - NO , server only
 
 **CHECKLIST:**
@@ -153,9 +153,9 @@ LOCAL FEATURE - DONE
 - manual testing of area in feature env - DONE
 
 STAGING - IF ANY CHANGES SYNC BACK TO FEATURE TO MAKE THEM
-- push to staging and manually test
-- review each change before commit
+- push to staging and manually test - DONE
 - PR staging to main and review code changes again in GH
+- review each change before commit 
 
 MAIN
 - backup main db full and data only
