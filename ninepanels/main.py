@@ -106,14 +106,12 @@ async def index(request: Request):
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
 async def post_credentials_for_access_token(
-    credentials: OAuth2PasswordRequestForm = Depends(),
-
-    db: Session = Depends(get_db)
+    credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
-
-
     try:
-        user = auth.authenticate_user(db=db, email=credentials.username, password=credentials.password)
+        user = auth.authenticate_user(
+            db=db, email=credentials.username, password=credentials.password
+        )
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
         await queues.event_queue.put(
             pyd.Event(
@@ -130,7 +128,8 @@ async def post_credentials_for_access_token(
 
     try:
         access_token = auth.create_access_token(
-            data={"sub": credentials.username}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
+            data={"sub": credentials.username},
+            expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS,
         )
     except (TypeError, ValueError) as e:
         await queues.event_queue.put(
@@ -325,7 +324,6 @@ async def get_entries_by_panel_id(
     padded_entries = crud.pad_entries(
         db=db, unpadded_entries=unpadded_entries, limit=limit_days, panel_id=panel_id
     )
-
 
     # await asyncio.sleep(4)
 
