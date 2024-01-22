@@ -984,7 +984,6 @@ def pad_entries(
                 )
             daily_entries = []
 
-    # pp.pprint(padded_entries)
         return padded_entries
     else:
         return None
