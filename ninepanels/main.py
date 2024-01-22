@@ -25,6 +25,8 @@ from pprint import PrettyPrinter
 
 from datetime import datetime
 
+from typing import List
+
 from .db.database import get_db
 from . import middleware
 from . import crud

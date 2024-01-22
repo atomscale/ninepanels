@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from fastapi import Depends
 
+from typing import List
+
 from starlette.requests import Request
 
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from .. import pydmodels as pyd
 
 
 admin = APIRouter()
+
 # TODO examin braking this into am admin api module that doesn thaveperformance timing on it
 @admin.get(
     "/routes",
@@ -41,3 +44,13 @@ async def read_route_timings(
 )
 def read_request_performance(user: pyd.User = Depends(auth.get_current_user)):
     ...
+
+@admin.get("/users", response_model=List[pyd.User])
+async def read_all_users(
+    db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_admin_user)
+):
+
+    users = crud.read_all_users(db=db)
+
+    return users
