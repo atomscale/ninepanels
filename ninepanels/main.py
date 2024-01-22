@@ -163,6 +163,9 @@ async def post_credentials_for_access_token(
     event = event_models.UserLoggedIn(user_id=user.id, name=user.name)
     await queues.event_queue.put(event)
 
+    event = event_models.UserActivity(user_id=user.id)
+    await queues.event_queue.put(event)
+
     return {"access_token": access_token}
 
 
