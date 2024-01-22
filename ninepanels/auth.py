@@ -170,16 +170,10 @@ def get_current_user(
     return user
 
 
-
-
-
 def get_current_admin_user(
     current_user: pyd.User = Depends(get_current_user),
 ):
-    """
-    NOT IMPLEMENTED YET - USE auth.get_current_user in dep injection
-
-    Checks is the current user is an admin and verified.
+    """Checks if the current user is an admin and verified.
 
     If so, returns UserInDb pydantic instance"""
 

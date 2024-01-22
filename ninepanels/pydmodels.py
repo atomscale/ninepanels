@@ -64,6 +64,7 @@ class User(UserBase):
 
     id: int
     is_admin: bool | None = None
+    last_login: datetime | None = None
 
 
 class UserInDB(User):

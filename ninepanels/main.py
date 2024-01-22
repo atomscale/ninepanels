@@ -57,6 +57,9 @@ api_origins = [
 
 api.add_middleware(middleware.ResponseWrapperMiddleware)
 api.add_middleware(middleware.RouteTimingMiddleware)
+
+
+
 api.add_middleware(RollbarMiddleware)
 api.add_middleware(
     CORSMiddleware,

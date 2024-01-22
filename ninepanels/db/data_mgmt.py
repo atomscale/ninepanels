@@ -40,7 +40,7 @@ def read_data(db) -> None:
     users = db.query(sql.User).all()
     if users:
         for user in users:
-            print(f"{user.id=} {user.name=}: {user.is_admin}")
+            print(f"{user.id=} {user.name=} {user.email=} {user.is_admin=} {user.last_login=}")
             print()
             # if user.panels:
             #     for i, panel in enumerate(user.panels):

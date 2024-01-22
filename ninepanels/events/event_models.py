@@ -116,6 +116,7 @@ class UserLoggedIn(BaseEvent):
     `type`: str = "user_logged_in"
 
     Attrs:
+        `user_id`: int, user's id
         `name`: str, user's name
 
     Exclude on `model_dump()`:
@@ -127,3 +128,23 @@ class UserLoggedIn(BaseEvent):
     type: str = "user_logged_in"
     user_id: int
     name: str
+
+class UserActivity(BaseEvent):
+    """A user has completed some action on the app.
+
+    General purpose by intention, to be peppered in path operation funcs as needed.
+
+    Utilises BaseEvent created_at attr as the activity timestamp.
+
+    `type`: str = "user_activity"
+
+    Attrs:
+        `user_id`: int, user's id
+
+    Exclude on `model_dump()`:
+        - `type`
+
+    """
+
+    type: str = "user_activity"
+    user_id: int
