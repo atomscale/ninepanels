@@ -226,7 +226,10 @@ def test_post_entry_on_panel(test_server, test_access_token):
 def test_get_entries_by_panel_id(test_server, test_access_token):
     panel_id = 1
 
-    all = test_server.get(f"/panels/{panel_id}/entries")
+    all = test_server.get(
+        f"/panels/{panel_id}/entries",
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
 
     all_data = all.json()["data"]
 
@@ -234,11 +237,13 @@ def test_get_entries_by_panel_id(test_server, test_access_token):
 
     print("ALL")
     for e in all_data[:7]:
-        print(e['timestamp'], e["is_complete"])
+        print(e["timestamp"], e["is_complete"])
     print()
 
-
-    seven = test_server.get(f"/panels/{panel_id}/entries?limit=7")
+    seven = test_server.get(
+        f"/panels/{panel_id}/entries?limit=7",
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
 
     seven_data = seven.json()["data"]
 
@@ -246,10 +251,13 @@ def test_get_entries_by_panel_id(test_server, test_access_token):
 
     print("seven")
     for e in seven_data:
-        print(e['timestamp'], e["is_complete"])
+        print(e["timestamp"], e["is_complete"])
     print()
 
-    fourteen = test_server.get(f"/panels/{panel_id}/entries?limit=14")
+    fourteen = test_server.get(
+        f"/panels/{panel_id}/entries?limit=14",
+        headers={"Authorization": "Bearer " + test_access_token},
+    )
 
     fourteen_data = fourteen.json()["data"]
 
@@ -257,7 +265,7 @@ def test_get_entries_by_panel_id(test_server, test_access_token):
 
     print("fourteen")
     for e in fourteen_data:
-        print(e['timestamp'], e["is_complete"])
+        print(e["timestamp"], e["is_complete"])
     print()
 
 

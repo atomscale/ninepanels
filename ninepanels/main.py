@@ -106,13 +106,14 @@ async def index(request: Request):
     responses={401: {"model": pyd.HTTPError, "description": "Unauthorised"}},
 )
 async def post_credentials_for_access_token(
-    credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    credentials: OAuth2PasswordRequestForm = Depends(),
+
+    db: Session = Depends(get_db)
 ):
-    email = credentials.username
-    plain_password = credentials.password
+
 
     try:
-        user = auth.authenticate_user(db=db, email=email, password=plain_password)
+        user = auth.authenticate_user(db=db, email=credentials.username, password=credentials.password)
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
         await queues.event_queue.put(
             pyd.Event(
@@ -129,7 +130,7 @@ async def post_credentials_for_access_token(
 
     try:
         access_token = auth.create_access_token(
-            data={"sub": email}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
+            data={"sub": credentials.username}, expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS
         )
     except (TypeError, ValueError) as e:
         await queues.event_queue.put(
@@ -239,6 +240,8 @@ async def get_panels_by_user_id(
 ):
     panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
+    # await asyncio.sleep(4)
+
     return panels
 
 
@@ -304,6 +307,7 @@ async def get_entries_by_panel_id(
     limit: int = 100,
     sort_by: str = "timestamp.desc",
     db: Session = Depends(get_db),
+    user: pyd.User = Depends(auth.get_current_user),
 ):
     # TODO all exc handling all the way down
     sort_key, sort_direction = utils.parse_sort_by(sql.Entry, sort_by=sort_by)
@@ -321,6 +325,9 @@ async def get_entries_by_panel_id(
     padded_entries = crud.pad_entries(
         db=db, unpadded_entries=unpadded_entries, limit=limit_days, panel_id=panel_id
     )
+
+
+    # await asyncio.sleep(4)
 
     return padded_entries
 

@@ -136,27 +136,39 @@ Do not rollback, revert or otherwise mess with the branch timelines.
 
 Follow the deployment checklist for pushes from staging to prod.
 
-Initial questions to ask:
+**Initial questions to ask:**
 
-- does this involve a db schema migration?
-- does this involve deploying front and backends in tandem?
+- does this involve a db schema migration? - NO
+- does this involve deploying front and backends in tandem? - NO, this is backend bug fix, no change in api surface for clients
+- does the release involve an announcement, should the bar be active? - NO , server only
 
 **CHECKLIST:**
-- does the release involve an announcement, should the bar be active? - DONE
-- update backup table selection across backup.sh if db schema changes - DONE
-- search for prints and console.logs - verify 0 - DONE
-- check any helpers like temp component log in state for example are reset - DONE
-- check any new envars are in staging and prod - DONE
-- review each change before commit - TOO MANY - in future make smaller deploys
-- manual testing of area in feature env  - DONE
+
+LOCAL FEATURE - DONE
+- update backup table selection across backup.sh if db schema changes - no changes
+- search for prints and console.logs - DONE
+- check any helpers like temp component log in state, hardcoded testing credentials for example are reset - NA
+- check any new envars are in staging and prod - NA
+- local tests pass on feature branch - using ```source test.sh all``` - DONE
+- manual testing of area in feature env - DONE
+
+STAGING - IF ANY CHANGES SYNC BACK TO FEATURE TO MAKE THEM
 - push to staging and manually test - DONE
-- local tests pass on feature branch - DONE, passing
 - PR staging to main and review code changes again in GH
+- review each change before commit 
+
+MAIN
 - backup main db full and data only
 - merge PR
 - manually test in prod
 
+FIX FORWARD
 
+## Security
+
+To generate jwt secret keys etc:
+
+```openssl rand -hex 32```
 
 ## Documentation:
 
