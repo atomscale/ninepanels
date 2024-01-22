@@ -136,21 +136,21 @@ Do not rollback, revert or otherwise mess with the branch timelines.
 
 Follow the deployment checklist for pushes from staging to prod.
 
-Initial questions to ask:
+**Initial questions to ask:**
 
-- does this involve a db schema migration?
-- does this involve deploying front and backends in tandem?
+- does this involve a db schema migration? - NO
+- does this involve deploying front and backends in tandem? - NO
 
 **CHECKLIST:**
-- does the release involve an announcement, should the bar be active? - DONE
-- update backup table selection across backup.sh if db schema changes - DONE
-- search for prints and console.logs - verify 0 - DONE
-- check any helpers like temp component log in state for example are reset - DONE
-- check any new envars are in staging and prod - DONE
-- review each change before commit - TOO MANY - in future make smaller deploys
-- manual testing of area in feature env  - DONE
-- push to staging and manually test - DONE
-- local tests pass on feature branch - DONE, passing
+- does the release involve an announcement, should the bar be active? - NO , server only
+- update backup table selection across backup.sh if db schema changes - no changes
+- search for prints and console.logs - DONE
+- check any helpers like temp component log in state for example are reset - NA
+- check any new envars are in staging and prod - NA
+- review each change before commit
+- manual testing of area in feature env
+- push to staging and manually test
+- local tests pass on feature branch - DONE,
 - PR staging to main and review code changes again in GH
 - backup main db full and data only
 - merge PR
