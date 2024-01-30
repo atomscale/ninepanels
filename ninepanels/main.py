@@ -316,6 +316,7 @@ async def post_entry_by_panel_id(
     event = event_models.UserActivity(user_id=user.id)
     await queues.event_queue.put(event)
 
+
     return entry
 
 
@@ -345,7 +346,7 @@ async def get_entries_by_panel_id(
         db=db, unpadded_entries=unpadded_entries, limit=limit_days, panel_id=panel_id
     )
 
-    # await asyncio.sleep(4)
+    # await asyncio.sleep(2)
 
     return padded_entries
 
