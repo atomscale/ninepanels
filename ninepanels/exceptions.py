@@ -102,3 +102,6 @@ class RouteStatsProcessorError(NinePanelsBaseException):
 
 class ParseSortBy(NinePanelsBaseException):
     ...
+
+class IncorrectPasscode(NinePanelsBaseException):
+    ...

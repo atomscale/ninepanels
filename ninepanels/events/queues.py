@@ -7,17 +7,8 @@ event_queue = asyncio.Queue()
 async def event_worker():
     while True:
 
-        # TODO reimplement with events.
-        # qsize = event_queue.qsize()
-        # if qsize > 100:
-        #     await event_queue.put(
-        #     pyd.Event(
-        #         type=event_types.EXC_RAISED_WARN,
-        #         payload={"qsize": qsize},
-        #     )
-        # )
         event = await event_queue.get()
-        event_type = event.type
+        event_type = event.name
 
         if event_type in dispatcher.dispatcher:
             tasks = []

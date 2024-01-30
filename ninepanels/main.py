@@ -36,7 +36,6 @@ from . import auth
 from .core import config
 from . import exceptions
 from .events import queues
-from .events import event_types
 from .events import event_models
 from . import utils
 
@@ -45,7 +44,6 @@ from .routers import admin
 
 pp = PrettyPrinter(indent=4)
 
-# rollbar.init(access_token=config.ROLLBAR_KEY, environment=config.CURRENT_ENV)
 
 api = FastAPI()
 
@@ -57,7 +55,6 @@ api_origins = [
 
 api.add_middleware(middleware.ResponseWrapperMiddleware)
 api.add_middleware(middleware.RouteTimingMiddleware)
-
 
 
 api.add_middleware(RollbarMiddleware)
@@ -114,17 +111,15 @@ async def post_credentials_for_access_token(
     credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
     try:
-        user = auth.authenticate_user(
+        user = auth.authenticate_user_password_flow(
             db=db, email=credentials.username, password=credentials.password
         )
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
-        await queues.event_queue.put(
-            pyd.Event(
-                type=event_types.EXC_RAISED_WARN,
-                payload=e.__dict__,
-                payload_type=type(e),
-            )
+        event = event_models.ExceptionRaisedError(
+            exc_msg=str(e), exc_type=type(e)
         )
+        await queues.event_queue.put(event)
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -137,28 +132,30 @@ async def post_credentials_for_access_token(
             expires_delta=config.ACCESS_TOKEN_EXPIRE_DAYS,
         )
     except (TypeError, ValueError) as e:
-        await queues.event_queue.put(
-            pyd.Event(
-                type=event_types.EXC_RAISED_ERROR,
-                payload=e,
-                payload_type=type(e),
-            )
+        event = event_models.ExceptionRaisedError(
+            exc_msg=str(e), exc_type=type(e), user_id=user.id
         )
+        await queues.event_queue.put(event)
+
         raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Issue creating the access token",
         )
 
     try:
         crud.invalidate_all_user_prts(db=db, user_id=user.id)
     except exceptions.PasswordResetTokenException as e:
-        await queues.event_queue.put(
-            pyd.Event(
-                type=event_types.EXC_RAISED_WARN,
-                payload=e.__dict__,
-                payload_type=type(e),
-            )
+        event = event_models.ExceptionRaisedError(
+            exc_msg=str(e), exc_type=type(e), user_id=user.id
         )
+        await queues.event_queue.put(event)
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Issue invalidating user PRTs",
+        )
+
+    # invalidate all user passcodes
 
     event = event_models.UserLoggedIn(user_id=user.id, name=user.name)
     await queues.event_queue.put(event)
@@ -244,6 +241,7 @@ async def post_panel_by_user_id(
 
     return new_panel
 
+
 @api.get("/panels")  # response_model=List[pyd.PanelResponse])
 async def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
@@ -281,6 +279,7 @@ async def update_panel_by_id(
 
     return updated_panel
 
+
 @api.delete("/panels/{panel_id}")
 async def delete_panel_by_id(
     panel_id: int,
@@ -298,6 +297,7 @@ async def delete_panel_by_id(
     await queues.event_queue.put(event)
 
     return {"success": is_deleted}
+
 
 @api.post("/panels/{panel_id}/entries", response_model=pyd.Entry)
 async def post_entry_by_panel_id(

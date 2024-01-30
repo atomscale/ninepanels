@@ -50,9 +50,38 @@ def verify_password(plain_password, hashed_password) -> bool:
 def get_password_hash(password: str) -> str:
     return hash_context.hash(password)
 
+def verify_passcode(plain_passcode, hashed_passcode) -> bool:
+    """verfify users passcode
 
-def authenticate_user(db: Session, email: str, password: str) -> sql.User:
+    Returns:
+        bool: truthy for match
+
+    Raises:
+        exceptions.IncorrectPassword if passwords do not match, or if verify call raises exc
+
+    """
+
+    match = False
+
+    try:
+        match = hash_context.verify(plain_passcode, hashed_passcode)
+    except [ValueError, TypeError] as e:
+        raise exceptions.IncorrectPasscode(
+            context_msg=f"failure of hash_context.verify with {str(e)}"
+        )
+
+    if match:
+        return match
+    else:
+        raise exceptions.IncorrectPasscode(context_msg=f"failure to match")
+
+def get_passcode_hash(passcode: int) -> str:
+    return hash_context.hash(passcode)
+
+def authenticate_user_password_flow(db: Session, email: str, password: str) -> sql.User:
     """Finds the user in the db and checks their stored password
+
+    Used in the /token endpoint
 
     Returns:
         sql.User
@@ -63,7 +92,7 @@ def authenticate_user(db: Session, email: str, password: str) -> sql.User:
     """
 
     try:
-        user = crud.read_user_by_email(db, email)  # will return None if not found
+        user = crud.read_user_by_email(db, email)
     except exceptions.UserNotFound as e:
         raise exceptions.UserNotFound(
             detail="user not found",
@@ -77,6 +106,35 @@ def authenticate_user(db: Session, email: str, password: str) -> sql.User:
         raise exceptions.IncorrectPassword(detail="password verification error")
 
     return user
+
+
+
+def authenticate_user_passcode_flow(db: Session, email: str, passcode: int):
+    """
+
+    Used in the /passcode_token endpoint
+
+    Look up user in db to check exists
+    Look up latest passcode for that user from passcodes table
+        passcode func will handle no, or invalid passcode for user
+    verift the cupplied passcode against supplied
+
+    if verfies return user
+
+
+    """
+
+    try:
+        user = crud.read_user_by_email(db=db, email=email)
+    except exceptions.UserNotFound as e:
+        rai
+
+    ...
+
+
+
+
+
 
 
 def create_access_token(data: dict, expires_delta: str):
@@ -117,7 +175,7 @@ def get_current_user(
 
     Used as a base dependency.
 
-    - valid JWT (not in blacklist) - NOT IMPLEMENT YET
+    - valid JWT (not in blacklist)
     - email is in JWT
     - email is in db
 
