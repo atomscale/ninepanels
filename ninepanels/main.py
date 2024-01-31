@@ -115,8 +115,8 @@ async def post_credentials_for_access_token(
             db=db, email=credentials.username, password=credentials.password
         )
     except (exceptions.UserNotFound, exceptions.IncorrectPassword) as e:
-        event = event_models.ExceptionRaisedError(
-            exc_msg=str(e), exc_type=type(e)
+        event = event_models.ExceptionRaisedInfo(
+            exc_msg=str(e), exc_type=str(type(e))
         )
         await queues.event_queue.put(event)
 

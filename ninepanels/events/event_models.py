@@ -176,10 +176,18 @@ class ExceptionRaisedInfo(BaseExceptionEvent):
 
 
     name: str = "exc_raised_info"
+    exc_msg: str | None = None
+    exc_type: str | None = None
+    user_id: int | None = ModuleNotFoundError
+
 
 
 class ExceptionRaisedWarn(BaseExceptionEvent):
     name: str = "exc_raised_warn"
+    exc_msg: str | None = None
+    exc_type: str | None = None
+    user_id: int | None = ModuleNotFoundError
+
 
 
 class ExceptionRaisedError(BaseExceptionEvent):
@@ -195,3 +203,6 @@ class ExceptionRaisedError(BaseExceptionEvent):
 
     """
     name: str = "exc_raised_error"
+    exc_msg: str | None = None
+    exc_type: str | None = None
+    user_id: int | None = ModuleNotFoundError
