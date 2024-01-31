@@ -9,7 +9,8 @@ from .. import event_models
 async def password_reset(
     event: event_models.PasswordResetRequested
 ) -> bool:
-
+    print("here")
+    print(event.user_name, event.url)
     if config.CURRENT_ENV == "TEST":
         return True
 
@@ -18,8 +19,8 @@ async def password_reset(
     json = {
         "From": "ben@ninepanels.com",
         "To": event.email,
-        "Subject": f"Nine Panels: {event.name}, let's reset your password...",
-        "HtmlBody": f"<p>Hello {event.name},</p> <p>Let's get your password reset! Click the link here:</p> <p>{event.url}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
+        "Subject": f"Nine Panels: {event.user_name}, let's reset your password...",
+        "HtmlBody": f"<p>Hello {event.user_name},</p> <p>Let's get your password reset! Click the link here:</p> <p>{event.url}</p> <p>See you back on Nine Panels.</p> <p> Cheers, Ben. </p> ",
         "MessageStream": "outbound",
     }
 
@@ -56,8 +57,8 @@ async def welcome(event: event_models.NewUserCreated) -> bool:
     json = {
         "From": "ben@ninepanels.com",
         "To": event.email,
-        "Subject": f"Nine Panels: {event.name}, a warm welcome!",
-        "HtmlBody": f"""<p>Hello {event.name},</p>
+        "Subject": f"Nine Panels: {event.user_name}, a warm welcome!",
+        "HtmlBody": f"""<p>Hello {event.user_name},</p>
         <p><b>Thank you so much for signing up to Nine Panels!</b></p>
         <p>Nine Panels nurtures daily balance the important areas of your life. And it shows how consistently you engage with those areas.</p>
         <p>I built it for myself - I struggle to be consistent with one thing, let alone all the things! - and I'm properly honoured to share it with you. </p>

@@ -157,7 +157,7 @@ async def post_credentials_for_access_token(
 
     # invalidate all user passcodes
 
-    event = event_models.UserLoggedIn(user_id=user.id, name=user.name)
+    event = event_models.UserLoggedIn(user_id=user.id, user_name=user.name)
     await queues.event_queue.put(event)
 
     event = event_models.UserActivity(user_id=user.id)
@@ -184,7 +184,7 @@ async def create_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"{e.detail}"
         )
 
-    event = event_models.NewUserCreated(email=user.email, name=user.name)
+    event = event_models.NewUserCreated(email=user.email, user_name=user.name)
     await queues.event_queue.put(event)
 
     return user
@@ -386,6 +386,7 @@ async def initiate_password_reset_flow(
 ):
     try:
         prt_user, prt = crud.create_password_reset_token(db=db, email=email)
+        print(prt_user.email, prt)
     except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -398,10 +399,11 @@ async def initiate_password_reset_flow(
         )
 
     if prt_user:
+        print(config.NINEPANELS_URL_ROOT)
         url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
         event = event_models.PasswordResetRequested(
-            email=prt_user.email, name=prt_user.name, url=url
+            email=prt_user.email, user_name=prt_user.name, url=url
         )
         await queues.event_queue.put(event)
 

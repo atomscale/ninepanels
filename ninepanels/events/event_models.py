@@ -106,7 +106,7 @@ class NewUserCreated(BaseEvent):
 
     name: str = "new_user_created"
     email: EmailStr
-    name: str
+    user_name: str
 
 
 class PasswordResetRequested(BaseEvent):
@@ -127,7 +127,7 @@ class PasswordResetRequested(BaseEvent):
 
     name: str = "password_reset_requested"
     email: EmailStr
-    name: str
+    user_name: str
     url: str
 
 
@@ -148,7 +148,7 @@ class UserLoggedIn(BaseEvent):
     # TODO this can capture user_agent, ip address etc as needed for analysis
     name: str = "user_logged_in"
     user_id: int
-    name: str
+    user_name: str
 
 
 class UserActivity(BaseEvent):
