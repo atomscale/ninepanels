@@ -1,9 +1,9 @@
 
 
-from .handlers import user_comms
-from .handlers import monitoring
-from .handlers import performance
-from .handlers import logs
+from .consumers import user_comms
+from .consumers import monitoring
+from .consumers import performance
+from .consumers import logs
 
 dispatcher = {
     # always ensure a list of funcs, even if only one.
