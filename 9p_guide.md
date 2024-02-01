@@ -138,19 +138,21 @@ Follow the deployment checklist for pushes from staging to prod.
 
 **Initial questions to ask:**
 
-- does this involve a db schema migration? - NO
-- does this involve deploying front and backends in tandem? - NO, it is a api surface addition not yet implemeted in client
-- does the release involve an announcement, should the bar be active? - NO , server only
+- does this involve a db schema migration? -NO
+- does this involve deploying front and backends in tandem? YES
+  - do backend, verify
+  - then front
+- does the release involve an announcement, should the bar be active? YES
 
 **CHECKLIST:**
 
 LOCAL FEATURE
 - update backup table selection across backup.sh if db schema changes - NA
-- search for and remove prints and console.logs - DONE
-- check any helpers like temp component log in state, hardcoded testing credentials for example are reset - DONE
-- check any new envars are in staging and prod - NA
+- search for and remove prints and console.logs - YES
+- check any helpers like temp component log in state, hardcoded testing credentials for example are reset - CHECKED
+- check any new envars are in staging and prod - YES - will cycle keys after deploy of f and b
 - local tests pass on feature branch - using ```source test.sh all``` - PASSING
-- manual testing of area in feature env - DONE
+- manual testing of area in feature env - WORKING
 
 STAGING - IF ANY CHANGES SYNC BACK TO FEATURE TO MAKE THEM
 - push to staging and manually test

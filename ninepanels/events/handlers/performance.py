@@ -61,7 +61,6 @@ class RouteTimer:
 
         self.diff_ms: float = diff_timedelta.total_seconds() * 1000
 
-        # timing_event = pyd.Event(type=event_types.TIMING_CREATED, payload=self)
         timing_event = event_models.RouteTimingCreated(
             request_id=self.request_id,
             method_path=self.method_path,
@@ -97,7 +96,7 @@ class RouteTimingsBuffer:
 
         """
         async with self.lock:
-            new_timing = sql.Timing(**timing.model_dump(exclude={"type"}))
+            new_timing = sql.Timing(**timing.model_dump(exclude={"name"}))
 
             if timing.method_path in self.buffers:
                 self.buffers[timing.method_path].append(new_timing)
@@ -273,7 +272,7 @@ route_timings_buffer = RouteTimingsBuffer()
 
 
 async def handle_route_timing_created(event: event_models.RouteTimingCreated) -> None:
-    """Coro to coordinated buffering and flushing of new route timing events
+    """Coro to coordinate buffering and flushing of new route timing events
 
     Args:
         event: event_models.RouteTimingCreated - produced by `perforance.RouteTimer`
@@ -286,15 +285,10 @@ async def handle_route_timing_created(event: event_models.RouteTimingCreated) ->
     try:
         method_path = await route_timings_buffer.add_timing_to_buffer(event)
     except exceptions.RouteTimerError as e:
-        # await queues.event_queue.put(
-        #     pyd.Event(type=event_types.EXC_RAISED_ERROR, payload=e)
-        # )
+        #TODO handle this error
         ...
 
     if method_path:
-        # TODO produce an event_models.RouteTimingsPersisted event
-        # print(f"produce an event_models.RouteTimingsPersisted event for {method_path}")
-
         await queues.event_queue.put(
             event_models.RouteTimingsPersisted(method_path=method_path)
         )
@@ -310,21 +304,3 @@ async def handle_route_timings_persisted(event: event_models.RouteTimingsPersist
         stats_processor.calculate_stats_for_route, event
     )
 
-    # print(f"route stats for {event.method_path} created: {route_stats}")
-    # await queues.event_queue.put(
-    #     pyd.Event(
-    #         type=event_types.TIMING_STATS_PERSISTED,
-    #         payload=stats,
-    #     )
-    # )
-
-    # method_path = stats["method_path"]
-
-    # if last_alert_id[method_path] and not last_alert_id[method_path]['is_dispatched']:
-    #     await queues.event_queue.put(
-    #         pyd.Event(
-    #             type=event_types.TIMING_ALERT,
-    #             payload=stats,
-    #         )
-    #     )
-    #     last_alert_id[method_path]['is_dispatched'] = True
