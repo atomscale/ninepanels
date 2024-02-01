@@ -1,3 +1,5 @@
+# v5
+
 from fastapi import APIRouter
 from fastapi import Depends
 
@@ -7,10 +9,10 @@ from starlette.requests import Request
 
 from sqlalchemy.orm import Session
 
-from ..db.database import get_db
-from .. import crud
-from .. import auth
-from .. import pydmodels as pyd
+from ...db.database import get_db
+from ... import crud
+from ... import auth
+from ... import pydmodels as pyd
 
 
 admin = APIRouter()
@@ -37,7 +39,7 @@ async def read_route_timings(
     window_size: int | None = 100,
     db: Session = Depends(get_db),
     user: pyd.User = Depends(auth.get_current_admin_user),
-): 
+):
     resp = crud.read_route_timings(
         db=db, method_path=method_path, window_size=window_size
     )

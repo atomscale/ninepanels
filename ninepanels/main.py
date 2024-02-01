@@ -4,6 +4,7 @@ import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 
 from fastapi import FastAPI
+from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import status
@@ -39,7 +40,6 @@ from .events import queues
 from .events import event_models
 from . import utils
 
-from .routers import admin
 
 
 pp = PrettyPrinter(indent=4)
@@ -66,7 +66,16 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
-api.include_router(admin.admin, prefix="/admin")
+
+
+from .routers.v5.admin import admin as v5_admin
+
+
+v5_router = APIRouter()
+v5_router.include_router(v5_admin, prefix="/admin")
+
+
+api.include_router(v5_router, prefix="/v5")
 
 
 def run_migrations():
