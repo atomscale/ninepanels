@@ -147,12 +147,12 @@ Follow the deployment checklist for pushes from staging to prod.
 **CHECKLIST:**
 
 LOCAL FEATURE
-- update backup table selection across backup.sh if db schema changes
-- search for and remove prints and console.logs -
-- check any helpers like temp component log in state, hardcoded testing credentials for example are reset -
-- check any new envars are in staging and prod -
-- local tests pass on feature branch - using ```source test.sh all``` -
-- manual testing of area in feature env
+- update backup table selection across backup.sh if db schema changes - NA
+- search for and remove prints and console.logs - YES
+- check any helpers like temp component log in state, hardcoded testing credentials for example are reset - CHECKED
+- check any new envars are in staging and prod - YES - will cycle keys after deploy of f and b
+- local tests pass on feature branch - using ```source test.sh all``` - PASSING
+- manual testing of area in feature env - WORKING
 
 STAGING - IF ANY CHANGES SYNC BACK TO FEATURE TO MAKE THEM
 - push to staging and manually test

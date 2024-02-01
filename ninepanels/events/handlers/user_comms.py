@@ -9,8 +9,7 @@ from .. import event_models
 async def password_reset(
     event: event_models.PasswordResetRequested
 ) -> bool:
-    print("here")
-    print(event.user_name, event.url)
+   
     if config.CURRENT_ENV == "TEST":
         return True
 

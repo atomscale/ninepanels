@@ -9,11 +9,9 @@ async def event_worker():
 
         event = await event_queue.get()
         event_name = event.name
-        print(event_name)
 
         if event_name in dispatcher.dispatcher:
             tasks = []
-            print(dispatcher.dispatcher[event_name])
             for fn in dispatcher.dispatcher[event_name]:
                 tasks.append(fn(event))
             await asyncio.gather(*tasks)

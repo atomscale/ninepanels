@@ -386,7 +386,6 @@ async def initiate_password_reset_flow(
 ):
     try:
         prt_user, prt = crud.create_password_reset_token(db=db, email=email)
-        print(prt_user.email, prt)
     except exceptions.PasswordResetTokenException:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -399,7 +398,6 @@ async def initiate_password_reset_flow(
         )
 
     if prt_user:
-        print(config.NINEPANELS_URL_ROOT)
         url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
 
         event = event_models.PasswordResetRequested(
