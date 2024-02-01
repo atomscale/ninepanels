@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import pydmodels as pyd
-from .events.handlers import performance
+from .events.consumers import performance
 
 
 class ResponseWrapperMiddleware(BaseHTTPMiddleware):

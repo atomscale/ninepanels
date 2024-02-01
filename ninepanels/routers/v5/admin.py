@@ -15,7 +15,7 @@ from ... import auth
 from ... import pydmodels as pyd
 
 
-admin = APIRouter()
+admin = APIRouter(prefix="/admin")
 
 
 @admin.get(
