@@ -48,8 +48,9 @@ async def read_route_timings(
 
 @admin.get("/users", response_model=List[pyd.User])
 async def read_all_users(
-    db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_admin_user)
+    request: Request, db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_admin_user)
 ):
+    print(request.headers)
     users = crud.read_all_users(db=db)
 
     return users

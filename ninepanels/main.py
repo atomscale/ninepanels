@@ -29,12 +29,13 @@ from . import middleware
 from . import crud
 from . import pydmodels as pyd
 from . import sqlmodels as sql
-from . import auth
+
 from .core import config
 from . import exceptions
 from .events import queues
 from .events import event_models
 from . import utils
+from . import auth
 
 
 
@@ -68,6 +69,7 @@ from .routers.v5.admin import admin as v5_admin
 from .routers.v5.users import users as v5_users
 from .routers.v5.panels import panels as v5_panels
 from .routers.v5.metrics import metrics as v5_metrics
+from .routers.v5.auth import auth_router as v5_auth
 
 
 v5_router = APIRouter()
@@ -75,6 +77,7 @@ v5_router.include_router(v5_admin, tags=[])
 v5_router.include_router(v5_users)
 v5_router.include_router(v5_panels)
 v5_router.include_router(v5_metrics)
+v5_router.include_router(v5_auth)
 
 
 api.include_router(v5_router, prefix="/v5", tags=['v5'])
@@ -84,31 +87,31 @@ from fastapi.openapi.utils import get_openapi
 
 
 
-def custom_openapi():
-    if api.openapi_schema:
-        return api.openapi_schema
-    openapi_schema = get_openapi(
-        title="Your API",
-        version="1.0.0",
-        description="API documentation",
-        routes=api.routes,
-    )
-    # Customize the schema here
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "oauth2",
-            "flows": {
-                "password": {
-                    "tokenUrl": "v5/auth/token",
-                    "scopes": {},
-                }
-            },
-        }
-    }
-    api.openapi_schema = openapi_schema
-    return api.openapi_schema
+# def custom_openapi():
+#     if api.openapi_schema:
+#         return api.openapi_schema
+#     openapi_schema = get_openapi(
+#         title="Your API",
+#         version="1.0.0",
+#         description="API documentation",
+#         routes=api.routes,
+#     )
+#     # Customize the schema here
+#     openapi_schema["components"]["securitySchemes"] = {
+#         "BearerAuth": {
+#             "type": "oauth2",
+#             "flows": {
+#                 "password": {
+#                     "tokenUrl": "v5/auth/token",
+#                     "scopes": {},
+#                 }
+#             },
+#         }
+#     }
+#     api.openapi_schema = openapi_schema
+#     return api.openapi_schema
 
-api.openapi = custom_openapi
+# api.openapi = custom_openapi
 
 
 
@@ -207,97 +210,5 @@ async def post_credentials_for_access_token(
     event = event_models.UserActivity(user_id=user.id)
     await queues.event_queue.put(event)
 
+    print(access_token)
     return {"access_token": access_token}
-
-
-
-
-
-
-
-
-
-
-@api.post("/request_password_reset")
-async def initiate_password_reset_flow(
-    email: str = Form(),
-    db: Session = Depends(get_db),
-):
-    try:
-        prt_user, prt = crud.create_password_reset_token(db=db, email=email)
-    except exceptions.PasswordResetTokenException:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not create password reset token",
-        )
-    except exceptions.UserNotFound as e:
-        raise HTTPException(
-            status_code=404,
-            detail=e.detail,
-        )
-
-    if prt_user:
-        url = f"{config.NINEPANELS_URL_ROOT}/password_reset?email={prt_user.email}&password_reset_token={prt}"
-
-        event = event_models.PasswordResetRequested(
-            email=prt_user.email, user_name=prt_user.name, url=url
-        )
-        await queues.event_queue.put(event)
-
-        return True  # initiation of password flow successful, used for ui logic only
-
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Could not start password reset process, sorry.",
-        )
-
-
-@api.post("/password_reset")
-async def password_reset(
-    new_password: str = Form(),
-    email: str = Form(),
-    password_reset_token: str = Form(),
-    db: Session = Depends(get_db),
-):
-    try:
-        user = crud.read_user_by_email(db=db, email=email)
-    except exceptions.UserNotFound as e:
-        raise HTTPException(404, detail=e.detail)
-
-    try:
-        token_valid = crud.check_password_reset_token_is_valid(
-            db=db, password_reset_token=password_reset_token, user_id=user.id
-        )
-    except exceptions.PasswordResetTokenException:
-        raise HTTPException(
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Problem with the password reset process...",
-        )
-
-    if token_valid:
-        new_password_hash = auth.get_password_hash(new_password)
-
-        update = {"hashed_password": new_password_hash}
-
-        try:
-            updated_user = crud.update_user_by_id(db=db, user_id=user.id, update=update)
-        except exceptions.UserNotUpdated:
-            raise HTTPException(400, detail="Could not update your password.")
-
-        try:
-            token_invalidated = crud.invalidate_password_reset_token(
-                db=db, password_reset_token=password_reset_token, user_id=user.id
-            )
-        except exceptions.PasswordResetTokenException:
-            raise HTTPException(400, detail="Error in invalidating password")
-
-        rollbar.report_message(
-            message=f"{user.name} successfully updated their password", level="info"
-        )
-        return True  # password updated
-    else:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            detail="Please request a new password reset token.",
-        )

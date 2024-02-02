@@ -127,7 +127,7 @@ def authenticate_user_passcode_flow(db: Session, email: str, passcode: int):
     try:
         user = crud.read_user_by_email(db=db, email=email)
     except exceptions.UserNotFound as e:
-        rai
+        raise
 
     ...
 
