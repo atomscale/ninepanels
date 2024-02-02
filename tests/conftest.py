@@ -15,6 +15,7 @@ def test_db():
 
     test_engine = create_engine(config.SQLALCHEMY_DATABASE_URI)
 
+    # sql.Base.metadata.drop_all(bind=test_engine)
 
     sql.Base.metadata.create_all(bind=test_engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
