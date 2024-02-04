@@ -1,9 +1,13 @@
+# move to db/ and refactor out logic to /services
+
 import pytz
 import logging
 import uuid
 
 from sqlalchemy import desc
 from sqlalchemy import asc
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
@@ -12,10 +16,10 @@ from datetime import datetime, timedelta
 
 from pprint import PrettyPrinter
 
-from . import sqlmodels as sql
-from . import exceptions
-from . import utils
-from .core import config
+from .. import sqlmodels as sql
+from .. import exceptions
+from .. import utils
+from ..core import config
 
 
 pp = PrettyPrinter(indent=4)
@@ -209,7 +213,7 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
         Panel Not Found - in all failure cases
 
     """
-
+    start = datetime.utcnow()
     try:
         panels = (
             db.query(sql.Panel)
@@ -223,8 +227,33 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
             detail=f"error in db call to find panels {str(e)}"
         )
 
+    for panel in panels:
+        print(panel.entries)
+
+    end = datetime.utcnow()
+    call_duration =  end - start
+    print(call_duration)
     if panels:
         return panels
+
+
+def read_current_entry_by_panel_id(db: Session, panel_id: int) -> sql.Entry:
+
+    """return the latest entry up to the current time, return none if none"""
+
+    now = datetime.utcnow()
+    trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
+    current_entry = (
+        db.query(sql.Entry)
+        .where(sql.Entry.panel_id == panel_id)
+        .where(sql.Entry.timestamp > trimmed_now)
+        .order_by(sql.Entry.timestamp.desc())
+        .first()
+    )
+
+    return current_entry
+
+
 
 
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
@@ -396,49 +425,6 @@ def create_entry_by_panel_id(
     return entry
 
 
-def read_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
-    """return only the latest status for each panel belonging to a user
-    ie the up do date daily view
-
-    TODO examine if this can be refactored into the db call, and i think it can be optimised
-    TODO this needs error handling
-
-    """
-
-    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-
-    panels_with_latest_entry_only = []
-
-    # could lookup user sepcified timezone once set in db, create it here
-    uk_tz = pytz.timezone("Europe/London")
-    now = datetime.now(uk_tz)
-
-
-    trimmed_now = now.replace(hour=0, minute=0, second=0, microsecond=1)
-
-    if panels:
-        for panel in panels:
-            panel_d = utils.instance_to_dict(panel)
-
-            current_entry = (
-                db.query(sql.Entry)
-                .where(sql.Entry.panel_id == panel_d["id"])
-                .where(sql.Entry.timestamp > trimmed_now)
-                .order_by(sql.Entry.timestamp.desc())
-                .first()
-            )
-
-            if current_entry:
-                current_entry_d = utils.instance_to_dict(current_entry)
-                panel_d["is_complete"] = current_entry_d["is_complete"]
-            else:
-                panel_d["is_complete"] = False
-
-            panels_with_latest_entry_only.append(panel_d)
-
-    return panels_with_latest_entry_only
-
-
 def read_entries_by_panel_id(
     db: Session,
     panel_id: int,
@@ -447,12 +433,15 @@ def read_entries_by_panel_id(
     offset: int | None = None,
     limit: int | None = None,
 ) -> list[sql.Entry]:
-
-    """ Return a list of all entries. NOTE: there can be many entries per day."""
+    """Return a list of all entries. NOTE: there can be many entries per day."""
     unpadded_entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
-        .order_by(desc(getattr(sql.Entry, sort_key)) if sort_direction == 'desc' else asc(getattr(sql.Entry, sort_key)))
+        .order_by(
+            desc(getattr(sql.Entry, sort_key))
+            if sort_direction == "desc"
+            else asc(getattr(sql.Entry, sort_key))
+        )
         .offset(offset)
         .limit(limit)
         .all()
@@ -572,7 +561,6 @@ def calc_consistency(db: Session, user_id: int):
                 new_date = start_date + timedelta(days=day_counter)
                 date_range.append(new_date)
 
-
             days_complete = 0
             for date in date_range:
                 day_matches = []
@@ -603,7 +591,7 @@ def calc_consistency(db: Session, user_id: int):
                     "days_complete": days_complete,
                     "panel_id": panel.id,
                     "user_id": user_id,
-                    "title": panel.title
+                    "title": panel.title,
                 }
             )
 
@@ -926,7 +914,6 @@ def pad_entries(
 ) -> list[dict]:
     today = datetime.utcnow().date()
 
-
     padded_entries = []
 
     panel_created_at = test_created_at
@@ -936,7 +923,6 @@ def pad_entries(
     if panel_created_at:
         panel_age_td: timedelta = today - panel_created_at
         date_range_len: int = panel_age_td.days + 1
-
 
         date_range = []
         for n in range(date_range_len):
@@ -950,10 +936,11 @@ def pad_entries(
                 if unpadded_entry.timestamp.date() == date:
                     daily_entries.append(unpadded_entry)
 
-
             if daily_entries:
                 # sort all dailies here and return last one
-                sorted_daily_entries = sorted(daily_entries, key=lambda x: x.timestamp, reverse=True)
+                sorted_daily_entries = sorted(
+                    daily_entries, key=lambda x: x.timestamp, reverse=True
+                )
 
                 last_entry = sorted_daily_entries[0]
 
@@ -961,7 +948,6 @@ def pad_entries(
                     final_entry = last_entry.model_dump()
                 else:
                     final_entry = utils.instance_to_dict(last_entry)
-
 
                 final_entry["timestamp"] = final_entry["timestamp"].date()
                 padded_entries.append(final_entry)

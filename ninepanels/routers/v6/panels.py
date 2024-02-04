@@ -18,12 +18,13 @@ from ... import exceptions
 from ... import utils
 from ...events import event_models
 from ...events import queues
+from ...services import panels as pn
 
 panels = APIRouter(prefix="/panels")
 
 @panels.post("", response_model=pyd.Panel)
 async def post_panel_by_user_id(
-    position: int = Form(default=None),  # TODO temp until client updates
+    position: int = Form(default=None),
     title: str = Form(),
     description: str | None = Form(None),
     db: Session = Depends(get_db),
@@ -58,8 +59,8 @@ async def post_panel_by_user_id(
 async def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-    panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
-
+    # panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
+    panels = pn.all_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
     # await asyncio.sleep(4)
 
     return panels

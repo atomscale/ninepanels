@@ -1,7 +1,7 @@
 import rollbar
 
 from .. import event_models
-from ... import crud
+from ...db import crud
 from ... import exceptions
 
 

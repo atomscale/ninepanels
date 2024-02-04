@@ -26,7 +26,7 @@ from datetime import datetime
 
 from .db.database import get_db
 from . import middleware
-from . import crud
+from .db import crud
 from . import pydmodels as pyd
 from . import sqlmodels as sql
 
@@ -73,47 +73,27 @@ from .routers.v5.auth import auth_router as v5_auth
 
 
 v5_router = APIRouter()
-v5_router.include_router(v5_admin, tags=[])
+v5_router.include_router(v5_admin)
 v5_router.include_router(v5_users)
 v5_router.include_router(v5_panels)
 v5_router.include_router(v5_metrics)
 v5_router.include_router(v5_auth)
 
+from .routers.v6.admin import admin as v6_admin
+from .routers.v6.users import users as v6_users
+from .routers.v6.panels import panels as v6_panels
+from .routers.v6.metrics import metrics as v6_metrics
+from .routers.v6.auth import auth_router as v6_auth
+
+v6_router = APIRouter()
+v6_router.include_router(v6_admin)
+v6_router.include_router(v6_users)
+v6_router.include_router(v6_panels)
+v6_router.include_router(v6_metrics)
+v6_router.include_router(v6_auth)
 
 api.include_router(v5_router, prefix="/v5", tags=['v5'])
-
-
-from fastapi.openapi.utils import get_openapi
-
-
-
-# def custom_openapi():
-#     if api.openapi_schema:
-#         return api.openapi_schema
-#     openapi_schema = get_openapi(
-#         title="Your API",
-#         version="1.0.0",
-#         description="API documentation",
-#         routes=api.routes,
-#     )
-#     # Customize the schema here
-#     openapi_schema["components"]["securitySchemes"] = {
-#         "BearerAuth": {
-#             "type": "oauth2",
-#             "flows": {
-#                 "password": {
-#                     "tokenUrl": "v5/auth/token",
-#                     "scopes": {},
-#                 }
-#             },
-#         }
-#     }
-#     api.openapi_schema = openapi_schema
-#     return api.openapi_schema
-
-# api.openapi = custom_openapi
-
-
+api.include_router(v6_router, prefix="/v6", tags=['v6'])
 
 
 def run_migrations():

@@ -1,5 +1,5 @@
 import pytest
-from ninepanels import crud
+from ninepanels.db import crud
 from ninepanels import exceptions
 from ninepanels import utils
 from datetime import datetime, timedelta

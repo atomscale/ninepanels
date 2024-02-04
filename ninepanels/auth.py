@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 
 from . import sqlmodels as sql
 from . import pydmodels as pyd
-from . import crud
+from .db import crud
 from . import exceptions
 from .db.database import get_db
 
