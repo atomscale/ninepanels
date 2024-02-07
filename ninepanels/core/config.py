@@ -50,7 +50,7 @@ def get_env_var(var):
 # password=[YOUR-PASSWORD]
 # host=aws-0-eu-central-1.pooler.supabase.com
 # port=5432
-# database=postgres  NOT IMPL YET
+# database=postgres  v4
 
 try:
     CURRENT_ENV = get_env_var("NINEPANELS_ENV")
@@ -62,7 +62,9 @@ except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
 
-SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
+SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/postgres"
+
+print(SQLALCHEMY_DATABASE_URI)
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
