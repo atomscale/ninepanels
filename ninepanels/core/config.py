@@ -62,7 +62,7 @@ except EnvironmentError as e:
     print(f"missing env var error! startup aborted {e}")
     exit(1)
 
-SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
+SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}"
 
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
