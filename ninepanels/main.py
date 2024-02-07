@@ -79,21 +79,21 @@ v5_router.include_router(v5_panels)
 v5_router.include_router(v5_metrics)
 v5_router.include_router(v5_auth)
 
-from .routers.v6.admin import admin as v6_admin
-from .routers.v6.users import users as v6_users
-from .routers.v6.panels import panels as v6_panels
-from .routers.v6.metrics import metrics as v6_metrics
-from .routers.v6.auth import auth_router as v6_auth
+# from .routers.v6.admin import admin as v6_admin
+# from .routers.v6.users import users as v6_users
+# from .routers.v6.panels import panels as v6_panels
+# from .routers.v6.metrics import metrics as v6_metrics
+# from .routers.v6.auth import auth_router as v6_auth
 
-v6_router = APIRouter()
-v6_router.include_router(v6_admin)
-v6_router.include_router(v6_users)
-v6_router.include_router(v6_panels)
-v6_router.include_router(v6_metrics)
-v6_router.include_router(v6_auth)
+# v6_router = APIRouter()
+# v6_router.include_router(v6_admin)
+# v6_router.include_router(v6_users)
+# v6_router.include_router(v6_panels)
+# v6_router.include_router(v6_metrics)
+# v6_router.include_router(v6_auth)
 
 api.include_router(v5_router, prefix="/v5", tags=['v5'])
-api.include_router(v6_router, prefix="/v6", tags=['v6'])
+# api.include_router(v6_router, prefix="/v6", tags=['v6'])
 
 
 def run_migrations():

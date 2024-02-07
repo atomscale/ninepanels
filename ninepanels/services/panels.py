@@ -21,11 +21,6 @@ def all_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[
 
     panels_with_latest_entry_only = []
 
-    # could lookup user sepcified timezone once set in db, create it here
-    uk_tz = pytz.timezone("Europe/London")
-    now = datetime.now(uk_tz)
-
-
     if panels:
         for panel in panels:
             panel_d = utils.instance_to_dict(panel)

@@ -227,13 +227,12 @@ def read_all_panels_by_user_id(db: Session, user_id: int) -> list[sql.Panel]:
             detail=f"error in db call to find panels {str(e)}"
         )
 
-    for panel in panels:
-        print(panel.entries)
 
     end = datetime.utcnow()
     call_duration =  end - start
     print(call_duration)
     if panels:
+        pp.pprint(panels)
         return panels
 
 
@@ -302,6 +301,7 @@ def update_panel_by_id(
     if update:
         try:
             panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
+            print("here")
         except exceptions.PanelNotFound:
             raise exceptions.PanelNotUpdated(detail=f"Panel not found")
 
@@ -325,6 +325,8 @@ def update_panel_by_id(
                     raise exceptions.PanelNotUpdated(
                         detail=f"no field '{update_field}' found on panel"
                     )
+            print(panel)
+
             return panel
         else:
             raise exceptions.PanelNotUpdated(

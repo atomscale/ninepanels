@@ -7,6 +7,8 @@ from fastapi import Body
 from fastapi import HTTPException
 from fastapi import status
 
+from typing import List
+
 from sqlalchemy.orm import Session
 
 from ...db.database import get_db
@@ -18,6 +20,7 @@ from ... import exceptions
 from ... import utils
 from ...events import event_models
 from ...events import queues
+from ...services import panels as pn
 
 panels = APIRouter(prefix="/panels")
 
@@ -54,11 +57,11 @@ async def post_panel_by_user_id(
     return new_panel
 
 
-@panels.get("")  # response_model=List[pyd.PanelResponse])
+@panels.get("")# , response_model=List[pyd.PanelResponse])
 async def get_panels_by_user_id(
     db: Session = Depends(get_db), user: pyd.User = Depends(auth.get_current_user)
 ):
-    panels = crud.read_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
+    panels = pn.all_panels_with_current_entry_by_user_id(db=db, user_id=user.id)
 
     # await asyncio.sleep(4)
 
