@@ -64,8 +64,6 @@ except EnvironmentError as e:
 
 SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{DB_PORT}/postgres"
 
-print(SQLALCHEMY_DATABASE_URI)
-
 def get_db_uri():
     return SQLALCHEMY_DATABASE_URI
 
