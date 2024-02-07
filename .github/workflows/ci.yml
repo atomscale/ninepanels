@@ -41,6 +41,7 @@ jobs:
         DB_HOSTNAME: "localhost"
         DB_PASSWORD: "postgres"
         PGPASSWORD: "postgres"
+        DB_USER: "postgres"
         DB_PORT: 5432
         NINEPANELS_SERVER_ROOT: "http://127.0.0.1:8000/"
         JWT_SECRET: "not secret"
