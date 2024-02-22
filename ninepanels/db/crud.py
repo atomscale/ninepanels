@@ -253,8 +253,6 @@ def read_current_entry_by_panel_id(db: Session, panel_id: int) -> sql.Entry:
     return current_entry
 
 
-
-
 def read_panel_by_id(db: Session, panel_id: int, user_id: int) -> sql.Panel:
     """Read a panel by id and user_id to check ownership
 
@@ -504,6 +502,7 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
     else:
         raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
+    # TODO this is not being returned, why is it being called?
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
 
@@ -525,79 +524,6 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
     except (SQLAlchemyError, AttributeError, TypeError, exceptions.PanelNotFound) as e:
         db.rollback()
         raise exceptions.PanelsNotSorted(context_msg=f"{str(e)}", user_id=user_id)
-
-
-def today() -> datetime:
-    """TODO wherever this is called it can just be 'date'"""
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    return today
-
-
-def calc_panel_age(created_at: datetime) -> int:
-    panel_age = today() - created_at
-    return panel_age.days + 2
-
-
-def calc_consistency(db: Session, user_id: int):
-    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
-
-    panel_consistencies = []
-    if panels:
-        for panel in panels:
-
-            panel_age = calc_panel_age(created_at=panel.created_at)
-
-            date_range = []
-            start_date = panel.created_at
-            start_date = start_date.replace(
-                hour=23, minute=59, second=59, microsecond=100000
-            )
-
-            date_range = []
-            date_range.append(start_date)
-
-            day_counter = 0
-
-            for i in range(panel_age):
-                day_counter += 1
-                new_date = start_date + timedelta(days=day_counter)
-                date_range.append(new_date)
-
-            days_complete = 0
-            for date in date_range:
-                day_matches = []
-
-                for entry in panel.entries:
-                    if (
-                        date.date() == entry.timestamp.date()
-                    ):  #  TODO needs to compare whole dates
-                        day_matches.append(entry)
-
-                if day_matches:
-                    sorted_day_match = sorted(
-                        day_matches, key=lambda x: x.timestamp, reverse=True
-                    )
-                    if sorted_day_match[0].is_complete == True:
-                        days_complete += 1
-
-            if panel_age > 0:
-                panel_consistency = days_complete / panel_age
-            else:
-                panel_consistency = 0
-
-            panel_consistencies.append(
-                {
-                    "panel_pos": panel.position,
-                    "consistency": panel_consistency,
-                    "panel_age": panel_age,
-                    "days_complete": days_complete,
-                    "panel_id": panel.id,
-                    "user_id": user_id,
-                    "title": panel.title,
-                }
-            )
-
-    return panel_consistencies
 
 
 def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
@@ -969,3 +895,76 @@ def pad_entries(
         return padded_entries
     else:
         return None
+
+
+def today() -> datetime:
+    """TODO wherever this is called it can just be 'date'"""
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    return today
+
+
+def calc_panel_age(created_at: datetime) -> int:
+    panel_age = today() - created_at
+    return panel_age.days + 2
+
+
+def calc_consistency(db: Session, user_id: int):
+    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
+
+    panel_consistencies = []
+    if panels:
+        for panel in panels:
+
+            panel_age = calc_panel_age(created_at=panel.created_at)
+
+            date_range = []
+            start_date = panel.created_at
+            start_date = start_date.replace(
+                hour=23, minute=59, second=59, microsecond=100000
+            )
+
+            date_range = []
+            date_range.append(start_date)
+
+            day_counter = 0
+
+            for i in range(panel_age):
+                day_counter += 1
+                new_date = start_date + timedelta(days=day_counter)
+                date_range.append(new_date)
+
+            days_complete = 0
+            for date in date_range:
+                day_matches = []
+
+                for entry in panel.entries:
+                    if (
+                        date.date() == entry.timestamp.date()
+                    ):  #  TODO needs to compare whole dates
+                        day_matches.append(entry)
+
+                if day_matches:
+                    sorted_day_match = sorted(
+                        day_matches, key=lambda x: x.timestamp, reverse=True
+                    )
+                    if sorted_day_match[0].is_complete == True:
+                        days_complete += 1
+
+            if panel_age > 0:
+                panel_consistency = days_complete / panel_age
+            else:
+                panel_consistency = 0
+
+            panel_consistencies.append(
+                {
+                    "panel_pos": panel.position,
+                    "consistency": panel_consistency,
+                    "panel_age": panel_age,
+                    "days_complete": days_complete,
+                    "panel_id": panel.id,
+                    "user_id": user_id,
+                    "title": panel.title,
+                }
+            )
+
+    return panel_consistencies
