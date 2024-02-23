@@ -3,6 +3,7 @@
 import pytz
 import logging
 import uuid
+import random
 
 from sqlalchemy import desc
 from sqlalchemy import asc
@@ -1071,7 +1072,7 @@ def ts_to_date(timestamp: datetime) -> date:
     return timestamp.date()
 
 
-def pad_days_to_grid(arr: list[sql.Day]) -> list[dict]:
+def pad_days_to_grid(arr: list[sql.Day], panel_id: int) -> list[dict]:
     """Ensures response is padded for nx7 grid
     Called every time to form panel.graph.days
 
@@ -1088,6 +1089,11 @@ def pad_days_to_grid(arr: list[sql.Day]) -> list[dict]:
             pad_date = arr[0].panel_date + timedelta(days=days_to_pad - i)
             pad_day = {
                 "day_of_week": pad_date.weekday(),
+                "day_date_num": pad_date.day,
+                "panel_id": panel_id,
+                "is_complete": False,
+                "last_updated": datetime.utcnow(),
+                "id": random.randint(1_000_000_000, 9_999_999_999),
                 "is_pad": True,
                 "panel_date": pad_date,
             }
@@ -1100,6 +1106,11 @@ def pad_days_to_grid(arr: list[sql.Day]) -> list[dict]:
             pad_date = arr[-1].panel_date - timedelta(days=i + 1)
             pad_day = {
                 "day_of_week": pad_date.weekday(),
+                "day_date_num": pad_date.day,
+                "panel_id": panel_id,
+                "is_complete": False,
+                "last_updated": datetime.utcnow(),
+                "id": random.randint(1_000_000_000, 9_999_999_999),
                 "is_pad": True,
                 "panel_date": pad_date,
             }
@@ -1161,7 +1172,7 @@ def calculate_week_column(days: list[dict | sql.Day]) -> list:
     ...
 
 
-def assemble_panel_response(db: Session, panel_id: int, user_id: str, current_user_date: date | None = None) -> dict:
+def assemble_panel_response(db: Session, panel_id: int, user_id: str, current_user_date: date | None = None) -> pyd.Panel:
 
     # will need pyd model to support response..?
     # this will run on read, update
@@ -1183,8 +1194,8 @@ def assemble_panel_response(db: Session, panel_id: int, user_id: str, current_us
         current_user_date = ts_to_date(timestamp=user_ts)
 
     # read the panel
-    panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-    panel = utils.instance_to_dict(panel)
+    panel: sql.Panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
+    panel: dict = utils.instance_to_dict(panel)
 
     panel_last_date = ts_to_date(panel["last_updated"])
 
@@ -1192,17 +1203,20 @@ def assemble_panel_response(db: Session, panel_id: int, user_id: str, current_us
         fill_missed_days(db=db, current_user_date=current_user_date, panel_id=panel_id)
 
     raw_days = read_days_for_panel(db=db, panel_id=panel_id)
-    padded_days = pad_days_to_grid(arr=raw_days)
+    padded_days = pad_days_to_grid(arr=raw_days, panel_id=panel_id)
 
-    return padded_days
+
+
     # stats = calculate_stats(days=raw_days)
     # week_column = calculate_week_column(days=padded_days)
 
-    # assembke response dict for now, could use pyd?
 
-    # panel_response = {
-    #     **panel,
-    #     "graph": {"days": padded_days, "stats": {}, "week_column": []},
-    # }
+    panel_response = {
+        **panel,
+        "graph": {"days": padded_days, "stats": {}, "week_column": []},
+    }
 
+    panel: pyd.Panel = pyd.PanelResponse(**panel_response)
+
+    return panel
     # convert to pyd panel respononse here to test fits shape

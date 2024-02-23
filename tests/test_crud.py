@@ -493,7 +493,7 @@ def test_pad_days(test_db):
 
     # we have established we have a single sql.Day in a list
 
-    padded_days = crud.pad_days_to_grid(arr=days)
+    padded_days = crud.pad_days_to_grid(arr=days, panel_id=new_panel.id)
 
     assert len(padded_days) == 7
     assert isinstance(padded_days[0], dict)
@@ -566,10 +566,6 @@ def test_assemble_panel_response(test_db):
 
     current_user_date = datetime(day=10, month=3, year=2024).date()
 
-    days = crud.assemble_panel_response(db=test_db, panel_id=new_panel.id, user_id=1)
+    panel = crud.assemble_panel_response(db=test_db, panel_id=new_panel.id, user_id=1)
 
-    assert isinstance(days, list)
-    assert len(days) % 7 == 0
-
-    for day in days:
-        pp.pprint(day)
+    pp.pprint(panel.model_dump())

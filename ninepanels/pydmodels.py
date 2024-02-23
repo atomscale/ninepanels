@@ -31,6 +31,7 @@ class Panel(BaseModel):
     created_at: datetime | None = None  # dev None, will be non-nullable
     title: str
     description: str | None = None
+    last_updated: datetime | None = None
     position: int | None = None  # dev None, will be non-nullable
     user_id: int
     # entries: list[Entry] # depr in new response model
