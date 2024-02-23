@@ -41,6 +41,7 @@ class Panel(Base):
     __tablename__ = "panels"
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime)  # dev None, will be non-nullable
+    last_updated = Column(DateTime) # new
     title = Column(String)
     description = Column(String)
     position = Column(Integer)  # dev None, will be non-nullable
@@ -48,6 +49,8 @@ class Panel(Base):
     user = relationship("User", back_populates="panels")
 
     entries = relationship("Entry", back_populates="panel")
+
+    days = relationship("Day", back_populates="panel")
 
 
 class Entry(Base):
@@ -57,6 +60,26 @@ class Entry(Base):
     timestamp = Column(DateTime)
     panel_id = Column(Integer, ForeignKey("panels.id"))
     panel = relationship("Panel", back_populates="entries")
+
+class Day(Base):
+    __tablename__ = "days"
+    id = Column(Integer, primary_key=True)
+
+    panel_date = Column(DateTime)
+    # this is key cross check and this must be unique for a panel
+    # where shoudl logic sit for parseing down to a "ddmmyy" type day?, not here
+
+    day_of_week = Column(Integer) # can i validate here that only range(0,6)?
+    day_date_num = Column(Integer) # again, limit to 31?
+
+    last_updated = Column(DateTime)
+
+    is_complete = Column(Boolean)
+    is_pad = Column(Boolean)
+
+    panel_id = Column(Integer, ForeignKey("panels.id"))
+    panel = relationship("Panel", back_populates="days")
+
 
 
 class BlacklistedAccessToken(Base):

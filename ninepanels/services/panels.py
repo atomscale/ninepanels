@@ -45,13 +45,14 @@ def all_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[
 graph_response_model = {
     "days": [
         {
-            "timestamp": "dd.mm.YYYY", # 0 index must always be a sunday ie have day_of_week == 6
+            "panel_date": "dd.mm.YYYY", # 0 index must always be a sunday ie have day_of_week == 6
             "is_complete": False, # reads from entries tabel to derive this using current functionality ish
             "is_pad": True, # can not render any visible ui for this, exlucded from stats.
             # "is_paused": False, # can set hasehd border on this
             # "has_note": False, # sticking with current fucntionality just for now
             "id": 1234, # or random hash generated for pad
             "panel_id": 267, # as normal
+            "last_updated": "ts",
             # "user_id": 1, # future proof for a global query perhaps?    NO, this is denoramilsing the data schem before necessity is clear
             "day_of_week": 3, # for ui month border render, 0 = Mon, 6 = sun, and USED for padding. nice.
             "day_date": 24 # max 31 etc, the dd part of timestamp.
@@ -88,13 +89,13 @@ graph_response_model = {
             # with panel_id in url? lets say yes for now (an ALL route can be constructed later)
             # read from panels table with id
             # if last_updated date of panel is same as current date (as per user time, needs implemented)
-                # read panel_days, assemble response data and send
+                # read panel_days, assemble response data and send, no need to run update to today function?
             # if its not the same
                 # run the update_to_today type function to complete missed days on panel_days back to a previous entry
                 # then assemble the response data
 
-        # tapping a day on the grid is a very clsoe feature, does this schema support that?
-        # yes, a day tap in the grid opena rightTray with props of the day that has all the required data
+        # tapping a day on the grid is a very close feature, does this schema support that?
+        # yes, a day tap in the grid opens a rightTray with props of the day that has all the required data
         # from there notes coudl be fetched (future) and a form field coudl perform an update to a day (planned):
             # need a PATCH day route, using the day based limits for updating day status.
 

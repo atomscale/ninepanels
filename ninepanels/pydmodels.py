@@ -33,12 +33,31 @@ class Panel(BaseModel):
     description: str | None = None
     position: int | None = None  # dev None, will be non-nullable
     user_id: int
-    entries: list[Entry]
+    # entries: list[Entry] # depr in new response model
 
+class DayCreate(BaseModel):
+    panel_date: datetime
+    day_of_week: int
+    day_date_num: int
+    last_updated: datetime
+    is_complete: bool
+    is_pad: bool
+    panel_id: int
+
+
+class Day(DayCreate):
+    model_config = {"from_attributes": True}
+    id: int
+
+
+class Graph(BaseModel):
+    days: list[Day]
+    stats: dict
+    week_column: list
 
 class PanelResponse(Panel):
-    is_complete: bool
-
+    # is_complete: bool # depr in new response model, use panel.graph[0].isComplete in client instead
+    graph: Graph
 
 class PanelUpdate(BaseModel):
     """request validation for the update operation"""

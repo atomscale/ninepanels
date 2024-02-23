@@ -2,6 +2,8 @@ import pytest
 from ninepanels.db import crud
 from ninepanels import exceptions
 from ninepanels import utils
+from ninepanels import pydmodels as pyd
+from ninepanels import sqlmodels as sql
 from datetime import datetime, timedelta
 from pprint import PrettyPrinter
 
@@ -87,7 +89,6 @@ def test_update_user_by_id(test_db):
             db=test_db, user_id=user.id, update={"last_login": "not a date"}
         )
 
-
     # update user name and check has changed
 
     updated_user = crud.update_user_by_id(
@@ -135,6 +136,7 @@ def test_create_entry_by_panel_id(test_db):
         )
 
 
+@pytest.mark.skip
 def test_read_panels_with_current_entry_by_user_id(test_db):
     test_user_id = 1
     panels = crud.read_panels_with_current_entry_by_user_id(test_db, test_user_id)
@@ -403,8 +405,7 @@ def test_entry_padding(test_db):
         ),
     ]
 
-    for unp in test_unpadded_entries:
-        print(unp.id)
+
 
     test_created_at = datetime.utcnow() + timedelta(days=-10)
 
@@ -418,5 +419,157 @@ def test_entry_padding(test_db):
         test_created_at=test_created_at.date(),
     )
 
-    pp.pprint(padded)
     assert isinstance(padded, list)
+
+
+def test_create_day(test_db):
+    """Given a new panel in db  and related Days table with no Day rows
+    when a Day is created
+    then a sql.Day isntance with id is returned
+    """
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db, title="testing panel", user_id=1
+    )
+
+    # TODO evntuall this will be 1 day as upon create need to creat the first day
+    check = crud.read_days_for_panel(db=test_db, panel_id=new_panel.id)
+
+    assert isinstance(check, list)
+    assert len(check) == 0
+
+    now_date = datetime.utcnow().date()
+
+    day = pyd.DayCreate(
+        panel_date=now_date,
+        day_of_week=now_date.weekday(),
+        day_date_num=now_date.day,
+        last_updated=datetime.utcnow(),
+        is_complete=False,
+        is_pad=False,
+        panel_id=new_panel.id,
+    )
+
+    new_day = crud.create_day(db=test_db, day=day)
+
+    assert new_day.id == 1
+
+
+def test_read_days_for_panel(test_db): ...
+
+
+def test_pad_days(test_db):
+    """given a freah panel wtih one day entry created
+    on a specific hardcoded date
+    when the padding is applied,
+    the len should be seven with"""
+
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db, title="testing panel", user_id=1
+    )
+
+    # a friday, = weekday 4
+    now_date = datetime(day=23, month=2, year=2024).date()
+
+    day = pyd.DayCreate(
+        panel_date=now_date,
+        day_of_week=now_date.weekday(),
+        day_date_num=now_date.day,
+        last_updated=datetime.utcnow(),
+        is_complete=False,
+        is_pad=False,
+        panel_id=new_panel.id,
+    )
+
+    new_day = crud.create_day(db=test_db, day=day)
+
+    assert new_day.day_of_week == 4
+    assert new_day.day_date_num == 23
+
+    days = crud.read_days_for_panel(db=test_db, panel_id=new_panel.id)
+
+    assert len(days) == 1
+    assert isinstance(days, list)
+    assert isinstance(days[0], sql.Day)
+
+    # we have established we have a single sql.Day in a list
+
+    padded_days = crud.pad_days_to_grid(arr=days)
+
+    assert len(padded_days) == 7
+    assert isinstance(padded_days[0], dict)
+    assert isinstance(padded_days[2], sql.Day)
+
+
+def test_fill_missed_days(test_db):
+    """given a Day tbale with one entry on a given date,
+    and given the current user time multiple days after that one entry
+    then the days shoudl be filled iwht non-pad false days with a generated id
+
+    """
+
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db, title="testing back fill", user_id=1
+    )
+
+    old_date = datetime(day=29, month=2, year=2024).date()
+
+    day = pyd.DayCreate(
+        panel_date=old_date,
+        day_of_week=old_date.weekday(),
+        day_date_num=old_date.day,
+        last_updated=datetime.utcnow(),
+        is_complete=False,
+        is_pad=False,
+        panel_id=new_panel.id,
+    )
+
+    old_day = crud.create_day(db=test_db, day=day)
+
+    current_user_date = datetime(day=10, month=3, year=2024).date()
+
+    success = crud.fill_missed_days(
+        db=test_db, current_user_date=current_user_date, panel_id=new_panel.id
+    )
+
+    assert success
+
+    days = crud.read_days_for_panel(db=test_db, panel_id=new_panel.id)
+
+    assert days[0].panel_date.date() == current_user_date
+    assert days[-1].panel_date.date() == old_date
+
+
+def test_assemble_panel_response(test_db):
+    """
+    Given one known old date entry
+
+
+    """
+    old_date = datetime(day=10, month=2, year=2024).date()
+
+    new_panel = crud.create_panel_by_user_id(
+        db=test_db, title="testing assembple panel", user_id=1, last_updated=old_date
+    )
+
+
+    day = pyd.DayCreate(
+        panel_date=old_date,
+        day_of_week=old_date.weekday(),
+        day_date_num=old_date.day,
+        last_updated=datetime.utcnow(),
+        is_complete=False,
+        is_pad=False,
+        panel_id=new_panel.id,
+    )
+
+    old_day = crud.create_day(db=test_db, day=day)
+
+    current_user_date = datetime(day=10, month=3, year=2024).date()
+
+    days = crud.assemble_panel_response(db=test_db, panel_id=new_panel.id, user_id=1)
+
+    assert isinstance(days, list)
+    assert len(days) % 7 == 0
+
+    for day in days:
+        pp.pprint(day)

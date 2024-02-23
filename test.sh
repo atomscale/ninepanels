@@ -8,7 +8,7 @@ arg1=$1
 
 if [[ $1 == "crud" ]]; then
     echo "crud tests..."
-    pytest -v tests/test_crud.py
+    pytest -v tests/test_crud.py -s
     return 0
 
 elif [[ $1 == "api" ]]; then

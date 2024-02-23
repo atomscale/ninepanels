@@ -105,3 +105,6 @@ class ParseSortBy(NinePanelsBaseException):
 
 class IncorrectPasscode(NinePanelsBaseException):
     ...
+
+class DayNotFound(NinePanelsBaseException):
+    ...

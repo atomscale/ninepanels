@@ -24,7 +24,7 @@ def generate_random_hash() -> str:
 
     return hash
 
-def parse_sort_by(model, sort_by: str) -> (str, str):
+def parse_sort_by(model, sort_by: str):
     """ split validate that the sort key is present on the target model"""
 
     sort_key, sort_direction = sort_by.split('.')
