@@ -43,6 +43,7 @@ class DayCreate(BaseModel):
     last_updated: datetime
     is_complete: bool
     is_pad: bool
+    is_fill: bool
     panel_id: int
 
 

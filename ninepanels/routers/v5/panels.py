@@ -20,7 +20,7 @@ from ... import exceptions
 from ... import utils
 from ...events import event_models
 from ...events import queues
-from ...services import panels as pn
+from ...services import services as pn
 
 panels = APIRouter(prefix="/panels")
 

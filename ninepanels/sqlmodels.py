@@ -76,6 +76,7 @@ class Day(Base):
 
     is_complete = Column(Boolean)
     is_pad = Column(Boolean)
+    is_fill=Column(Boolean)
 
     panel_id = Column(Integer, ForeignKey("panels.id"))
     panel = relationship("Panel", back_populates="days")

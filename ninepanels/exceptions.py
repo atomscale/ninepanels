@@ -108,3 +108,6 @@ class IncorrectPasscode(NinePanelsBaseException):
 
 class DayNotFound(NinePanelsBaseException):
     ...
+
+class FillMissedDaysException(NinePanelsBaseException):
+    ...

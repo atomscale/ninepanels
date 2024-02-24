@@ -1,4 +1,3 @@
-# move to db/ and refactor out logic to /services
 
 import pytz
 import logging
@@ -21,6 +20,7 @@ from .. import sqlmodels as sql
 from .. import pydmodels as pyd
 from .. import exceptions
 from .. import utils
+from ..services import services
 from ..core import config
 
 
@@ -975,28 +975,26 @@ def calc_consistency(db: Session, user_id: int):
     return panel_consistencies
 
 
-#####
-
-
-# consciously going to write both crud and logic funcs here, then refactor out
+#######
 
 
 def create_day(db: Session, day: pyd.Day) -> sql.Day:
-
-    # this is being called internally from assemble_panel_response on panel read or update
-
     """Create a day for a panel"""
 
     new_day = sql.Day(**day.model_dump())
 
-    db.add(new_day)
-    db.commit()
+    try:
+        db.add(new_day)
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise
+        # TODO add logging event procuiton here
 
     return new_day
 
 
 def read_days_for_panel(db: Session, panel_id: int) -> list[sql.Day]:
-    # i dont think currently that a single read day is needed...
     """
     Attrs:
         db
@@ -1032,11 +1030,8 @@ def update_day(db: Session, panel_id: int, day_id: int) -> sql.Day:
     ...
 
 
-# delete day not needed?
-
-
 def read_user_tz(db: Session, user_id: int) -> str:
-    """Query user tbale for user tz
+    """Query user table for user tz
 
     Attrs:
         db
@@ -1044,13 +1039,15 @@ def read_user_tz(db: Session, user_id: int) -> str:
 
     Returns:
         str of tz
+
+    CURRENTLY MOCKING RETURN VALUE
     """
 
     # TODO add col to user table
     return "EDIN"
 
 
-def user_current_time(db: Session, user_id: int) -> datetime:
+def read_user_current_time(db: Session, user_id: int) -> datetime:
     """Return the current datetime.now for specific user
 
     CURRENTLY MOCKING RETURN VALUE TO UTCNOW
@@ -1062,161 +1059,43 @@ def user_current_time(db: Session, user_id: int) -> datetime:
     return datetime.utcnow()
 
 
-def ts_to_date(timestamp: datetime) -> date:
-    """Trim a full timestamp to a date for comparisons
+def read_most_recent_day_for_panel(db: Session, panel_id: int) -> sql.Day:
+    """Return the sql.Day with the latest panel_date in the Days table for the
+    give panel_id
 
     Returns
-        datetime.date instance
+        sql.Day
+
+    Raises:
+        SqlAlchemyError
     """
 
-    return timestamp.date()
+    try:
+        most_recent_day = (
+            db.query(sql.Day)
+            .filter(sql.Day.panel_id == panel_id)
+            .order_by(sql.Day.panel_date.desc())
+            .first()
+        )
+    except SQLAlchemyError as e:
+        # TODO produce to event queue as standard to logging
+        raise
 
 
-def pad_days_to_grid(arr: list[sql.Day], panel_id: int) -> list[dict]:
-    """Ensures response is padded for nx7 grid
-    Called every time to form panel.graph.days
+def create_filled_days(db: Session, filled_days: list[sql.Day]) -> None:
+    """Populate Days tabe with sql.Day instances passed in an array
 
-    Returns:
-        list of dict objects of both actual day instances and created padded ones
+    Returns
+        None
 
-    """
-    padded = [*arr]
-
-    # pad start
-    if arr[0].day_of_week != 6:
-        days_to_pad = 6 - arr[0].day_of_week
-        for i in range(0, days_to_pad):
-            pad_date = arr[0].panel_date + timedelta(days=days_to_pad - i)
-            pad_day = {
-                "day_of_week": pad_date.weekday(),
-                "day_date_num": pad_date.day,
-                "panel_id": panel_id,
-                "is_complete": False,
-                "last_updated": datetime.utcnow(),
-                "id": random.randint(1_000_000_000, 9_999_999_999),
-                "is_pad": True,
-                "panel_date": pad_date,
-            }
-            padded.insert(i, pad_day)
-
-    # pad end
-    if arr[-1].day_of_week != 0:
-        days_to_pad = arr[-1].day_of_week
-        for i in range(days_to_pad):
-            pad_date = arr[-1].panel_date - timedelta(days=i + 1)
-            pad_day = {
-                "day_of_week": pad_date.weekday(),
-                "day_date_num": pad_date.day,
-                "panel_id": panel_id,
-                "is_complete": False,
-                "last_updated": datetime.utcnow(),
-                "id": random.randint(1_000_000_000, 9_999_999_999),
-                "is_pad": True,
-                "panel_date": pad_date,
-            }
-            padded.append(pad_day)
-
-    return padded
-
-
-def fill_missed_days(db: Session, current_user_date: datetime, panel_id: int):
-
-    # get the most recent day that exists in the db
-
-    last_day: sql.Day = db.query(sql.Day).order_by(sql.Day.panel_date.desc()).first()
-
-    last_date: datetime = last_day.panel_date.date()
-
-    if current_user_date > last_date:
-        td: timedelta = current_user_date - last_date
-
-        fill_list = []
-        for i in range(td.days):
-
-            filled_date = current_user_date - timedelta(days=i)
-
-            filler_day = pyd.DayCreate(
-                panel_date=filled_date,
-                day_of_week=filled_date.weekday(),
-                day_date_num=filled_date.day,
-                last_updated=datetime.utcnow(),
-                is_complete=False,
-                is_pad=False,
-                panel_id=panel_id,
-            )
-
-            fill_list.append(sql.Day(**filler_day.model_dump()))
-
-        try:
-            db.add_all(fill_list)
-            db.commit()
-        except SQLAlchemyError as e:
-            db.rollback()
-            raise
-
-        return True
-
-
-def calculate_stats(days: list[dict | sql.Day]) -> dict:
-    """Calc stats for given list of days
-
-    Returns:
-        dict of stats
-
-    """
-    ...
-
-
-def calculate_week_column(days: list[dict | sql.Day]) -> list:
-    """ """
-    ...
-
-
-def assemble_panel_response(db: Session, panel_id: int, user_id: str, current_user_date: date | None = None) -> pyd.Panel:
-
-    # will need pyd model to support response..?
-    # this will run on read, update
+    Raises:
+        SqlAlchemyError
     """
 
-    Attrs:
-        db: db Session instance
-        panel_id: int, panel id
-        user_tz: str,
-
-    Returns:
-        TODO pyd model or dict to convert implictly in response handler
-    """
-
-    # get the user's current time
-
-    if current_user_date is None:
-        user_ts = user_current_time(db=db, user_id=user_id)
-        current_user_date = ts_to_date(timestamp=user_ts)
-
-    # read the panel
-    panel: sql.Panel = read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-    panel: dict = utils.instance_to_dict(panel)
-
-    panel_last_date = ts_to_date(panel["last_updated"])
-
-    if panel_last_date != current_user_date:
-        fill_missed_days(db=db, current_user_date=current_user_date, panel_id=panel_id)
-
-    raw_days = read_days_for_panel(db=db, panel_id=panel_id)
-    padded_days = pad_days_to_grid(arr=raw_days, panel_id=panel_id)
-
-
-
-    # stats = calculate_stats(days=raw_days)
-    # week_column = calculate_week_column(days=padded_days)
-
-
-    panel_response = {
-        **panel,
-        "graph": {"days": padded_days, "stats": {}, "week_column": []},
-    }
-
-    panel: pyd.Panel = pyd.PanelResponse(**panel_response)
-
-    return panel
-    # convert to pyd panel respononse here to test fits shape
+    try:
+        db.add_all(filled_days)
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        # TODO produce to event queue as standard to logging
+        raise

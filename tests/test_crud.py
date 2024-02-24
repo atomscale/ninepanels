@@ -446,6 +446,7 @@ def test_create_day(test_db):
         last_updated=datetime.utcnow(),
         is_complete=False,
         is_pad=False,
+        is_fill=False,
         panel_id=new_panel.id,
     )
 
@@ -477,6 +478,7 @@ def test_pad_days(test_db):
         last_updated=datetime.utcnow(),
         is_complete=False,
         is_pad=False,
+        is_fill=False,
         panel_id=new_panel.id,
     )
 
@@ -520,6 +522,7 @@ def test_fill_missed_days(test_db):
         last_updated=datetime.utcnow(),
         is_complete=False,
         is_pad=False,
+        is_fill=False,
         panel_id=new_panel.id,
     )
 
@@ -541,31 +544,61 @@ def test_fill_missed_days(test_db):
 
 def test_assemble_panel_response(test_db):
     """
-    Given one known old date entry
+    Given a panel effectivley created on a midweek date with one entry,
+    Tuesday 20th Feb,
+    When no user action unitl Friday 23rd when the next read happens
+    then the response be a pyd.Panel model
+    should have sat 24 and sun 25th padded
+    the 23 back to the 21 filled as false
+    the 19th padded
 
 
     """
-    old_date = datetime(day=10, month=2, year=2024).date()
+    create_date = datetime(day=20, month=2, year=2024).date()
 
     new_panel = crud.create_panel_by_user_id(
-        db=test_db, title="testing assembple panel", user_id=1, last_updated=old_date
+        db=test_db, title="testing assembple panel", user_id=1, last_updated=create_date
     )
 
 
     day = pyd.DayCreate(
-        panel_date=old_date,
-        day_of_week=old_date.weekday(),
-        day_date_num=old_date.day,
+        panel_date=create_date,
+        day_of_week=create_date.weekday(),
+        day_date_num=create_date.day,
         last_updated=datetime.utcnow(),
         is_complete=False,
+        is_fill=False,
         is_pad=False,
         panel_id=new_panel.id,
     )
 
     old_day = crud.create_day(db=test_db, day=day)
 
-    current_user_date = datetime(day=10, month=3, year=2024).date()
+    current_user_date = datetime(day=23, month=2, year=2024).date()
 
-    panel = crud.assemble_panel_response(db=test_db, panel_id=new_panel.id, user_id=1)
+    panel = crud.assemble_panel_response(db=test_db, panel_id=new_panel.id, user_id=1, current_user_date=current_user_date)
 
     pp.pprint(panel.model_dump())
+
+    assert create_date.weekday() == 1 # is a Tuesday
+    assert current_user_date.weekday() == 4 # is a Friday
+
+    assert isinstance(panel, pyd.PanelResponse)
+    assert isinstance(panel.graph, pyd.Graph)
+    assert isinstance(panel.graph.days, list)
+    assert isinstance(panel.graph.days[6], pyd.Day)
+
+    assert panel.graph.days[0].panel_date.day == 25
+    assert panel.graph.days[0].day_of_week == 6
+    assert panel.graph.days[0].day_date_num == 25
+
+    assert panel.graph.days[0].is_pad == True
+    assert panel.graph.days[1].is_pad == True
+    assert panel.graph.days[2].is_pad == False
+    assert panel.graph.days[2].is_fill == True
+    assert panel.graph.days[5].is_pad == False
+    assert panel.graph.days[5].is_fill == False
+
+    assert panel.graph.days[6].panel_date.day == 19
+    assert panel.graph.days[6].day_of_week == 0
+    assert panel.graph.days[6].day_date_num == 19
