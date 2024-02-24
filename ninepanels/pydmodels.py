@@ -8,6 +8,7 @@ from pydantic import EmailStr
 from pydantic import model_validator
 
 from datetime import datetime
+from datetime import date
 
 
 class AccessToken(BaseModel):
@@ -24,15 +25,16 @@ class Entry(EntryCreate):
     panel_id: int
     timestamp: datetime
 
+class PanelCreate(BaseModel):
+    title: str
+    position: int  # dev None, will be non-nullable
+    description: str | None = None
+    last_updated: datetime | date | None = None
+    created_at: datetime | date | None = None  # dev None, will be non-nullable
 
-class Panel(BaseModel):
+class Panel(PanelCreate):
     model_config = {"from_attributes": True}
     id: int
-    created_at: datetime | None = None  # dev None, will be non-nullable
-    title: str
-    description: str | None = None
-    last_updated: datetime | None = None
-    position: int | None = None  # dev None, will be non-nullable
     user_id: int
     # entries: list[Entry] # depr in new response model
 

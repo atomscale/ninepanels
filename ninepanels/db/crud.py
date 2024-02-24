@@ -174,40 +174,47 @@ def create_panel_by_user_id(
     db: Session,
     user_id: int,
     title: str,
-    position: int | None = None,
+    position: int ,
+    description: str | None = None,
     last_updated: datetime | None = None,
-    description: str = None,
-):
-    """create a panel for a user by id"""
+    created_at: datetime | None = None,
+) -> sql.Panel:
+    """ Create a panel for a user by id
 
-    user = db.query(sql.User).where(sql.User.id == user_id).first()
+    Returns
+        sql.Panel instance
 
-    if last_updated is None:
-        last_updated = datetime.utcnow()
+    Raises
+        exceptions.PanelNotCreated
 
+    """
+
+    user = read_user_by_id(db=db, user_id=user_id)
+
+    new_panel = pyd.PanelCreate(
+        title=title,
+        description=description,
+        last_updated=datetime.utcnow(),
+        created_at=datetime.utcnow(),
+        user_id=user.id,
+        position=position,
+    )
+
+    # required for unit testing
+    if last_updated != None:
+        new_panel.last_updated = last_updated
+
+    # required for unit testing
+    if created_at != None:
+        new_panel.created_at = created_at
+
+    new_panel = sql.Panel(**new_panel.model_dump())
     try:
-        if description:
-            new_panel = sql.Panel(
-                created_at=datetime.utcnow(),
-                title=title,
-                description=description,
-                last_updated=last_updated,
-                user_id=user_id,
-                position=position,
-            )
-        else:
-            new_panel = sql.Panel(
-                created_at=datetime.utcnow(),
-                title=title,
-                user_id=user_id,
-                last_updated=last_updated,
-                position=position,
-            )
-
         user.panels.append(new_panel)
         db.commit()
         return new_panel
     except SQLAlchemyError as e:
+        db.rollback()
         raise exceptions.PanelNotCreated(context_msg=str(e))
 
 
@@ -978,10 +985,10 @@ def calc_consistency(db: Session, user_id: int):
 #######
 
 
-def create_day(db: Session, day: pyd.Day) -> sql.Day:
+def create_day(db: Session, new_day: pyd.DayCreate) -> sql.Day:
     """Create a day for a panel"""
 
-    new_day = sql.Day(**day.model_dump())
+    new_day = sql.Day(**new_day.model_dump())
 
     try:
         db.add(new_day)
@@ -1080,6 +1087,8 @@ def read_most_recent_day_for_panel(db: Session, panel_id: int) -> sql.Day:
     except SQLAlchemyError as e:
         # TODO produce to event queue as standard to logging
         raise
+
+    return most_recent_day
 
 
 def create_filled_days(db: Session, filled_days: list[sql.Day]) -> None:

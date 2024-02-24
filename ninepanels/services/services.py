@@ -181,6 +181,7 @@ def fill_missed_days(db: Session, current_user_date: datetime, panel_id: int) ->
                 f"exc in writing filled days to db {str(e)}"
             )
 
+        return True
 
 def calculate_panel_stats(days: list[dict | sql.Day]) -> dict:
     """Calc stats for given list of days
@@ -254,7 +255,7 @@ def pad_days_to_grid(arr: list[sql.Day], panel_id: int) -> list[dict]:
     return padded
 
 
-def assemble_panel_response(
+def orchestrate_panel_response(
     db: Session, panel_id: int, user_id: int, current_user_date: date | None = None
 ) -> pyd.PanelResponse:
 
@@ -289,7 +290,7 @@ def assemble_panel_response(
         fill_missed_days(db=db, current_user_date=current_user_date, panel_id=panel_id)
 
     raw_days = crud.read_days_for_panel(db=db, panel_id=panel_id)
-    padded_days = crud.pad_days_to_grid(arr=raw_days, panel_id=panel_id)
+    padded_days =   pad_days_to_grid(arr=raw_days, panel_id=panel_id)
 
     stats = calculate_panel_stats(days=raw_days)
     week_column = calculate_panel_week_column(days=padded_days)
@@ -302,3 +303,40 @@ def assemble_panel_response(
     panel: pyd.PanelResponse = pyd.PanelResponse(**panel_response)
 
     return panel
+
+def orchestrate_panel_create(db: Session, user_id: int, new_panel: pyd.PanelCreate) -> pyd.PanelResponse:
+
+    """ Orchestrates the creation of a panel
+
+    - creates Panel
+    - creates associated Day
+
+    Returns
+        pyd.PanelResponse ready to http out the door ;)
+
+    """
+
+    # create panel
+
+    new_panel = crud.create_panel_by_user_id(db, user_id=user_id, **new_panel.model_dump())
+    # create Day
+    user_current_day = crud.read_user_current_time(db=db, user_id=user_id).date()
+
+    new_day = pyd.DayCreate(
+        panel_date=user_current_day,
+        day_of_week=user_current_day.weekday(),
+        day_date_num=user_current_day.day,
+        last_updated=datetime.utcnow(),
+        is_complete=False,
+        is_pad=False,
+        is_fill=False,
+        panel_id=new_panel.id
+    )
+
+    new_day = crud.create_day(db=db, new_day=new_day)
+
+    if new_day and new_panel:
+
+        panel: pyd.PanelResponse = orchestrate_panel_response(db=db, panel_id=new_panel.id, user_id=new_panel.user_id)
+
+        return panel

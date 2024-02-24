@@ -11,14 +11,14 @@ if [[ $1 == "crud" ]]; then
     pytest -v tests/test_crud.py -s
     return 0
 
+elif [[ $1 == "services" ]]; then
+    echo "services test..."
+    pytest -v tests/test_services.py -s
+    return 0
+
 elif [[ $1 == "api" ]]; then
     echo "api tests..."
     pytest -v tests/test_api.py -s
-    return 0
-
-elif [[ $1 == "ci" ]]; then
-    echo "ci test..."
-    pytest -v tests/test_ci.py -s
     return 0
 
 elif [[ $1 == "all" ]]; then
@@ -27,6 +27,6 @@ elif [[ $1 == "all" ]]; then
     return 0
 
 else
-    echo "define scope of tests: crud, api, all"
+    echo "define scope of tests: crud, services, api, all"
     return 0
 fi
