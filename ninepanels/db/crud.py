@@ -1,4 +1,3 @@
-
 import pytz
 import logging
 import uuid
@@ -174,12 +173,12 @@ def create_panel_by_user_id(
     db: Session,
     user_id: int,
     title: str,
-    position: int ,
+    position: int,
     description: str | None = None,
     last_updated: datetime | None = None,
     created_at: datetime | None = None,
 ) -> sql.Panel:
-    """ Create a panel for a user by id
+    """Create a panel for a user by id
 
     Returns
         sql.Panel instance
@@ -396,7 +395,11 @@ def delete_panel_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
 def create_entry_by_panel_id(
     db: Session, is_complete: bool, panel_id: int, user_id: int
 ):
-    """Create an entry in the db. Appends timestamp in utc
+    """
+    TODO REMOVE DEPRECATED
+
+
+    Create an entry in the db. Appends timestamp in utc
 
     Args:
         db: an sqlalchemy Session instance
@@ -447,7 +450,11 @@ def read_entries_by_panel_id(
     offset: int | None = None,
     limit: int | None = None,
 ) -> list[sql.Entry]:
-    """Return a list of all entries. NOTE: there can be many entries per day."""
+    """
+        TODO REMOVE DEPRECATED
+
+
+    Return a list of all entries. NOTE: there can be many entries per day."""
     unpadded_entries = (
         db.query(sql.Entry)
         .filter(sql.Entry.panel_id == panel_id)
@@ -517,7 +524,7 @@ def panel_sort_on_update(db: Session, user_id: int, panel_id: int, new_pos: int)
         raise exceptions.PanelNotUpdated(f"That's where the panel already is 🙂")
 
     # TODO this is not being returned, why is it being called?
-    panels = read_all_panels_by_user_id(db=db, user_id=user_id)
+    # panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
 
 def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
@@ -541,6 +548,10 @@ def panel_sort_on_delete(db: Session, del_panel_pos: int, user_id: int) -> None:
 
 
 def delete_all_entries_by_panel_id(db: Session, user_id: int, panel_id: int) -> bool:
+    """TODO REMOVE DEPRECATED
+    This needs to become delete all days...
+    """
+
     panel = (
         db.query(sql.Panel)
         .join(sql.User)
@@ -852,6 +863,10 @@ def pad_entries(
     panel_id: int,
     test_created_at: datetime = None,
 ) -> list[dict]:
+    """
+    TODO REMOVE DEPRECATED
+
+    """
     today = datetime.utcnow().date()
 
     padded_entries = []
@@ -910,7 +925,10 @@ def pad_entries(
 
 
 def today() -> datetime:
-    """TODO wherever this is called it can just be 'date'"""
+    """
+        TODO REMOVE DEPRECATED
+
+    TODO wherever this is called it can just be 'date'"""
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return today
 
@@ -921,6 +939,11 @@ def calc_panel_age(created_at: datetime) -> int:
 
 
 def calc_consistency(db: Session, user_id: int):
+    """
+
+    TODO REMOVE DEPRECATED
+    """
+
     panels = read_all_panels_by_user_id(db=db, user_id=user_id)
 
     panel_consistencies = []
@@ -1108,3 +1131,40 @@ def create_filled_days(db: Session, filled_days: list[sql.Day]) -> None:
         db.rollback()
         # TODO produce to event queue as standard to logging
         raise
+
+
+def update_day_completion_by_id(db: Session, day_id: int, update: dict) -> sql.Day:
+    """Update completion status of a day by inverting current bool value
+
+    Returns:
+        sql.Day of updated Day
+
+    Raises:
+        exceptions.DayNotUpdated
+    """
+
+    if update:
+        try:
+            day: sql.Day = db.query(sql.Day).filter(sql.Day.id == day_id).first()
+        except SQLAlchemyError as e:
+            raise exceptions.DayNotUpdated(detail=f"{day_id=} not found")
+
+        if day:
+
+            # invert truthiness of day completion
+            # this assumes server is the authority on a panel completion status
+            day.is_complete = not day.is_complete
+
+            try:
+                db.commit()
+            except SQLAlchemyError as e:
+                db.rollback()
+                raise exceptions.DayNotUpdated(
+                    f" issue in commit during day update {str(e)}"
+                )
+            return day
+        else:
+            raise exceptions.DayNotUpdated(detail=f"panel with id {day_id} not found")
+
+    else:
+        raise exceptions.DayNotUpdated(detail=f"no update body in call to ")

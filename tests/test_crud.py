@@ -406,8 +406,6 @@ def test_entry_padding(test_db):
         ),
     ]
 
-
-
     test_created_at = datetime.utcnow() + timedelta(days=-10)
 
     limit = None
@@ -421,7 +419,6 @@ def test_entry_padding(test_db):
     )
 
     assert isinstance(padded, list)
-
 
 
 def test_create_day(test_db):
@@ -452,10 +449,9 @@ def test_create_day(test_db):
         panel_id=new_panel.id,
     )
 
-    new_day = crud.create_day(db=test_db,new_day=day)
+    new_day = crud.create_day(db=test_db, new_day=day)
 
     assert new_day.id == 1
 
 
 def test_read_days_for_panel(test_db): ...
-

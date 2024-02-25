@@ -41,7 +41,7 @@ class Panel(Base):
     __tablename__ = "panels"
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime)  # dev None, will be non-nullable
-    last_updated = Column(DateTime) # new
+    last_updated = Column(DateTime)  # new
     title = Column(String)
     description = Column(String)
     position = Column(Integer)  # dev None, will be non-nullable
@@ -61,6 +61,7 @@ class Entry(Base):
     panel_id = Column(Integer, ForeignKey("panels.id"))
     panel = relationship("Panel", back_populates="entries")
 
+
 class Day(Base):
     __tablename__ = "days"
     id = Column(Integer, primary_key=True)
@@ -69,18 +70,17 @@ class Day(Base):
     # this is key cross check and this must be unique for a panel
     # where shoudl logic sit for parseing down to a "ddmmyy" type day?, not here
 
-    day_of_week = Column(Integer) # can i validate here that only range(0,6)?
-    day_date_num = Column(Integer) # again, limit to 31?
+    day_of_week = Column(Integer)  # can i validate here that only range(0,6)?
+    day_date_num = Column(Integer)  # again, limit to 31?
 
     last_updated = Column(DateTime)
 
     is_complete = Column(Boolean)
     is_pad = Column(Boolean)
-    is_fill=Column(Boolean)
+    is_fill = Column(Boolean)
 
     panel_id = Column(Integer, ForeignKey("panels.id"))
     panel = relationship("Panel", back_populates="days")
-
 
 
 class BlacklistedAccessToken(Base):
@@ -104,6 +104,7 @@ class PasswordResetToken(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="password_reset_tokens")
 
+
 class Timing(Base):
     __tablename__ = "timings"
     id = Column(Integer, primary_key=True)
@@ -116,6 +117,7 @@ class Timing(Base):
     start_ts = Column(DateTime)
     stop_ts = Column(DateTime)
     diff_ms = Column(Float)
+
 
 class TimingStats(Base):
     __tablename__ = "timing_stats"

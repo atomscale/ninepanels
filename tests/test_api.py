@@ -199,7 +199,6 @@ def test_update_panel_by_id(test_server, test_access_token):
     test_panel = resp.json()
     assert test_panel["status_code"] == 422  # pydantic will send back 'unprocessable
 
-    # panel update field that not in pydantic PanelUpdate obj caught
     resp = test_server.patch(base_url +
         f"/panels/{test_panel_id}",
         json={"not_exist": "new updated title from api"},

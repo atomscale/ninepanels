@@ -14,7 +14,7 @@ from .. import utils
 
 
 def all_panels_with_current_entry_by_user_id(db: Session, user_id: int) -> list[dict]:
-    """ DEPRECATED
+    """DEPRECATED
 
     return only the latest status for each panel belonging to a user
     ie the up do date daily view
@@ -183,6 +183,7 @@ def fill_missed_days(db: Session, current_user_date: datetime, panel_id: int) ->
 
         return True
 
+
 def calculate_panel_stats(days: list[dict | sql.Day]) -> dict:
     """Calc stats for given list of days
 
@@ -214,43 +215,48 @@ def pad_days_to_grid(arr: list[sql.Day], panel_id: int) -> list[dict]:
         list of dict objects of both actual day instances and created padded ones
 
     """
-    padded = [*arr]
 
-    # pad start
-    if arr[0].day_of_week != 6:
-        days_to_pad = 6 - arr[0].day_of_week
-        for i in range(0, days_to_pad):
-            pad_date = arr[0].panel_date + timedelta(days=days_to_pad - i)
-            pad_day = {
-                "day_of_week": pad_date.weekday(),
-                "day_date_num": pad_date.day,
-                "panel_id": panel_id,
-                "is_complete": False,
-                "is_fill": False,
-                "last_updated": datetime.utcnow(),
-                "id": random.randint(1_000_000_000, 9_999_999_999),
-                "is_pad": True,
-                "panel_date": pad_date,
-            }
-            padded.insert(i, pad_day)
+    try:
+        padded = [*arr]
 
-    # pad end
-    if arr[-1].day_of_week != 0:
-        days_to_pad = arr[-1].day_of_week
-        for i in range(days_to_pad):
-            pad_date = arr[-1].panel_date - timedelta(days=i + 1)
-            pad_day = {
-                "day_of_week": pad_date.weekday(),
-                "day_date_num": pad_date.day,
-                "panel_id": panel_id,
-                "is_complete": False,
-                "is_fill": False,
-                "last_updated": datetime.utcnow(),
-                "id": random.randint(1_000_000_000, 9_999_999_999),
-                "is_pad": True,
-                "panel_date": pad_date,
-            }
-            padded.append(pad_day)
+        # pad start
+        if arr[0].day_of_week != 6:
+            days_to_pad = 6 - arr[0].day_of_week
+            for i in range(0, days_to_pad):
+                pad_date = arr[0].panel_date + timedelta(days=days_to_pad - i)
+                pad_day = {
+                    "day_of_week": pad_date.weekday(),
+                    "day_date_num": pad_date.day,
+                    "panel_id": panel_id,
+                    "is_complete": False,
+                    "is_fill": False,
+                    "last_updated": datetime.utcnow(),
+                    "id": random.randint(1_000_000_000, 9_999_999_999),
+                    "is_pad": True,
+                    "panel_date": pad_date,
+                }
+                padded.insert(i, pad_day)
+
+        # pad end
+        if arr[-1].day_of_week != 0:
+            days_to_pad = arr[-1].day_of_week
+            for i in range(days_to_pad):
+                pad_date = arr[-1].panel_date - timedelta(days=i + 1)
+                pad_day = {
+                    "day_of_week": pad_date.weekday(),
+                    "day_date_num": pad_date.day,
+                    "panel_id": panel_id,
+                    "is_complete": False,
+                    "is_fill": False,
+                    "last_updated": datetime.utcnow(),
+                    "id": random.randint(1_000_000_000, 9_999_999_999),
+                    "is_pad": True,
+                    "panel_date": pad_date,
+                }
+                padded.append(pad_day)
+    except Exception as e:
+        # TODO refine exc type as
+        raise exceptions.PadDaysException(f"could not pad days: {str(e)}")
 
     return padded
 
@@ -258,8 +264,7 @@ def pad_days_to_grid(arr: list[sql.Day], panel_id: int) -> list[dict]:
 def orchestrate_panel_response(
     db: Session, panel_id: int, user_id: int, current_user_date: date | None = None
 ) -> pyd.PanelResponse:
-
-    """ Coordinate the assembly of a full panel response instance.
+    """Coordinate the assembly of a full panel response instance.
     Utilise in all areas where a panel or panels is returned.
 
 
@@ -272,31 +277,63 @@ def orchestrate_panel_response(
 
     Returns:
         pyd.PanelResponse instance
+
+    Raises:
+        exceptions.OrchestratePanelResponseException
     """
 
     # get the user's current time
 
     if current_user_date is None:
-        user_ts: datetime = crud.read_user_current_time(db=db, user_id=user_id)
+        try:
+            user_ts: datetime = crud.read_user_current_time(db=db, user_id=user_id)
+        except Exception as e:
+            # TODO refine exc type as
+            raise exceptions.OrchestratePanelResponseException(
+                f"could not read current user time: {str(e)}"
+            )
         current_user_date: date = user_ts.date()
 
     # read the panel
-    panel: sql.Panel = crud.read_panel_by_id(db=db, panel_id=panel_id, user_id=user_id)
-    panel: dict = utils.instance_to_dict(panel)
+    try:
+        panel: sql.Panel = crud.read_panel_by_id(
+            db=db, panel_id=panel_id, user_id=user_id
+        )
+        panel: dict = utils.instance_to_dict(panel)
+    except exceptions.PanelNotFound as e:
+        # TODO refine exc type as
+        raise exceptions.OrchestratePanelResponseException(
+            f"could not read panel {str(e)}"
+        )
 
     panel_last_date: date = panel["last_updated"].date()
 
     if panel_last_date != current_user_date:
         fill_missed_days(db=db, current_user_date=current_user_date, panel_id=panel_id)
 
-    raw_days = crud.read_days_for_panel(db=db, panel_id=panel_id)
-    padded_days =   pad_days_to_grid(arr=raw_days, panel_id=panel_id)
+    try:
+        raw_days = crud.read_days_for_panel(db=db, panel_id=panel_id)
+    except exceptions.DayNotFound as e:
+        # TODO refine exc type as
+        raise exceptions.OrchestratePanelResponseException(
+            f"could not read days for panel: {str(e)}"
+        )
+
+    try:
+        padded_days = pad_days_to_grid(arr=raw_days, panel_id=panel_id)
+    except exceptions.PadDaysException as e:
+        # TODO refine exc type as
+        raise exceptions.OrchestratePanelResponseException(
+            f"could nor read current user time: {str(e)}"
+        )
 
     stats = calculate_panel_stats(days=raw_days)
     week_column = calculate_panel_week_column(days=padded_days)
 
     panel_response: dict = {
         **panel,
+        "is_complete": raw_days[0].is_complete,
+        "day_id": raw_days[0].id,
         "graph": {"days": padded_days, "stats": stats, "week_column": week_column},
     }
 
@@ -304,9 +341,11 @@ def orchestrate_panel_response(
 
     return panel
 
-def orchestrate_panel_create(db: Session, user_id: int, new_panel: pyd.PanelCreate) -> pyd.PanelResponse:
 
-    """ Orchestrates the creation of a panel
+def orchestrate_panel_create(
+    db: Session, user_id: int, new_panel: pyd.PanelCreate
+) -> pyd.PanelResponse:
+    """Orchestrates the creation of a panel
 
     - creates Panel
     - creates associated Day
@@ -318,7 +357,9 @@ def orchestrate_panel_create(db: Session, user_id: int, new_panel: pyd.PanelCrea
 
     # create panel
 
-    new_panel = crud.create_panel_by_user_id(db, user_id=user_id, **new_panel.model_dump())
+    new_panel = crud.create_panel_by_user_id(
+        db, user_id=user_id, **new_panel.model_dump()
+    )
     # create Day
     user_current_day = crud.read_user_current_time(db=db, user_id=user_id).date()
 
@@ -330,13 +371,72 @@ def orchestrate_panel_create(db: Session, user_id: int, new_panel: pyd.PanelCrea
         is_complete=False,
         is_pad=False,
         is_fill=False,
-        panel_id=new_panel.id
+        panel_id=new_panel.id,
     )
 
     new_day = crud.create_day(db=db, new_day=new_day)
 
     if new_day and new_panel:
 
-        panel: pyd.PanelResponse = orchestrate_panel_response(db=db, panel_id=new_panel.id, user_id=new_panel.user_id)
+        panel: pyd.PanelResponse = orchestrate_panel_response(
+            db=db, panel_id=new_panel.id, user_id=new_panel.user_id
+        )
 
         return panel
+
+
+def orchestrate_panel_update(
+    db: Session, user_id: int, panel_id: int, update: dict
+) -> pyd.PanelResponse:
+    """Coordinate a panel udpate
+
+    Returns:
+        pyd.PanelResponse with updated panel
+    """
+
+    # if update to title or desc just call reg update func
+
+    if "is_complete" not in update.keys():
+        try:
+            updated_panel = crud.update_panel_by_id(
+                db=db, user_id=user_id, panel_id=panel_id, update=update
+            )
+        except exceptions.PanelNotUpdated as e:
+            # TODO emit event
+            raise exceptions.OrchestratePanelUpdateException(
+                f"panel update orch service layer exc at update for not _is_complete: {str(e)}"
+            )
+
+    # if a toggle of is_complete (which is virtual, not a panel attr but a panel.graph[0] surfaced element)
+    # then
+
+    if "is_complete" in update.keys():
+        if "day_id" not in update.keys():
+            raise exceptions.OrchestratePanelUpdateException(
+                f"day_id is missing from is_complete request"
+            )
+
+        # drop day_id from update dict as do not wnat to update the id in the Days table
+        day_id = update["day_id"]
+        del update["day_id"]
+
+        try:
+            updated_day: sql.Day = crud.update_day_completion_by_id(
+                db=db, day_id=day_id, update=update
+            )
+        except exceptions.DayNotUpdated as e:
+            raise exceptions.OrchestratePanelUpdateException(f"exc in day update for is_complete")
+
+
+    # then call orch response
+    try:
+        panel_response: pyd.PanelResponse = orchestrate_panel_response(
+            db=db, panel_id=panel_id, user_id=user_id
+        )
+    except exceptions.OrchestratePanelResponseException as e:
+        # TODO emit event
+        raise exceptions.OrchestratePanelUpdateException(
+            f"panel update orch service layer exc at update for not _is_complete: {str(e)}"
+        )
+
+    return panel_response

@@ -62,12 +62,18 @@ class Graph(BaseModel):
 class PanelResponse(Panel):
     # is_complete: bool # depr in new response model, use panel.graph[0].isComplete in client instead
     graph: Graph
+    is_complete: bool
+    day_id: int
 
-class PanelUpdate(BaseModel):
-    """request validation for the update operation"""
+# class PanelUpdate(BaseModel):
+#     """
+#     IS THIS IN USE?
 
-    title: str = None
-    description: str = None
+#     request validation for the update operation"""
+
+#     title: str = None
+#     description: str = None
+#     is_complete: bool = None
 
 class HTTPError(BaseModel):
     """error repsonse model for docs"""

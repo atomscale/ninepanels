@@ -10,8 +10,9 @@ from ninepanels import sqlmodels as sql
 
 pp = PrettyPrinter()
 
+
 def test_pad_days(test_db):
-    """given a freah panel wtih one day entry created
+    """given a fresh panel wtih one day entry created
     on a specific hardcoded date
     when the padding is applied,
     the len should be seven with"""
@@ -109,16 +110,20 @@ def test_orchestrate_panel_response(test_db):
     create_date = datetime(day=20, month=2, year=2024).date()
 
     new_panel = crud.create_panel_by_user_id(
-        db=test_db, title="testing assembple panel", user_id=1, last_updated=create_date, position=7, created_at=create_date
+        db=test_db,
+        title="testing assembple panel",
+        user_id=1,
+        last_updated=create_date,
+        position=7,
+        created_at=create_date,
     )
-
 
     day = pyd.DayCreate(
         panel_date=create_date,
         day_of_week=create_date.weekday(),
         day_date_num=create_date.day,
         last_updated=datetime.utcnow(),
-        is_complete=False,
+        is_complete=True,
         is_fill=False,
         is_pad=False,
         panel_id=new_panel.id,
@@ -128,12 +133,17 @@ def test_orchestrate_panel_response(test_db):
 
     current_user_date = datetime(day=23, month=2, year=2024).date()
 
-    panel = services.orchestrate_panel_response(db=test_db, panel_id=new_panel.id, user_id=1, current_user_date=current_user_date)
+    panel = services.orchestrate_panel_response(
+        db=test_db,
+        panel_id=new_panel.id,
+        user_id=1,
+        current_user_date=current_user_date,
+    )
 
     # pp.pprint(panel.model_dump())
 
-    assert create_date.weekday() == 1 # is a Tuesday
-    assert current_user_date.weekday() == 4 # is a Friday
+    assert create_date.weekday() == 1  # is a Tuesday
+    assert current_user_date.weekday() == 4  # is a Friday
 
     assert isinstance(panel, pyd.PanelResponse)
     assert isinstance(panel.graph, pyd.Graph)
@@ -155,6 +165,7 @@ def test_orchestrate_panel_response(test_db):
     assert panel.graph.days[6].day_of_week == 0
     assert panel.graph.days[6].day_date_num == 19
 
+
 def test_orchestrate_panel_create(test_db):
     """Given no prior data apart from mocked panel create pyd instance from request data
     when a new panel is created
@@ -163,12 +174,11 @@ def test_orchestrate_panel_create(test_db):
 
     """
 
-    panel_create = pyd.PanelCreate(
-        title="orch create test",
-        position=7
-    )
+    panel_create = pyd.PanelCreate(title="orch create test", position=7)
 
-    new_panel = services.orchestrate_panel_create(db=test_db, user_id=1, new_panel=panel_create)
+    new_panel = services.orchestrate_panel_create(
+        db=test_db, user_id=1, new_panel=panel_create
+    )
 
     assert new_panel
     assert isinstance(new_panel, pyd.PanelResponse)
@@ -181,3 +191,66 @@ def test_orchestrate_panel_create(test_db):
 
     # pp.pprint(new_panel.model_dump())
 
+
+def test_orchestrate_panel_update(test_db):
+    """Given a fresh panel with a newly created day,
+    when a user send a panel"""
+
+    # create the fresh panel and day
+
+    panel_create = pyd.PanelCreate(title="orch update test", position=7)
+
+    new_panel = services.orchestrate_panel_create(
+        db=test_db, user_id=1, new_panel=panel_create
+    )
+
+    assert new_panel
+    assert isinstance(new_panel, pyd.PanelResponse)
+    assert isinstance(new_panel, pyd.PanelResponse)
+    assert isinstance(new_panel.graph, pyd.Graph)
+    assert isinstance(new_panel.graph.days, list)
+    assert isinstance(new_panel.graph.days[0], pyd.Day)
+
+    assert new_panel.title == panel_create.title
+
+    update_payload = {"title": "update of title worked"}
+
+    updated_panel = services.orchestrate_panel_update(
+        db=test_db, user_id=1, panel_id=new_panel.id, update=update_payload
+    )
+
+    assert updated_panel
+    assert updated_panel.title == update_payload["title"]
+    # pp.pprint(new_panel.model_dump())
+
+
+def test_orchestrate_panel_graph_update(test_db):
+    """Given a fresh panel with a newly created day,
+    when a user send a panel"""
+
+    # create the fresh panel and day
+
+    panel_create = pyd.PanelCreate(title="orch update test", position=7)
+
+    new_panel = services.orchestrate_panel_create(
+        db=test_db, user_id=1, new_panel=panel_create
+    )
+
+    assert new_panel
+    assert isinstance(new_panel, pyd.PanelResponse)
+    assert isinstance(new_panel, pyd.PanelResponse)
+    assert isinstance(new_panel.graph, pyd.Graph)
+    assert isinstance(new_panel.graph.days, list)
+    assert isinstance(new_panel.graph.days[0], pyd.Day)
+
+    assert new_panel.title == panel_create.title
+
+    update_payload = {"is_complete": True, "day_id": 1}
+
+    updated_panel = services.orchestrate_panel_update(
+        db=test_db, user_id=1, panel_id=new_panel.id, update=update_payload
+    )
+
+    assert updated_panel
+    assert updated_panel.is_complete == True
+    pp.pprint(updated_panel.model_dump())
